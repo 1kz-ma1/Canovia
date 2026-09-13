@@ -4,10 +4,13 @@
 
 @section('content')
     <div class="mx-auto max-w-3xl space-y-5 md:space-y-6">
-        <header class="flex items-start justify-between gap-3 md:gap-4">
-            <div class="min-w-0">
+        <header class="pk-cosmic-page-heading pk-today-heading flex items-start justify-between gap-3 md:gap-4">
+            <div class="relative z-10 min-w-0">
+                <p class="pk-cosmic-kicker">TODAY / TAKE ACTION</p>
                 <h1 class="text-3xl font-bold text-slate-100">今日のおすすめ</h1>
+                <p class="pk-cosmic-subcopy">迷ったら、今日の一歩だけ決めよう。</p>
             </div>
+            <img src="/brand/mascot-guide.webp" alt="" class="pk-page-mascot pk-page-mascot-today" aria-hidden="true">
             @if (($draft['step'] ?? 'recommendation') !== 'recommendation')
                 <form method="POST" action="{{ route('navigation.reset') }}" class="shrink-0">
                     @csrf
@@ -28,7 +31,7 @@
         <main class="assistant-chat-shell">
             @if (($draft['step'] ?? 'recommendation') === 'intent')
                 <div class="assistant-message-row assistant-message-left">
-                    <div class="assistant-avatar">PK</div>
+                    <div class="assistant-avatar pk-assistant-avatar"><img src="/brand/logo-mark.svg" alt="" width="26" height="26"></div>
                     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
                         <p class="text-sm font-semibold text-sky-300">条件を変える</p>
                         <h2 class="mt-2 text-xl font-bold text-slate-100">今日はどう進めたい？</h2>
@@ -46,7 +49,7 @@
                 </div>
             @elseif (($draft['step'] ?? null) === 'time')
                 <div class="assistant-message-row assistant-message-left">
-                    <div class="assistant-avatar">PK</div>
+                    <div class="assistant-avatar pk-assistant-avatar"><img src="/brand/logo-mark.svg" alt="" width="26" height="26"></div>
                     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
                         <h2 class="text-xl font-bold text-slate-100">どれくらい時間がありますか？</h2>
                         <form method="POST" action="{{ route('navigation.time') }}" class="mt-5 space-y-5">
@@ -76,13 +79,13 @@
                 </div>
             @else
                 <div class="assistant-message-row assistant-message-left">
-                    <div class="assistant-avatar">PK</div>
+                    <div class="assistant-avatar pk-assistant-avatar"><img src="/brand/logo-mark.svg" alt="" width="26" height="26"></div>
                     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
                         @if ($recommendation)
                             <section class="rounded-3xl border border-sky-400/20 bg-slate-950/30 p-4 md:p-5 plan-identity-shell" data-plan-accent="{{ $recommendation->plan->accentKey() }}">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
-                                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-sky-300">Top pick</p>
+                                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-sky-300">おすすめ</p>
                                         <h2 class="mt-2 text-2xl font-bold text-slate-100">{{ $recommendation->task->title }}</h2>
                                         <p class="mt-1 plan-identity-chip truncate text-sm"><span aria-hidden="true">{{ $recommendation->plan->displayIcon() }}</span>{{ $recommendation->plan->title }}</p>
                                     </div>

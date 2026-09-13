@@ -4,8 +4,12 @@
 
 @section('content')
     <div class="space-y-6">
-        <header>
-            <h1 class="text-3xl font-black tracking-tight text-slate-50">これまでの積み上げ</h1>
+        <header class="pk-cosmic-page-heading pk-timeline-heading">
+            <div class="relative z-10">
+                <p class="pk-cosmic-kicker">TIMELINE / LOOK BACK</p>
+                <h1 class="text-3xl font-black tracking-tight text-slate-50">これまでの積み上げ</h1>
+                <p class="pk-cosmic-subcopy">歩いてきた軌道を、次の一歩につなげる。</p>
+            </div>
         </header>
 
         @forelse ($items as $date => $group)

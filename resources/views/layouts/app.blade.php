@@ -61,28 +61,31 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body data-focus-mode="{{ $focusMode ? '1' : '0' }}" data-onboarding-version="{{ $onboardingVersion }}" data-onboarding-auto="{{ $onboardingAuto ? '1' : '0' }}" data-onboarding-authenticated="{{ auth()->check() ? '1' : '0' }}" data-route-name="{{ request()->route()?->getName() }}" class="min-h-screen bg-slate-950 text-slate-100 antialiased {{ $focusMode ? 'pace-focus-mode' : '' }}">
-    <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div class="absolute -left-24 top-0 h-80 w-80 rounded-full bg-sky-500/10 blur-3xl"></div>
-        <div class="absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl"></div>
+<body data-focus-mode="{{ $focusMode ? '1' : '0' }}" data-onboarding-version="{{ $onboardingVersion }}" data-onboarding-auto="{{ $onboardingAuto ? '1' : '0' }}" data-onboarding-authenticated="{{ auth()->check() ? '1' : '0' }}" data-route-name="{{ request()->route()?->getName() }}" class="pk-cosmic-shell min-h-screen bg-slate-950 text-slate-100 antialiased {{ $focusMode ? 'pace-focus-mode' : '' }}">
+    <div class="pk-cosmic-backdrop pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+        <span class="pk-space-glow pk-space-glow-a"></span>
+        <span class="pk-space-glow pk-space-glow-b"></span>
+        <span class="pk-space-star pk-space-star-a"></span>
+        <span class="pk-space-star pk-space-star-b"></span>
+        <span class="pk-space-star pk-space-star-c"></span>
     </div>
 
     @unless ($focusMode)
         <header class="desktop-app-header sticky top-0 z-50 hidden border-b border-slate-800/90 bg-slate-950/90 backdrop-blur-xl md:block">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-                <a href="{{ route('home') }}" class="group inline-flex items-center gap-3">
-                    <span class="flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-400/30 bg-sky-500/15 text-sm font-black text-sky-200 shadow-lg shadow-sky-950/30">PK</span>
+                <a href="{{ route('home') }}" class="pk-brand-lockup group inline-flex items-center gap-3" aria-label="PaceKeeper ホーム">
+                    <img src="/brand/logo-mark.svg" alt="" class="pk-brand-mark" width="44" height="44">
                     <span>
-                        <span class="font-heading block text-xl font-bold tracking-tight text-slate-50">Pace Keeper</span>
-                        <span class="block text-xs font-medium text-slate-400">自分のペースで、前へ。</span>
+                        <span class="pk-brand-wordmark block text-xl font-black tracking-tight">PaceKeeper</span>
+                        <span class="block text-[11px] font-semibold tracking-[0.08em] text-slate-400">自分のペースで、前へ。</span>
                     </span>
                 </a>
 
-                <nav class="flex flex-wrap items-center gap-1 rounded-2xl border border-slate-800 bg-slate-900/75 p-1 text-sm shadow-lg shadow-slate-950/20">
-                    <a href="{{ route('home') }}" class="nav-link whitespace-nowrap {{ request()->routeIs('home') || request()->routeIs('calendar.*') || request()->routeIs('my_plans.*') || request()->routeIs('plans.show') || request()->routeIs('plans.edit') || request()->routeIs('tasks.*') ? 'nav-link-active' : '' }}">ホーム</a>
-                    <a href="{{ route('navigation.index') }}" data-navigation-link data-onboarding-target="today-nav" class="nav-link whitespace-nowrap {{ request()->routeIs('navigation.*') || request()->routeIs('work_sessions.*') ? 'nav-link-active' : '' }}">今日</a>
-                    <a href="{{ route('roadmap.index') }}" data-onboarding-target="roadmap-nav" class="nav-link whitespace-nowrap {{ request()->routeIs('roadmap.*') || request()->routeIs('chat.*') || request()->routeIs('plans.review_assistant.*') || request()->routeIs('achievements.*') ? 'nav-link-active' : '' }}">ロードマップ</a>
-                    <a href="{{ route('timeline.index') }}" class="nav-link whitespace-nowrap {{ request()->routeIs('timeline.*') ? 'nav-link-active' : '' }}">タイムライン</a>
+                <nav class="pk-desktop-nav flex flex-wrap items-center gap-1 rounded-2xl border border-slate-800 bg-slate-900/75 p-1 text-sm shadow-lg shadow-slate-950/20" aria-label="メインナビゲーション">
+                    <a href="{{ route('home') }}" class="nav-link pk-nav-link whitespace-nowrap {{ request()->routeIs('home') || request()->routeIs('calendar.*') || request()->routeIs('my_plans.*') || request()->routeIs('plans.show') || request()->routeIs('plans.edit') || request()->routeIs('tasks.*') ? 'nav-link-active' : '' }}"><span class="pk-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.8 15.7c-1.8 1.7-2.7 3.4-2.5 4.9 1.5.2 3.2-.7 4.9-2.5M14.5 4.2c2.8-.9 5.2-.9 5.3-.8.1.1.1 2.5-.8 5.3-1 3.2-3.5 6.1-7.2 7.8L7.9 12.6c1.7-3.7 4.6-6.2 6.6-8.4Z"/><path d="m9.1 15 4 4M7.4 12.1l-2.7.6-1.5 2.6 4.2.8M14.8 16.3l.8 4.2 2.6-1.5.6-2.7"/><circle cx="15.2" cy="8.8" r="1.6"/></svg><i></i></span><span>ホーム</span></a>
+                    <a href="{{ route('navigation.index') }}" data-navigation-link data-onboarding-target="today-nav" class="nav-link pk-nav-link whitespace-nowrap {{ request()->routeIs('navigation.*') || request()->routeIs('work_sessions.*') ? 'nav-link-active' : '' }}"><span class="pk-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8.5 6.3 9 5.7-9 5.7V6.3Z"/></svg><i></i></span><span>今日</span></a>
+                    <a href="{{ route('roadmap.index') }}" data-onboarding-target="roadmap-nav" class="nav-link pk-nav-link whitespace-nowrap {{ request()->routeIs('roadmap.*') || request()->routeIs('chat.*') || request()->routeIs('plans.review_assistant.*') || request()->routeIs('achievements.*') ? 'nav-link-active' : '' }}"><span class="pk-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5 9 3l6 2.5L20 3v15.5L15 21l-6-2.5L4 21V5.5Zm5-2.5v15.5M15 5.5V21"/></svg><i></i></span><span>ロードマップ</span></a>
+                    <a href="{{ route('timeline.index') }}" class="nav-link pk-nav-link whitespace-nowrap {{ request()->routeIs('timeline.*') ? 'nav-link-active' : '' }}"><span class="pk-nav-icon pk-nav-icon-timeline" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M10 7v3.5l2.4 1.5M14.8 15.5h4.4a1.8 1.8 0 0 1 1.8 1.8v1.8a1.8 1.8 0 0 1-1.8 1.8h-1.7l-1.8 1.4.2-1.4h-1.1a1.8 1.8 0 0 1-1.8-1.8v-1.8"/></svg><i></i></span><span>タイムライン</span></a>
                 </nav>
 
                 <div class="hidden items-center gap-2 lg:flex">
@@ -109,7 +112,7 @@
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
                 @else
-                    <a href="{{ route('home') }}" class="mobile-brand-mark" aria-label="PaceKeeper ホーム">PK</a>
+                    <a href="{{ route('home') }}" class="mobile-brand-mark pk-mobile-brand-mark" aria-label="PaceKeeper ホーム"><img src="/brand/logo-mark.svg" alt="" width="32" height="32"></a>
                 @endunless
                 <div class="min-w-0 flex-1">
                     <p class="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300">PaceKeeper</p>

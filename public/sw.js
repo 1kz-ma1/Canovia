@@ -1,9 +1,11 @@
-const CACHE_VERSION = 'pacekeeper-shell-v5';
+const CACHE_VERSION = 'pacekeeper-shell-v6';
 const STATIC_ASSETS = [
     '/offline.html',
     '/manifest.webmanifest',
     '/icons/icon-192.png',
     '/icons/icon-512.png',
+    '/brand/logo-mark.svg',
+    '/brand/mascot-guide.webp',
 ];
 
 self.addEventListener('install', (event) => {
