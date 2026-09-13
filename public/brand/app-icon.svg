@@ -1,23 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">PaceKeeper app icon</title>
   <defs>
-    <linearGradient id="bg" x1="60" y1="40" x2="450" y2="470" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#081126"/><stop offset=".55" stop-color="#050B1B"/><stop offset="1" stop-color="#0A0F2C"/>
-    </linearGradient>
-    <linearGradient id="orbit" x1="70" y1="390" x2="450" y2="120" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#6FD8FF"/><stop offset=".55" stop-color="#7477FF"/><stop offset="1" stop-color="#B58EFF"/>
-    </linearGradient>
-    <radialGradient id="star" cx=".42" cy=".35" r=".8">
-      <stop stop-color="#FFF6D7"/><stop offset=".52" stop-color="#FFC978"/><stop offset="1" stop-color="#FFAA55"/>
+    <radialGradient id="bg" cx="28%" cy="15%" r="105%">
+      <stop offset="0" stop-color="#111B3F"/>
+      <stop offset=".48" stop-color="#071027"/>
+      <stop offset="1" stop-color="#020615"/>
     </radialGradient>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <linearGradient id="orbit" x1="150" y1="700" x2="805" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#70DBFF"/>
+      <stop offset=".5" stop-color="#7184FF"/>
+      <stop offset="1" stop-color="#B88CFF"/>
+    </linearGradient>
+    <linearGradient id="planet" x1="260" y1="746" x2="770" y2="1010" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#173E8C"/>
+      <stop offset=".48" stop-color="#0B2A67"/>
+      <stop offset="1" stop-color="#061332"/>
+    </linearGradient>
+    <radialGradient id="star" cx="40%" cy="34%" r="72%">
+      <stop offset="0" stop-color="#FFF8DF"/>
+      <stop offset=".46" stop-color="#FFD48B"/>
+      <stop offset="1" stop-color="#FFB659"/>
+    </radialGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="16" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
+    <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="clip"><rect width="1024" height="1024" rx="224"/></clipPath>
   </defs>
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
-  <circle cx="118" cy="122" r="4" fill="#BFE8FF" opacity=".8"/><circle cx="390" cy="105" r="5" fill="#FFE0A8" opacity=".9"/><circle cx="401" cy="350" r="3" fill="#BFE8FF" opacity=".75"/>
-  <ellipse cx="257" cy="288" rx="173" ry="84" fill="none" stroke="url(#orbit)" stroke-width="24" stroke-linecap="round" transform="rotate(-16 257 288)"/>
-  <circle cx="385" cy="354" r="27" fill="url(#orbit)" filter="url(#glow)"/>
-  <path d="M209 92c12 64 31 83 95 95-64 12-83 31-95 95-12-64-31-83-95-95 64-12 83-31 95-95Z" fill="url(#star)" filter="url(#glow)"/>
-  <path d="M368 88c5 28 14 37 42 42-28 5-37 14-42 42-5-28-14-37-42-42 28-5 37-14 42-42Z" fill="#C5ECFF" filter="url(#glow)"/>
-  <path d="M126 280c4 21 11 28 32 32-21 4-28 11-32 32-4-21-11-28-32-32 21-4 28-11 32-32Z" fill="#FFD68E"/>
+  <g clip-path="url(#clip)">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <circle cx="122" cy="158" r="3" fill="#EAF8FF"/><circle cx="192" cy="104" r="6" fill="#7FDBFF" opacity=".72"/><circle cx="798" cy="126" r="4" fill="#FFD79C"/><circle cx="860" cy="296" r="3" fill="#D7CFFF"/><circle cx="168" cy="420" r="4" fill="#FFF0C4"/><circle cx="885" cy="618" r="5" fill="#7FDBFF" opacity=".7"/><circle cx="708" cy="512" r="2.5" fill="#fff" opacity=".85"/>
+    <path d="M112 312h42M133 291v42" stroke="#FFD48B" stroke-width="5" stroke-linecap="round" opacity=".8" filter="url(#softGlow)"/>
+    <path d="M820 208h32M836 192v32" stroke="#D9F5FF" stroke-width="4" stroke-linecap="round" opacity=".75" filter="url(#softGlow)"/>
+
+    <ellipse cx="505" cy="483" rx="318" ry="133" fill="none" stroke="url(#orbit)" stroke-width="28" stroke-linecap="round" transform="rotate(-17 505 483)" opacity=".98" filter="url(#softGlow)"/>
+    <ellipse cx="505" cy="483" rx="270" ry="102" fill="none" stroke="#D7E6FF" stroke-width="3" transform="rotate(-17 505 483)" opacity=".32"/>
+    <circle cx="760" cy="624" r="36" fill="url(#orbit)" filter="url(#glow)"/>
+    <circle cx="251" cy="526" r="18" fill="#DDEBFF" filter="url(#softGlow)"/>
+    <circle cx="646" cy="367" r="15" fill="#FFC978" filter="url(#softGlow)"/>
+
+    <path d="M393 140c17 92 48 123 140 140-92 17-123 48-140 140-17-92-48-123-140-140 92-17 123-48 140-140Z" fill="url(#star)" filter="url(#glow)"/>
+    <path d="M688 173c6 34 18 46 52 52-34 6-46 18-52 52-6-34-18-46-52-52 34-6 46-18 52-52Z" fill="#D8F4FF" opacity=".92" filter="url(#softGlow)"/>
+
+    <circle cx="512" cy="1040" r="430" fill="url(#planet)"/>
+    <circle cx="512" cy="1040" r="430" fill="none" stroke="#6F8FE5" stroke-width="7" opacity=".62" filter="url(#softGlow)"/>
+    <ellipse cx="474" cy="757" rx="294" ry="34" fill="#79BFFF" opacity=".13" filter="url(#softGlow)"/>
+    <path d="M164 814c124-39 218-34 316-1 103 34 216 39 383-17" fill="none" stroke="#6FC8FF" stroke-width="7" stroke-linecap="round" opacity=".16"/>
+    <path d="M260 864c73-19 122-15 184 7M587 853c72 15 127 8 196-16" fill="none" stroke="#FFC978" stroke-width="4" stroke-linecap="round" opacity=".34"/>
+    <g fill="#FFC978" opacity=".72" filter="url(#softGlow)">
+      <circle cx="310" cy="870" r="5"/><circle cx="348" cy="846" r="3"/><circle cx="414" cy="888" r="4"/><circle cx="580" cy="874" r="4"/><circle cx="646" cy="844" r="5"/><circle cx="714" cy="884" r="3"/>
+    </g>
+  </g>
 </svg>

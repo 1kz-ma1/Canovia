@@ -4,16 +4,17 @@
 
 @section('content')
     <div class="space-y-6">
-        <header class="pk-cosmic-page-heading pk-timeline-heading">
+        <header class="pk-v18-page-hero pk-v18-timeline-hero">
             <div class="relative z-10">
-                <p class="pk-cosmic-kicker">TIMELINE / LOOK BACK</p>
-                <h1 class="text-3xl font-black tracking-tight text-slate-50">これまでの積み上げ</h1>
-                <p class="pk-cosmic-subcopy">歩いてきた軌道を、次の一歩につなげる。</p>
+                <p class="pk-v18-eyebrow">TIMELINE / LOOK BACK</p>
+                <h1>歩いてきた軌道。</h1>
+                <p>積み上げた一歩を、次の未来へつなげる。</p>
             </div>
+            <div class="pk-v18-timeline-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
         </header>
 
         @forelse ($items as $date => $group)
-            <section class="timeline-day page-card p-4 sm:p-5">
+            <section class="timeline-day page-card pk-v18-timeline-day p-3.5 sm:p-5">
                 <div class="timeline-day-heading">
                     <span class="timeline-dot" aria-hidden="true"></span>
                     <h2 class="font-black text-slate-100">{{ \Carbon\Carbon::parse($date)->isoFormat('M/D (ddd)') }}</h2>
@@ -22,7 +23,7 @@
                     @foreach ($group as $item)
                         @php($plan = $item['plan'])
                         @php($log = $item['log'])
-                        <article class="timeline-entry plan-identity-shell" data-plan-accent="{{ $plan->accentKey() }}">
+                        <article class="timeline-entry pk-v18-timeline-entry plan-identity-shell" data-plan-accent="{{ $plan->accentKey() }}">
                             <div class="min-w-0">
                                 <p class="plan-identity-chip text-xs"><span aria-hidden="true">{{ $plan->displayIcon() }}</span>{{ $plan->title }}</p>
                                 <h3 class="mt-1 truncate font-bold text-slate-100">{{ $log->task?->title ?? $log->task_title_snapshot ?? '計画全体' }}</h3>

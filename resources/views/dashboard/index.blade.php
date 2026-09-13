@@ -10,26 +10,53 @@
         $activeSession = $dashboard['active_work_session'];
         $todayRemaining = max(0, $dashboard['total_daily_required_minutes'] - $dashboard['today_minutes']);
         $calendarWeek = $dashboard['calendar_week'] ?? null;
+        $continuity = $dashboard['continuity'] ?? null;
+        $overallProgress = $dashboard['plan_tabs']->isNotEmpty()
+            ? (int) round($dashboard['plan_tabs']->avg(fn ($item) => (int) ($item['progress']['weighted_progress_percent'] ?? 0)))
+            : 0;
+        $overallRoadmapNodes = $dashboard['plan_tabs']
+            ->flatMap(fn ($item) => collect($item['roadmap']['nodes'] ?? []))
+            ->values();
+        $overallCompleted = $overallRoadmapNodes->filter(fn ($node) => ($node['status'] ?? null) === 'done')->count();
+        $overallDoing = $overallRoadmapNodes->filter(fn ($node) => ($node['is_current'] ?? false) || ($node['status'] ?? null) === 'doing')->count();
+        $overallTodo = $overallRoadmapNodes->filter(fn ($node) => ! in_array(($node['status'] ?? null), ['done', 'cancelled', 'doing'], true) && ! ($node['is_current'] ?? false))->count();
+        $nextOverallMilestone = $overallRoadmapNodes->first(fn ($node) => ! in_array(($node['status'] ?? null), ['done', 'cancelled'], true) && ! ($node['is_current'] ?? false));
+        $primaryPlan = $recommendation?->plan ?? data_get($dashboard['plan_tabs']->first(), 'plan');
+        $roadmapUrl = $primaryPlan ? route('roadmap.index', ['plan_id' => $primaryPlan->id]) : route('roadmap.index');
+        $processMessage = $dashboard['process_message'] ?? '続けることで、きっとどこかでつながってる。';
     @endphp
 
-    <div id="behaviorDashboard" class="space-y-7" data-event-url="{{ route('behavior_events.store') }}" data-navigation-url="{{ route('navigation.index') }}" data-work-started="{{ $activeSession ? 1 : 0 }}" data-onboarding-new-user="{{ $dashboard['plan_tabs']->isEmpty() ? '1' : '0' }}">
-        <header class="pk-cosmic-page-heading pk-home-heading flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div class="relative z-10 max-w-xl">
-                <p class="pk-cosmic-kicker">PACEKEEPER / HOME</p>
-                <h1 class="text-3xl font-black tracking-tight text-slate-50 font-heading">いまの全体像</h1>
-                <p class="pk-cosmic-subcopy">小さな一歩が、やがて大きな未来につながる。</p>
+    <div id="behaviorDashboard" class="pk-v18-dashboard space-y-5 md:space-y-6" data-event-url="{{ route('behavior_events.store') }}" data-navigation-url="{{ route('navigation.index') }}" data-work-started="{{ $activeSession ? 1 : 0 }}" data-onboarding-new-user="{{ $dashboard['plan_tabs']->isEmpty() ? '1' : '0' }}">
+        <header class="pk-v18-hero pk-home-heading">
+            <div class="pk-v18-hero-copy">
+                <div class="pk-v18-hero-brand" aria-label="PaceKeeper">
+                    <img src="/brand/logo-mark.svg" alt="" width="42" height="42">
+                    <div>
+                        <span class="pk-brand-wordmark">PaceKeeper</span>
+                        <small>自分のペースで、前へ。</small>
+                    </div>
+                </div>
+                <p class="pk-v18-eyebrow">SMALL STEPS · A BRIGHTER YOU</p>
+                <h1>今日も、あなたのペースで。</h1>
+                <p class="pk-v18-hero-lead">小さな一歩が、やがて大きな未来をつくる。</p>
             </div>
-            <img src="/brand/mascot-guide.webp" alt="" class="pk-page-mascot pk-page-mascot-home" aria-hidden="true">
-            <div class="relative z-10 flex flex-wrap gap-2">
-                <a href="{{ route('plans.create') }}" class="btn-primary" data-onboarding-target="create-plan">＋ 新しい計画</a>
-                <form method="POST" action="{{ route('chat.start', 'review') }}">
-                    @csrf
-                    <button type="submit" class="btn-secondary">計画を更新</button>
-                </form>
-                <a href="{{ route('calendar.index') }}" class="btn-secondary">カレンダー</a>
-                <a href="{{ route('my_plans.index') }}" class="btn-secondary">計画一覧</a>
+            <div class="pk-v18-hero-guide" aria-hidden="true">
+                <span class="pk-v18-guide-bubble">今日もいい一歩が<br>待ってるよ！</span>
+                <img src="/brand/mascot-guide.webp" alt="">
             </div>
+            <div class="pk-v18-hero-orbit" aria-hidden="true"></div>
+            <div class="pk-v18-hero-planet" aria-hidden="true"></div>
         </header>
+
+        <div class="pk-v18-quick-actions" aria-label="ホームの操作">
+            <a href="{{ route('plans.create') }}" class="pk-v18-action-chip is-primary" data-onboarding-target="create-plan"><span>＋</span> 新しい計画</a>
+            <form method="POST" action="{{ route('chat.start', 'review') }}">
+                @csrf
+                <button type="submit" class="pk-v18-action-chip">計画を更新</button>
+            </form>
+            <a href="{{ route('calendar.index') }}" class="pk-v18-action-chip">カレンダー</a>
+            <a href="{{ route('my_plans.index') }}" class="pk-v18-action-chip">計画一覧</a>
+        </div>
 
         @if (session('success'))
             <div class="assistant-notice assistant-notice-success">{{ session('success') }}</div>
@@ -39,43 +66,114 @@
         @endif
 
         @if ($activeSession)
-            <section class="page-card p-5 ring-1 ring-emerald-400/25">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">{{ $activeSession->status === 'paused' ? '一時停止中' : '作業中' }}</p>
-                        <h2 class="mt-1 text-xl font-black text-slate-50">{{ $activeSession->task?->title ?? '作業中のタスク' }}</h2>
-                        <p class="mt-1 text-sm text-slate-400">{{ $activeSession->plan?->displayIcon() }} {{ $activeSession->plan?->title }}</p>
-                    </div>
-                    <a href="{{ route('work_sessions.active', $activeSession) }}" class="btn-primary">作業へ戻る</a>
+            <section class="pk-v18-active-session plan-identity-shell" data-plan-accent="{{ $activeSession->plan?->accentKey() ?? 'sky' }}">
+                <div class="min-w-0">
+                    <p class="pk-v18-card-kicker">{{ $activeSession->status === 'paused' ? 'PAUSED' : 'IN FOCUS' }}</p>
+                    <h2>{{ $activeSession->task?->title ?? '作業中のタスク' }}</h2>
+                    <p>{{ $activeSession->plan?->displayIcon() }} {{ $activeSession->plan?->title }}</p>
                 </div>
+                <a href="{{ route('work_sessions.active', $activeSession) }}" class="btn-primary">作業へ戻る</a>
             </section>
         @endif
 
-        @if (! empty($dashboard['continuity']))
-            @php
-                $continuity = $dashboard['continuity'];
-            @endphp
-            <section class="continuity-card plan-identity-shell" data-plan-accent="{{ $continuity['plan_accent'] ?? 'sky' }}">
-                <div class="min-w-0">
-                    <p class="text-xs font-black uppercase tracking-[0.16em] text-sky-300">前回の続き</p>
-                    <p class="mt-2 plan-identity-chip text-xs"><span aria-hidden="true">{{ $continuity['plan_icon'] ?? '🧭' }}</span>{{ $continuity['plan_title'] }}</p>
-                    <h2 class="mt-1 text-lg font-black text-slate-50">{{ $continuity['task_title'] }}</h2>
-                    <p class="mt-2 text-sm leading-6 text-slate-300">{{ $continuity['next_action_note'] ?: '前回の続きから、そのまま始められます。' }}</p>
-                </div>
-                <div class="mt-4 flex flex-wrap gap-2 sm:mt-0">
-                    @if ($continuity['is_active'])
-                        <a href="{{ route('work_sessions.active', $continuity['session_id']) }}" class="btn-primary">作業へ戻る</a>
-                    @elseif ($continuity['can_resume_task'])
-                        <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
-                            @csrf
-                            <input type="hidden" name="task_id" value="{{ $continuity['task_id'] }}">
-                            <input type="hidden" name="source" value="dashboard-resume">
-                            <button type="submit" class="btn-primary">続きから開始</button>
-                        </form>
-                    @endif
-                    <a href="{{ route('roadmap.index', ['plan_id' => $continuity['plan_id']]) }}" class="btn-secondary">地図で見る</a>
+        @if ($dashboard['plan_tabs']->isEmpty())
+            <section class="empty-state page-card p-8 text-center">
+                <div class="text-4xl" aria-hidden="true">✦</div>
+                <h2 class="mt-3 text-xl font-black text-slate-100">最初の星を決めよう</h2>
+                <p class="mt-2 text-sm text-slate-400">ざっくりした目標で大丈夫。PaceKeeperが、今日の一歩までつなげます。</p>
+                <a href="{{ route('plans.create') }}" class="btn-primary mt-5">計画を作る</a>
+            </section>
+        @else
+            @if ($recommendation)
+                <section class="pk-v18-recommendation plan-identity-shell" data-plan-accent="{{ $recommendation->plan->accentKey() }}">
+                    <div class="pk-v18-recommendation-titlebar">
+                        <div class="flex items-center gap-2">
+                            <span class="pk-v18-starlight" aria-hidden="true">✦</span>
+                            <div>
+                                <p class="pk-v18-card-kicker">TODAY'S GUIDANCE</p>
+                                <h2>今日のおすすめ</h2>
+                            </div>
+                        </div>
+                        <a href="{{ route('navigation.index', ['configure' => 1]) }}" class="pk-v18-ellipsis" aria-label="おすすめ条件を変更">•••</a>
+                    </div>
+
+                    <div class="pk-v18-recommendation-main">
+                        <div class="pk-v18-plan-glyph" aria-hidden="true"><span>{{ $recommendation->plan->displayIcon() }}</span></div>
+                        <div class="min-w-0 flex-1">
+                            <p class="plan-identity-chip text-[11px]"><span aria-hidden="true">{{ $recommendation->plan->displayIcon() }}</span>{{ $recommendation->plan->title }}</p>
+                            <h3>{{ $recommendation->task->title }}</h3>
+                            <p class="pk-v18-recommendation-meta"><span>◷ {{ $recommendation->recommendedMinutes }}分</span><span>次の一歩</span></p>
+                        </div>
+                        <span class="pk-v18-chevron" aria-hidden="true">›</span>
+                    </div>
+
+                    <div class="pk-v18-task-strip">
+                        <div class="pk-v18-mini-progress" style="--pk-mini-progress: {{ max(6, min(100, (int) $recommendation->task->progress_percent)) }}%;"><strong>{{ (int) $recommendation->task->progress_percent }}%</strong></div>
+                        <div class="min-w-0 flex-1">
+                            <span>今日のタスク</span>
+                            <strong>{{ $recommendation->task->next_action_note ?: $recommendation->task->title }}</strong>
+                        </div>
+                        <span class="pk-v18-chevron" aria-hidden="true">›</span>
+                    </div>
+
+                    <a href="{{ route('navigation.index') }}" class="pk-v18-start-cta" data-onboarding-target="today-start">
+                        <span aria-hidden="true">▶</span><strong>今すぐ始める</strong><span aria-hidden="true">→</span>
+                    </a>
+                </section>
+            @endif
+
+            <section class="pk-v18-overview-grid">
+                <article class="pk-v18-progress-card">
+                    <a href="{{ route('my_plans.index') }}" class="pk-v18-card-link" aria-label="計画一覧を見る"></a>
+                    <div class="pk-v18-card-heading"><h2>進捗</h2><span>›</span></div>
+                    <div class="pk-v18-progress-ring" style="--pk-progress: {{ $overallProgress }}%;"><strong>{{ $overallProgress }}<small>%</small></strong></div>
+                    <p class="pk-v18-progress-message">{{ $overallProgress >= 80 ? 'ゴールが見えてきた！' : ($overallProgress >= 40 ? 'コツコツ、いい感じ！' : 'ここから一歩ずつ。') }}</p>
+                    <div class="pk-v18-progress-stats">
+                        <span><b>{{ $overallCompleted }}</b><small>完了</small></span>
+                        <span><b>{{ $overallDoing }}</b><small>進行中</small></span>
+                        <span><b>{{ $overallTodo }}</b><small>やること</small></span>
+                    </div>
+                </article>
+
+                <div class="pk-v18-overview-stack">
+                    <article class="pk-v18-mini-card">
+                        @if ($continuity)
+                            <div class="pk-v18-mini-card-heading"><span>📖</span><h2>前回の続き</h2><span>›</span></div>
+                            <p class="plan-identity-chip mt-2 text-[10px]"><span aria-hidden="true">{{ $continuity['plan_icon'] ?? '🧭' }}</span>{{ $continuity['plan_title'] }}</p>
+                            <h3>{{ $continuity['task_title'] }}</h3>
+                            @if ($continuity['can_resume_task'] || $continuity['is_active'])
+                                <div class="pk-v18-mini-actions">
+                                    @if ($continuity['is_active'])
+                                        <a href="{{ route('work_sessions.active', $continuity['session_id']) }}">作業へ戻る →</a>
+                                    @else
+                                        <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
+                                            @csrf
+                                            <input type="hidden" name="task_id" value="{{ $continuity['task_id'] }}">
+                                            <input type="hidden" name="source" value="dashboard">
+                                            <button type="submit">続きから開始 →</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endif
+                        @else
+                            <div class="pk-v18-mini-card-heading"><span>📖</span><h2>前回の続き</h2><span>›</span></div>
+                            <p class="pk-v18-empty-copy">最初の作業を終えると、ここからすぐ再開できます。</p>
+                        @endif
+                    </article>
+
+                    <a href="{{ $roadmapUrl }}" class="pk-v18-mini-card pk-v18-roadmap-mini">
+                        <div class="pk-v18-mini-card-heading"><span>🗺</span><h2>あなたのロードマップ</h2><span>›</span></div>
+                        <div class="pk-v18-mini-orbit" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                        <p><small>次のマイルストーン</small><strong>{{ $nextOverallMilestone['title'] ?? '未来へのルートを確認する' }}</strong></p>
+                    </a>
                 </div>
             </section>
+
+            <blockquote class="pk-v18-quote-card">
+                <span aria-hidden="true">“</span>
+                <p>{{ $processMessage }}</p>
+                <small>SAME SKY · BRIGHTER YOU</small>
+            </blockquote>
         @endif
 
         @if (($dashboard['pending_plan_updates'] ?? collect())->isNotEmpty())
@@ -94,7 +192,7 @@
             </details>
         @endif
 
-        <nav class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/75 p-1" aria-label="ダッシュボード表示">
+        <nav class="pk-v18-plan-tabs overflow-x-auto" aria-label="ダッシュボード表示">
             <div class="flex min-w-max gap-1" role="tablist">
                 <button type="button" class="dashboard-tab nav-link nav-link-active" data-dashboard-tab="overall" role="tab" aria-selected="true">全体</button>
                 @foreach ($dashboard['plan_tabs'] as $item)
@@ -103,108 +201,58 @@
             </div>
         </nav>
 
-        <section data-dashboard-panel="overall" class="space-y-6">
-            @if ($dashboard['plan_tabs']->isEmpty())
-                <section class="empty-state page-card p-8 text-center">
-                    <div class="text-4xl" aria-hidden="true">🧭</div>
-                    <h2 class="mt-3 text-xl font-black text-slate-100">まず計画をひとつ作りましょう</h2>
-                    <p class="mt-2 text-sm text-slate-400">ざっくり決めるだけでも大丈夫です。使いながら少しずつ整えていけます。</p>
-                    <a href="{{ route('plans.create') }}" class="btn-primary mt-5">計画を作る</a>
-                </section>
-            @else
-                <section class="page-card p-5">
+        <section data-dashboard-panel="overall" class="space-y-4 md:space-y-5">
+            @if ($dashboard['plan_tabs']->isNotEmpty())
+                <section class="page-card pk-v18-section-card p-4 sm:p-5">
                     <div class="flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <h2 class="text-xl font-black text-slate-100">進行中の計画</h2>
-                        </div>
-                        <p class="text-sm text-slate-400">全体の残り 約{{ round($dashboard['remaining_minutes'] / 60, 1) }}時間</p>
+                        <div><p class="pk-v18-card-kicker">YOUR WORLDS</p><h2 class="text-base font-black text-slate-100 sm:text-lg">進行中の計画</h2></div>
+                        <p class="text-xs text-slate-400">残り 約{{ round($dashboard['remaining_minutes'] / 60, 1) }}時間</p>
                     </div>
-                    <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                         @foreach ($dashboard['plan_tabs'] as $item)
                             <button type="button" class="home-plan-card plan-identity-shell text-left" data-plan-accent="{{ $item['plan']->accentKey() }}" data-open-dashboard-tab="plan-{{ $item['plan']->id }}">
-                                <div class="flex items-start justify-between gap-3">
-                                    <span class="plan-identity-icon" aria-hidden="true">{{ $item['plan']->displayIcon() }}</span>
-                                    <span class="badge badge-slate">{{ $item['progress']['status'] }}</span>
-                                </div>
-                                <h3 class="mt-3 line-clamp-2 font-black text-slate-100">{{ $item['plan']->title }}</h3>
-                                <div class="mt-3 flex items-end justify-between gap-3">
-                                    <span class="text-2xl font-black text-slate-50">{{ $item['progress']['weighted_progress_percent'] }}%</span>
-                                    <span class="text-xs text-slate-400">期限 {{ $item['plan']->deadline->format('m/d') }}</span>
-                                </div>
+                                <div class="flex items-start justify-between gap-3"><span class="plan-identity-icon" aria-hidden="true">{{ $item['plan']->displayIcon() }}</span><span class="badge badge-slate">{{ $item['progress']['status'] }}</span></div>
+                                <h3 class="mt-2 line-clamp-2 font-black text-slate-100">{{ $item['plan']->title }}</h3>
+                                <div class="mt-2 flex items-end justify-between gap-3"><span class="text-xl font-black text-slate-50">{{ $item['progress']['weighted_progress_percent'] }}%</span><span class="text-[11px] text-slate-400">期限 {{ $item['plan']->deadline->format('m/d') }}</span></div>
                             </button>
                         @endforeach
                     </div>
                 </section>
 
                 @if ($calendarWeek)
-                    <section class="page-card p-5">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <h2 class="text-xl font-black text-slate-100">今週の見通し</h2>
-                            </div>
-                            <a href="{{ route('calendar.index') }}" class="btn-secondary px-3 py-2 text-xs">カレンダーを見る</a>
-                        </div>
-                        <div class="home-week-strip mt-4">
+                    <section class="page-card pk-v18-section-card p-4 sm:p-5">
+                        <div class="flex items-center justify-between gap-3"><div><p class="pk-v18-card-kicker">THIS WEEK</p><h2 class="text-base font-black text-slate-100 sm:text-lg">今週の見通し</h2></div><a href="{{ route('calendar.index') }}" class="text-xs font-bold text-sky-300">カレンダー →</a></div>
+                        <div class="home-week-strip mt-3">
                             @foreach ($calendarWeek['days'] as $day)
-                                <a href="{{ route('calendar.index', ['selected' => $day['date']->format('Y-m-d'), 'date' => $day['date']->format('Y-m-d')]) }}" class="home-week-day {{ $day['is_today'] ? 'is-today' : '' }}">
-                                    <span>{{ $day['date']->isoFormat('ddd') }}</span>
-                                    <strong>{{ $day['date']->day }}</strong>
-                                    <small>{{ $day['actual_minutes'] }}/{{ $day['available_minutes'] }}分</small>
-                                </a>
+                                <a href="{{ route('calendar.index', ['selected' => $day['date']->format('Y-m-d'), 'date' => $day['date']->format('Y-m-d')]) }}" class="home-week-day {{ $day['is_today'] ? 'is-today' : '' }}"><span>{{ $day['date']->isoFormat('ddd') }}</span><strong>{{ $day['date']->day }}</strong><small>{{ $day['actual_minutes'] }}/{{ $day['available_minutes'] }}分</small></a>
                             @endforeach
                         </div>
                     </section>
                 @endif
 
-                @if ($recommendation)
-                    <section class="today-compact-card plan-identity-shell" data-plan-accent="{{ $recommendation->plan->accentKey() }}">
-                        <div class="min-w-0">
-                            <p class="text-xs font-black uppercase tracking-[0.16em] text-sky-300">今日のおすすめ</p>
-                            <p class="mt-1 plan-identity-chip text-xs"><span aria-hidden="true">{{ $recommendation->plan->displayIcon() }}</span>{{ $recommendation->plan->title }}</p>
-                            <h2 class="mt-1 truncate font-black text-slate-100">{{ $recommendation->task->title }}</h2>
-                            <p class="mt-1 text-xs text-slate-400">約{{ $recommendation->recommendedMinutes }}分</p>
-                        </div>
-                        <a href="{{ route('navigation.index') }}" class="btn-secondary shrink-0">今日へ</a>
-                    </section>
-                @endif
-
-                <section class="page-card p-5">
-                    <div class="flex items-center justify-between gap-3">
-                        <h2 class="text-lg font-black text-slate-100">最近の動き</h2>
-                        <a href="{{ route('timeline.index') }}" class="text-xs font-bold text-sky-300">すべて見る →</a>
-                    </div>
-                    <div class="mt-4 space-y-3">
+                <section class="page-card pk-v18-section-card p-4 sm:p-5">
+                    <div class="flex items-center justify-between gap-3"><div><p class="pk-v18-card-kicker">RECENT ORBITS</p><h2 class="text-base font-black text-slate-100 sm:text-lg">最近の動き</h2></div><a href="{{ route('timeline.index') }}" class="text-xs font-bold text-sky-300">すべて見る →</a></div>
+                    <div class="mt-3 space-y-2">
                         @forelse ($dashboard['recent_activity'] ?? [] as $activity)
-                            <div class="flex items-center justify-between gap-3 text-sm">
-                                <span class="min-w-0 truncate text-slate-300"><span aria-hidden="true">{{ $activity['plan']->displayIcon() }}</span> {{ $activity['log']->task?->title ?? $activity['log']->task_title_snapshot ?? $activity['plan']->title }}</span>
-                                <span class="shrink-0 text-xs text-slate-500">{{ $activity['log']->worked_on?->format('m/d') }}・{{ $activity['log']->actual_minutes }}分</span>
-                            </div>
+                            <div class="pk-v18-activity-row"><span class="min-w-0 truncate"><span aria-hidden="true">{{ $activity['plan']->displayIcon() }}</span> {{ $activity['log']->task?->title ?? $activity['log']->task_title_snapshot ?? $activity['plan']->title }}</span><span>{{ $activity['log']->worked_on?->format('m/d') }} · {{ $activity['log']->actual_minutes }}分</span></div>
                         @empty
-                            <p class="text-sm text-slate-400">まだ作業記録はありません。</p>
+                            <p class="text-xs text-slate-400">まだ作業記録はありません。</p>
                         @endforelse
                     </div>
                 </section>
 
-                <details class="page-card p-5">
-                    <summary class="cursor-pointer font-bold text-slate-200">もう少し見る</summary>
-                    <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div class="metric-card"><p class="text-xs text-slate-500">今日の実績</p><p class="mt-1 font-black text-slate-100">{{ $dashboard['today_minutes'] }}分</p></div>
-                        <div class="metric-card"><p class="text-xs text-slate-500">今日の目安残り</p><p class="mt-1 font-black text-slate-100">{{ $todayRemaining }}分</p></div>
-                        <div class="metric-card"><p class="text-xs text-slate-500">連続</p><p class="mt-1 font-black text-slate-100">{{ $dashboard['streak_days'] }}日</p></div>
-                        <div class="metric-card"><p class="text-xs text-slate-500">作業リズム</p><p class="mt-1 font-black text-slate-100">{{ $dashboard['analysis_ready'] ? $state->state->label() : '学習中' }}</p></div>
+                <details class="page-card pk-v18-section-card p-4 sm:p-5">
+                    <summary class="cursor-pointer text-sm font-bold text-slate-200">もう少し見る</summary>
+                    <div class="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                        <div class="metric-card"><p class="text-[11px] text-slate-500">今日の実績</p><p class="mt-1 font-black text-slate-100">{{ $dashboard['today_minutes'] }}分</p></div>
+                        <div class="metric-card"><p class="text-[11px] text-slate-500">目安残り</p><p class="mt-1 font-black text-slate-100">{{ $todayRemaining }}分</p></div>
+                        <div class="metric-card"><p class="text-[11px] text-slate-500">連続</p><p class="mt-1 font-black text-slate-100">{{ $dashboard['streak_days'] }}日</p></div>
+                        <div class="metric-card"><p class="text-[11px] text-slate-500">作業リズム</p><p class="mt-1 font-black text-slate-100">{{ $dashboard['analysis_ready'] ? $state->state->label() : '学習中' }}</p></div>
                     </div>
                 </details>
-
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <a href="{{ route('calendar.index') }}" class="secondary-surface-card"><span aria-hidden="true">📅</span><strong>カレンダー</strong><small>時間の見通し</small></a>
-                    @auth
-                        <a href="{{ route('auth.account') }}" class="secondary-surface-card"><span aria-hidden="true">⚙️</span><strong>アカウント</strong><small>データ保護・設定</small></a>
-                    @else
-                        <a href="{{ route('auth.register.form') }}" class="secondary-surface-card"><span aria-hidden="true">🔐</span><strong>データを保護</strong><small>端末変更に備える</small></a>
-                    @endauth
-                </div>
             @endif
         </section>
+
 
         @foreach ($dashboard['plan_tabs'] as $item)
             @php
@@ -213,15 +261,15 @@
                 $roadmapNodes = collect($item['roadmap']['nodes'] ?? []);
                 $nextMilestone = $roadmapNodes->first(fn ($node) => ! in_array($node['status'] ?? null, ['done', 'cancelled'], true) && ! ($node['is_current'] ?? false));
             @endphp
-            <section data-dashboard-panel="plan-{{ $item['plan']->id }}" class="hidden space-y-6">
-                <section class="page-card p-5 plan-identity-shell" data-plan-accent="{{ $item['plan']->accentKey() }}">
+            <section data-dashboard-panel="plan-{{ $item['plan']->id }}" class="hidden space-y-4 md:space-y-6">
+                <section class="page-card pk-v18-section-card p-4 sm:p-5 plan-identity-shell" data-plan-accent="{{ $item['plan']->accentKey() }}">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="plan-identity-icon" aria-hidden="true">{{ $item['plan']->displayIcon() }}</span>
                             <div class="min-w-0">
                                 <p class="text-xs font-bold text-slate-400">{{ $item['progress']['status'] }}・進捗 {{ $item['progress']['weighted_progress_percent'] }}%</p>
-                                <h2 class="mt-1 text-2xl font-black text-slate-100">{{ $item['plan']->title }}</h2>
-                                <p class="mt-2 text-sm text-slate-400">期限 {{ $item['plan']->deadline->format('Y/m/d') }}・残り約{{ round($item['progress']['remaining_minutes'] / 60, 1) }}時間</p>
+                                <h2 class="mt-1 text-lg font-black text-slate-100 sm:text-xl">{{ $item['plan']->title }}</h2>
+                                <p class="mt-2 text-xs text-slate-400">期限 {{ $item['plan']->deadline->format('Y/m/d') }}・残り約{{ round($item['progress']['remaining_minutes'] / 60, 1) }}時間</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap gap-2">
@@ -235,28 +283,28 @@
                     <section class="continuity-card plan-identity-shell" data-plan-accent="{{ $item['plan']->accentKey() }}" data-task-view data-task-id="{{ $previousSession->task->id }}" data-plan-id="{{ $item['plan']->id }}">
                         <div>
                             <p class="text-xs font-black uppercase tracking-[0.16em] text-sky-300">前回の続き</p>
-                            <h3 class="mt-1 text-lg font-black text-slate-100">{{ $previousSession->task->title }}</h3>
-                            <p class="mt-2 text-sm text-slate-400">{{ $previousSession->ended_at?->diffForHumans() }}・実作業 {{ max(1, (int) ceil(($previousSession->actual_seconds ?? 0) / 60)) }}分</p>
+                            <h3 class="mt-1 text-base font-black text-slate-100">{{ $previousSession->task->title }}</h3>
+                            <p class="mt-2 text-xs text-slate-400">{{ $previousSession->ended_at?->diffForHumans() }}・実作業 {{ max(1, (int) ceil(($previousSession->actual_seconds ?? 0) / 60)) }}分</p>
                             @if ($previousSession->task->next_action_note)
-                                <p class="mt-2 text-sm text-sky-300">次回ここから：{{ $previousSession->task->next_action_note }}</p>
+                                <p class="mt-2 text-xs text-sky-300">次回ここから：{{ $previousSession->task->next_action_note }}</p>
                             @endif
                         </div>
                         @if (! in_array($previousSession->task->status, ['done', 'cancelled'], true))
                             <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
                                 @csrf
                                 <input type="hidden" name="task_id" value="{{ $previousSession->task->id }}">
-                                <input type="hidden" name="source" value="dashboard-plan-resume">
+                                <input type="hidden" name="source" value="dashboard">
                                 <button class="btn-primary">続きをやる</button>
                             </form>
                         @endif
                     </section>
                 @endif
 
-                <section class="page-card p-4 sm:p-6 plan-identity-shell" data-plan-accent="{{ $item['plan']->accentKey() }}">
+                <section class="page-card pk-v18-section-card p-3.5 sm:p-5 plan-identity-shell" data-plan-accent="{{ $item['plan']->accentKey() }}">
                     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p class="text-xs font-black uppercase tracking-[0.16em] text-sky-300">ロードマップ</p>
-                            <h2 class="mt-1 text-xl font-black text-slate-100">今ここから、この先へ</h2>
+                            <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">今ここから、この先へ</h2>
                         </div>
                         <a href="{{ route('roadmap.index', ['plan_id' => $item['plan']->id]) }}" class="text-xs font-bold text-sky-300">大きく見る →</a>
                     </div>
@@ -270,13 +318,13 @@
                     ])
                 </section>
 
-                <section class="page-card p-5">
-                    <p class="text-xs font-black uppercase tracking-[0.16em] text-sky-300">次の目標</p>
+                <section class="page-card pk-v18-section-card p-4 sm:p-5">
+                    <p class="text-[10px] font-black uppercase tracking-[0.16em] text-sky-300">次の目標</p>
                     @if ($nextMilestone)
-                        <h2 class="mt-1 text-lg font-black text-slate-100">{{ $nextMilestone['title'] }}</h2>
+                        <h2 class="mt-1 text-base font-black text-slate-100">{{ $nextMilestone['title'] }}</h2>
                         <p class="mt-2 text-sm text-slate-400">あと {{ $nextMilestone['remaining_minutes'] }}分ほどです。</p>
                     @else
-                        <h2 class="mt-1 text-lg font-black text-slate-100">ゴールが見えてきました</h2>
+                        <h2 class="mt-1 text-base font-black text-slate-100">ゴールが見えてきました</h2>
                         <p class="mt-2 text-sm text-slate-400">残りを確認して、ゴールまで進めましょう。</p>
                     @endif
                 </section>
