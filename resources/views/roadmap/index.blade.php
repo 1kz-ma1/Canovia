@@ -16,10 +16,13 @@
     @endif
 
     <div class="space-y-5">
-        <header class="roadmap-page-header">
-            <div>
+        <header class="roadmap-page-header pk-cosmic-page-heading pk-roadmap-heading">
+            <div class="relative z-10">
+                <p class="pk-cosmic-kicker">ROADMAP / SEE THE PATH</p>
                 <h1 class="text-3xl font-black tracking-tight text-slate-50">今いる場所と、この先</h1>
+                <p class="pk-cosmic-subcopy">進んだ軌跡と、次に向かう星を見渡す。</p>
             </div>
+            <img src="/brand/mascot-guide.webp" alt="" class="pk-page-mascot pk-page-mascot-roadmap" aria-hidden="true">
 
             @if ($plans->isNotEmpty())
                 <form method="GET" action="{{ route('roadmap.index') }}" class="hidden min-w-64 md:block">

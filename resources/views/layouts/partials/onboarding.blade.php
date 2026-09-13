@@ -1,19 +1,23 @@
 <dialog class="onboarding-intro-dialog" data-onboarding-intro aria-labelledby="onboarding-intro-title">
-    <section class="onboarding-intro-card">
-        <div class="flex items-start justify-between gap-4">
+    <section class="onboarding-intro-card pk-onboarding-intro-card">
+        <img src="/brand/mascot-guide.webp" alt="" class="pk-onboarding-mascot" aria-hidden="true">
+        <div class="relative z-10 flex items-start justify-between gap-4">
             <div>
-                <p class="onboarding-kicker">はじめに</p>
-                <h2 id="onboarding-intro-title" class="mt-1 text-2xl font-black text-slate-50">PaceKeeperは、次の一歩を決めやすくするアプリです</h2>
+                <div class="flex items-center gap-2">
+                    <img src="/brand/logo-mark.svg" alt="" class="h-8 w-8" width="32" height="32">
+                    <p class="onboarding-kicker">はじめに</p>
+                </div>
+                <h2 id="onboarding-intro-title" class="mt-2 max-w-md text-2xl font-black text-slate-50">PaceKeeperは、次の一歩を決めやすくするアプリです</h2>
             </div>
             <button type="button" class="feedback-close" data-onboarding-intro-skip aria-label="案内をスキップ">×</button>
         </div>
 
-        <p class="mt-4 text-sm leading-7 text-slate-300">
+        <p class="relative z-10 mt-4 max-w-lg text-sm leading-7 text-slate-300">
             資格勉強、制作、個人開発など、進めたいことはあるのに「今日は何をしよう」で止まりやすい人向けです。
             計画・作業実績・普段使っているAIをつないで、次にやることを見つけやすくします。
         </p>
 
-        <div class="onboarding-intro-points mt-5">
+        <div class="relative z-10 onboarding-intro-points mt-5">
             <article>
                 <span aria-hidden="true">🤝</span>
                 <div><strong>いつものAIで相談</strong><small>ChatGPTなど、普段のAIをそのまま使えます。</small></div>
@@ -28,7 +32,7 @@
             </article>
         </div>
 
-        <div class="mt-6 flex flex-col gap-2 sm:flex-row">
+        <div class="relative z-10 mt-6 flex flex-col gap-2 sm:flex-row">
             <button type="button" class="btn-primary flex-1 justify-center" data-onboarding-intro-start>使い方を見てみる</button>
             <button type="button" class="btn-secondary flex-1 justify-center" data-onboarding-intro-skip>今はスキップ</button>
         </div>

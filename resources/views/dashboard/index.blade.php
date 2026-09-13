@@ -13,11 +13,14 @@
     @endphp
 
     <div id="behaviorDashboard" class="space-y-7" data-event-url="{{ route('behavior_events.store') }}" data-navigation-url="{{ route('navigation.index') }}" data-work-started="{{ $activeSession ? 1 : 0 }}" data-onboarding-new-user="{{ $dashboard['plan_tabs']->isEmpty() ? '1' : '0' }}">
-        <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
+        <header class="pk-cosmic-page-heading pk-home-heading flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div class="relative z-10 max-w-xl">
+                <p class="pk-cosmic-kicker">PACEKEEPER / HOME</p>
                 <h1 class="text-3xl font-black tracking-tight text-slate-50 font-heading">いまの全体像</h1>
+                <p class="pk-cosmic-subcopy">小さな一歩が、やがて大きな未来につながる。</p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <img src="/brand/mascot-guide.webp" alt="" class="pk-page-mascot pk-page-mascot-home" aria-hidden="true">
+            <div class="relative z-10 flex flex-wrap gap-2">
                 <a href="{{ route('plans.create') }}" class="btn-primary" data-onboarding-target="create-plan">＋ 新しい計画</a>
                 <form method="POST" action="{{ route('chat.start', 'review') }}">
                     @csrf
