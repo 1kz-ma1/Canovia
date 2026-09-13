@@ -16,18 +16,19 @@
     @endif
 
     <div class="space-y-5">
-        <header class="roadmap-page-header pk-cosmic-page-heading pk-roadmap-heading">
-            <div class="relative z-10">
-                <p class="pk-cosmic-kicker">ROADMAP / SEE THE PATH</p>
-                <h1 class="text-3xl font-black tracking-tight text-slate-50">今いる場所と、この先</h1>
-                <p class="pk-cosmic-subcopy">進んだ軌跡と、次に向かう星を見渡す。</p>
+        <header class="roadmap-page-header pk-v18-page-hero pk-v18-roadmap-hero">
+            <div class="relative z-10 min-w-0">
+                <p class="pk-v18-eyebrow">ROADMAP / SEE THE PATH</p>
+                <h1>あなたのペースで、未来へつながる。</h1>
+                <p>今いる星と、その先のルートをひと目で。</p>
             </div>
-            <img src="/brand/mascot-guide.webp" alt="" class="pk-page-mascot pk-page-mascot-roadmap" aria-hidden="true">
+            <div class="pk-v18-roadmap-destination" aria-hidden="true"><i></i><i></i><i></i><span>⚑</span></div>
+            <img src="/brand/mascot-guide.webp" alt="" class="pk-v18-roadmap-mascot" aria-hidden="true">
 
             @if ($plans->isNotEmpty())
-                <form method="GET" action="{{ route('roadmap.index') }}" class="hidden min-w-64 md:block">
-                    <label class="text-xs font-bold text-slate-400" for="roadmap-plan">計画を選ぶ</label>
-                    <select id="roadmap-plan" name="plan_id" class="form-control mt-2" onchange="this.form.submit()">
+                <form method="GET" action="{{ route('roadmap.index') }}" class="relative z-20 hidden min-w-56 md:block">
+                    <label class="text-[11px] font-bold text-slate-400" for="roadmap-plan">計画を選ぶ</label>
+                    <select id="roadmap-plan" name="plan_id" class="form-control mt-1.5" onchange="this.form.submit()">
                         @foreach ($plans as $item)
                             <option value="{{ $item->id }}" @selected($plan?->id === $item->id)>{{ $item->displayIcon() }} {{ $item->title }}</option>
                         @endforeach
@@ -62,8 +63,8 @@
                 data-next-url="{{ $nextRoadmapUrl }}"
                 aria-live="polite"
             >
-                <section class="page-card p-4 sm:p-6 plan-identity-shell roadmap-page-card" data-plan-accent="{{ $plan->accentKey() }}">
-                    <div class="mb-4 flex items-start justify-between gap-3">
+                <section class="page-card pk-v18-roadmap-card p-3 sm:p-5 plan-identity-shell roadmap-page-card" data-plan-accent="{{ $plan->accentKey() }}">
+                    <div class="mb-3 flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
                                 @if ($previousRoadmapUrl)
@@ -85,7 +86,7 @@
                             </div>
 
                             @if ($continuity)
-                                <p class="mt-2 text-sm text-slate-400">前回：{{ $continuity['task_title'] }}{{ $continuity['ended_at'] ? '・'.$continuity['ended_at']->diffForHumans() : '' }}</p>
+                                <p class="mt-1.5 text-xs text-slate-400">前回：{{ $continuity['task_title'] }}{{ $continuity['ended_at'] ? '・'.$continuity['ended_at']->diffForHumans() : '' }}</p>
                             @endif
                         </div>
                         <a href="{{ route('plans.edit', $plan) }}#plan-design" class="btn-secondary shrink-0 px-3 py-2 text-xs">🎨 デザイン</a>

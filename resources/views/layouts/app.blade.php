@@ -31,11 +31,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#020617">
+    <meta name="theme-color" content="#0A0F1E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PaceKeeper">
     <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
     <title>@yield('title', 'Pace Keeper')</title>
 

@@ -4,17 +4,21 @@
 
 @section('content')
     <div class="mx-auto max-w-3xl space-y-5 md:space-y-6">
-        <header class="pk-cosmic-page-heading pk-today-heading flex items-start justify-between gap-3 md:gap-4">
+        <header class="pk-v18-page-hero pk-v18-today-hero">
             <div class="relative z-10 min-w-0">
-                <p class="pk-cosmic-kicker">TODAY / TAKE ACTION</p>
-                <h1 class="text-3xl font-bold text-slate-100">今日のおすすめ</h1>
-                <p class="pk-cosmic-subcopy">迷ったら、今日の一歩だけ決めよう。</p>
+                <p class="pk-v18-eyebrow">TODAY / TAKE ACTION</p>
+                <h1>今日の一歩を決めよう。</h1>
+                <p>迷ったら、PaceKeeperと一緒に今できる一歩だけ。</p>
             </div>
-            <img src="/brand/mascot-guide.webp" alt="" class="pk-page-mascot pk-page-mascot-today" aria-hidden="true">
+            <div class="pk-v18-page-guide" aria-hidden="true">
+                <span>いっしょに
+進もう ✦</span>
+                <img src="/brand/mascot-guide.webp" alt="">
+            </div>
             @if (($draft['step'] ?? 'recommendation') !== 'recommendation')
-                <form method="POST" action="{{ route('navigation.reset') }}" class="shrink-0">
+                <form method="POST" action="{{ route('navigation.reset') }}" class="relative z-20 shrink-0">
                     @csrf
-                    <button class="btn-secondary whitespace-nowrap px-3 text-sm">戻す</button>
+                    <button class="pk-v18-action-chip">戻す</button>
                 </form>
             @endif
         </header>
@@ -28,7 +32,7 @@
             </div>
         @endif
 
-        <main class="assistant-chat-shell">
+        <main class="assistant-chat-shell pk-v18-guidance-shell">
             @if (($draft['step'] ?? 'recommendation') === 'intent')
                 <div class="assistant-message-row assistant-message-left">
                     <div class="assistant-avatar pk-assistant-avatar"><img src="/brand/logo-mark.svg" alt="" width="26" height="26"></div>
@@ -82,11 +86,11 @@
                     <div class="assistant-avatar pk-assistant-avatar"><img src="/brand/logo-mark.svg" alt="" width="26" height="26"></div>
                     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
                         @if ($recommendation)
-                            <section class="rounded-3xl border border-sky-400/20 bg-slate-950/30 p-4 md:p-5 plan-identity-shell" data-plan-accent="{{ $recommendation->plan->accentKey() }}">
+                            <section class="pk-v18-today-card plan-identity-shell" data-plan-accent="{{ $recommendation->plan->accentKey() }}">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <p class="text-xs font-bold uppercase tracking-[0.18em] text-sky-300">おすすめ</p>
-                                        <h2 class="mt-2 text-2xl font-bold text-slate-100">{{ $recommendation->task->title }}</h2>
+                                        <h2 class="mt-1.5 text-lg font-black text-slate-100 sm:text-xl">{{ $recommendation->task->title }}</h2>
                                         <p class="mt-1 plan-identity-chip truncate text-sm"><span aria-hidden="true">{{ $recommendation->plan->displayIcon() }}</span>{{ $recommendation->plan->title }}</p>
                                     </div>
                                     <div class="shrink-0 rounded-2xl border border-sky-400/20 bg-slate-950/40 px-3 py-2 text-right">
@@ -119,7 +123,7 @@
                                     <input type="hidden" name="task_id" value="{{ $recommendation->task->id }}">
                                     <input type="hidden" name="intended_minutes" value="{{ $recommendation->recommendedMinutes }}">
                                     <input type="hidden" name="source" value="navigation">
-                                    <button class="btn-primary w-full justify-center py-3 text-base" data-onboarding-target="today-start">このまま開始</button>
+                                    <button class="pk-v18-start-cta w-full justify-center" data-onboarding-target="today-start">このまま開始</button>
                                 </form>
                             </section>
 
@@ -150,7 +154,7 @@
                                                             <p class="text-[10px] font-bold uppercase tracking-[0.16em] {{ $loop->first ? 'text-sky-300' : 'text-slate-500' }}">
                                                                 {{ $loop->first ? 'おすすめ' : '候補 ' . ($loop->iteration) }}
                                                             </p>
-                                                            <h3 class="mt-2 text-lg font-bold text-slate-100">{{ $candidate->task->title }}</h3>
+                                                            <h3 class="mt-2 text-base font-bold text-slate-100">{{ $candidate->task->title }}</h3>
                                                             <p class="mt-1 plan-identity-chip truncate text-xs"><span aria-hidden="true">{{ $candidate->plan->displayIcon() }}</span>{{ $candidate->plan->title }}</p>
                                                         </div>
                                                         <span class="badge badge-slate shrink-0">{{ $candidate->recommendedMinutes }}分</span>

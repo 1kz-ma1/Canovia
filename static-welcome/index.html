@@ -3,65 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#020617">
+    <meta name="theme-color" content="#0A0F1E">
     <meta name="robots" content="index,follow">
-    <meta name="description" content="PaceKeeper - いつものAIと計画をつなぎ、今日やることまで整理する。">
+    <meta name="description" content="PaceKeeper - いつものAIと一緒に、今日の一歩を決めよう。">
     <title>PaceKeeper</title>
     <link rel="icon" href="./icon-192.png">
     <link rel="apple-touch-icon" href="./icon-192.png">
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+    <div class="space" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="planet" aria-hidden="true"></div>
     <main class="welcome-shell">
+        <div class="topline" aria-hidden="true">
+            <span>SMALL STEPS</span><i></i><span>BRIGHTER TOMORROW</span>
+        </div>
+
+        <section class="navigator" aria-label="PaceKeeper Navigator">
+            <p class="microcopy">小さな一歩が、<br>やがて大きな未来をつくる。</p>
+            <img src="./mascot-guide.webp" alt="" class="mascot" width="420" height="420">
+            <p class="same-sky">SAME SKY<br>BRIGHTER YOU</p>
+        </section>
+
         <section class="brand" aria-label="PaceKeeper">
-            <img src="./brand/logo-mark.svg" alt="" class="brand-icon" width="72" height="72">
+            <img src="./logo-mark.svg" alt="" class="brand-mark" width="68" height="68">
             <div>
-                <p class="eyebrow">PACEKEEPER</p>
-                <h1><span>Pace</span>Keeper</h1>
-                <p class="brand-tagline">自分のペースで、前へ。</p>
+                <h1>PaceKeeper</h1>
+                <p>いつものAIと一緒に、<br><strong>今日の一歩を決めよう。</strong></p>
+                <span>自分のペースで、前へ。</span>
             </div>
         </section>
 
         <section class="welcome-card" aria-live="polite">
-            <img src="./brand/mascot-guide.webp" alt="" class="welcome-mascot" aria-hidden="true">
-            <div class="loader-wrap" aria-hidden="true">
-                <span class="loader-orbit"></span>
-                <span class="loader-planet"></span>
-                <span class="loader-star">✦</span>
-                <span class="loader-glow"></span>
+            <div class="orbit-loader" aria-hidden="true">
+                <span class="orbit"></span><i class="star">✦</i><b></b>
             </div>
 
             <div class="hint-stage" data-hint-stage>
                 <article class="hint is-active" data-hint>
-                    <p class="hint-kicker">いつものAIを、そのまま</p>
-                    <h2>AIを選び直さなくて大丈夫。</h2>
-                    <p>ChatGPT、Gemini、Claudeなど、普段使っているAIとの相談をPaceKeeperにつなげられます。</p>
+                    <p class="hint-kicker">GUIDANCE</p>
+                    <h2>いつものAIを、そのまま。</h2>
+                    <p>ChatGPT、Gemini、Claudeなど、普段の相談をPaceKeeperの計画につなげられます。</p>
                 </article>
                 <article class="hint" data-hint>
-                    <p class="hint-kicker">相談したら、計画へ戻す</p>
-                    <h2>会話で終わらせず、次の行動へ。</h2>
-                    <p>AIと決めた内容をタスクとロードマップに反映し、次に何をするかを見える形にします。</p>
+                    <p class="hint-kicker">PROGRESS</p>
+                    <h2>会話を、次の一歩へ。</h2>
+                    <p>AIと決めたことをタスクとロードマップへ戻し、次に進む場所を見える形にします。</p>
                 </article>
                 <article class="hint" data-hint>
-                    <p class="hint-kicker">迷った日は「今日」だけ</p>
-                    <h2>考える負担を減らして始める。</h2>
-                    <p>今の計画と実績から候補を絞り、そのままタイマーを始められます。</p>
+                    <p class="hint-kicker">TODAY</p>
+                    <h2>迷った日は、今日だけ。</h2>
+                    <p>今の計画と実績から候補を絞り、考える負担を減らしてそのまま始められます。</p>
                 </article>
             </div>
-
-            <div class="hint-dots" aria-hidden="true">
-                <span class="is-active" data-hint-dot></span>
-                <span data-hint-dot></span>
-                <span data-hint-dot></span>
-            </div>
+            <div class="hint-dots" aria-hidden="true"><span class="is-active" data-hint-dot></span><span data-hint-dot></span><span data-hint-dot></span></div>
 
             <div class="ready-area">
-                <p class="status" data-status>アプリを準備しています…</p>
-                <button type="button" class="open-button" data-open disabled>PaceKeeperを開く</button>
-
+                <p class="status" data-status>読み込み中…</p>
+                <button type="button" class="open-button" data-open disabled>PaceKeeperを開く <span>→</span></button>
                 <div class="slow-notice hidden" data-slow-notice>
-                    <p class="slow-title">いつもより準備に時間がかかっています</p>
-                    <p class="slow-copy">接続先が休止中の場合などは、起動まで少し長くかかることがあります。この画面の内容を見ながら、そのままお待ちいただけます。</p>
+                    <p class="slow-title">宇宙船を起動しています</p>
+                    <p class="slow-copy">接続先が休止中の場合は、起動まで少し時間がかかります。この画面のまま待っていて大丈夫です。</p>
                     <div class="slow-actions">
                         <button type="button" class="retry-button" data-retry>もう一度確認</button>
                         <button type="button" class="skip-wait" data-open-anyway>そのまま開く</button>
@@ -70,9 +72,13 @@
             </div>
         </section>
 
-        <p class="footnote">準備ができるまで、PaceKeeperの使い方を少しだけ紹介します。</p>
+        <aside class="install-hint">
+            <img src="./icon-192.png" alt="" width="46" height="46">
+            <p><strong>ホーム画面に追加すると、</strong><br>次回からすぐ開けます</p>
+            <span aria-hidden="true">›</span>
+        </aside>
+        <p class="footnote">SAME SKY · BRIGHTER YOU</p>
     </main>
-
     <script src="./config.js"></script>
     <script src="./app.js"></script>
 </body>
