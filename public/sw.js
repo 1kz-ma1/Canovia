@@ -1,7 +1,6 @@
-const CACHE_VERSION = 'pacekeeper-shell-v18';
+const CACHE_VERSION = 'pacekeeper-shell-v19';
 const STATIC_ASSETS = [
     '/offline.html',
-    '/manifest.webmanifest',
     '/icons/icon-180.png',
     '/icons/icon-192.png',
     '/icons/icon-512.png',

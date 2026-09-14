@@ -81,8 +81,13 @@
             <img src="/icons/icon-192.png" alt="" class="h-16 w-16 rounded-2xl shadow-lg" width="64" height="64">
             <div class="min-w-0">
                 <p class="font-bold text-slate-100">PaceKeeper</p>
-                <p class="mt-1 text-sm leading-6 text-slate-400" data-install-guide-copy>ブラウザからホーム画面へ追加できます。</p>
+                <p class="mt-1 text-sm leading-6 text-slate-400" data-install-guide-copy>ブラウザのデータを引き継いだ状態でホーム画面へ追加できます。</p>
             </div>
+        </div>
+
+        <div class="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-slate-300">
+            <p class="font-bold text-amber-100">データ引き継ぎ対応</p>
+            <p class="mt-1">Safariとホーム画面版で保存領域が分かれても、ログイン状態またはGuest計画を初回起動時に引き継ぎます。</p>
         </div>
 
         <div class="mt-5 hidden rounded-2xl border border-sky-400/25 bg-sky-500/10 p-4 text-sm leading-6 text-slate-200" data-install-ios-help>
