@@ -332,10 +332,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const feedbackDialog = document.querySelector('[data-feedback-dialog]');
-    document.querySelector('[data-feedback-open]')?.addEventListener('click', () => {
-        if (!feedbackDialog) return;
-        if (typeof feedbackDialog.showModal === 'function') feedbackDialog.showModal();
-        else feedbackDialog.setAttribute('open', '');
+    document.querySelectorAll('[data-feedback-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (!feedbackDialog) return;
+            if (typeof feedbackDialog.showModal === 'function') feedbackDialog.showModal();
+            else feedbackDialog.setAttribute('open', '');
+        });
     });
     document.querySelectorAll('[data-feedback-close]').forEach((button) => {
         button.addEventListener('click', () => {
