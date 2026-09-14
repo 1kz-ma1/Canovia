@@ -62,7 +62,7 @@
                 >
             </div>
 
-            <details class="rounded-2xl border border-slate-800 bg-slate-950/30 p-4" @if(old('description') || old('category') || old('start_date') || old('is_public') || old('visual_icon') || old('accent_key') || old('roadmap_world')) open @endif>
+            <details class="rounded-2xl border border-slate-800 bg-slate-950/30 p-4" @if(old('description') || old('category') || old('start_date') || old('is_public') || old('visual_icon') || old('accent_key') || old('roadmap_world') || old('is_collaborative')) open @endif>
                 <summary class="cursor-pointer list-none font-semibold text-slate-200">
                     <span class="flex items-center justify-between gap-3">
                         <span>詳細設定</span>
@@ -109,6 +109,21 @@
                             <span class="mt-1 block text-xs leading-5 text-slate-500">共有URLを知っている人が閲覧できます。編集はできません。</span>
                         </span>
                     </label>
+
+                    @auth
+                        <label class="flex items-start gap-3 rounded-xl border border-violet-400/20 bg-violet-500/5 p-4">
+                            <input type="checkbox" name="is_collaborative" value="1" @checked(old('is_collaborative')) class="mt-1">
+                            <span>
+                                <span class="block font-medium text-slate-200">共同計画として作る</span>
+                                <span class="mt-1 block text-xs leading-5 text-slate-500">参加者はURLまたは参加コードで参加できます。最初は閲覧のみで、編集権限はあとからあなたが付与します。</span>
+                            </span>
+                        </label>
+                    @else
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/35 p-4 text-sm text-slate-400">
+                            <strong class="text-slate-200">共同計画はログイン後に使えます。</strong>
+                            <p class="mt-1 text-xs leading-5">計画を作ったあとでアカウントへ紐づけてから有効化できます。</p>
+                        </div>
+                    @endauth
                 </div>
             </details>
 

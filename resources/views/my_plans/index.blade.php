@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '自分の計画一覧 | Pace Keeper')
+@section('title', '計画一覧 | Canovia')
 
 @section('content')
     <section class="mb-8">
@@ -9,19 +9,21 @@
                 <p class="mb-2 text-sm font-semibold text-slate-500">My Plans</p>
 
                 <h1 class="text-3xl font-bold tracking-tight text-slate-900">
-                    自分の計画一覧
+                    計画一覧
                 </h1>
 
                 <p class="mt-3 max-w-3xl leading-7 text-slate-600">
-                    このブラウザで作成した計画を表示しています。
-                    Cookie を削除した場合や別の端末では、編集権限付きの計画として表示されません。
+                    自分で作った計画と、参加中の共同計画をまとめて表示します。
+                    Guest計画はアカウントで保護しておくと端末を変えても安心です。
                 </p>
             </div>
 
-            <a href="{{ route('plans.create') }}"
-               class="btn-primary">
-                新しい計画を作成する
-            </a>
+            <div class="flex flex-wrap gap-2">
+                @auth
+                    <a href="{{ route('collaboration.join.form') }}" class="btn-secondary">共同計画に参加</a>
+                @endauth
+                <a href="{{ route('plans.create') }}" class="btn-primary">新しい計画を作成する</a>
+            </div>
         </div>
     </section>
 
@@ -48,6 +50,7 @@
                 @php
                     $plan = $item['plan'];
                     $progress = $item['progress'];
+                    $role = $item['role'] ?? 'owner';
                     $status = $progress['status'] ?? '予定通り';
 
                     $progressColorClass = match ($status) {
@@ -81,6 +84,13 @@
                                     {{ $plan->category ?? '未設定' }}
                                 </span>
 
+
+                                @if ($plan->is_collaborative)
+                                    <span class="rounded-full bg-violet-500/10 px-2 py-1 text-xs font-medium text-violet-200 ring-1 ring-violet-400/20">
+                                        共同 · {{ $role === 'owner' ? 'オーナー' : ($role === 'editor' ? '編集者' : '閲覧者') }}
+                                    </span>
+                                @endif
+
                                 @if ($plan->is_public)
                                     <span class="rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200">
                                         公開
@@ -102,9 +112,13 @@
                                 詳細
                             </a>
 
-                            <a href="{{ route('plans.edit', $plan) }}" class="btn-primary px-3 py-2 text-sm">
-                                編集
-                            </a>
+                            @if ($role === 'owner')
+                                <a href="{{ route('plans.edit', $plan) }}" class="btn-primary px-3 py-2 text-sm">編集</a>
+                            @elseif ($role === 'editor')
+                                <span class="badge badge-green">編集参加中</span>
+                            @else
+                                <span class="badge badge-slate">閲覧のみ</span>
+                            @endif
                         </div>
                     </div>
 

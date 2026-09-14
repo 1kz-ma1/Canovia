@@ -29,12 +29,9 @@
     <div id="behaviorDashboard" class="pk-v18-dashboard space-y-5 md:space-y-6" data-event-url="{{ route('behavior_events.store') }}" data-navigation-url="{{ route('navigation.index') }}" data-work-started="{{ $activeSession ? 1 : 0 }}" data-onboarding-new-user="{{ $dashboard['plan_tabs']->isEmpty() ? '1' : '0' }}">
         <header class="pk-v18-hero pk-home-heading">
             <div class="pk-v18-hero-copy">
-                <div class="pk-v18-hero-brand" aria-label="PaceKeeper">
-                    <img src="/brand/logo-mark.svg" alt="" width="42" height="42">
-                    <div>
-                        <span class="pk-brand-wordmark">PaceKeeper</span>
-                        <small>自分のペースで、前へ。</small>
-                    </div>
+                <div class="pk-v18-hero-brand pk-canovia-hero-brand" aria-label="Canovia カノーヴィア">
+                    <img src="/brand/canovia-wordmark.png" alt="Canovia カノーヴィア" class="pk-canovia-wordmark">
+                    <small>未来までの航路を、一緒に。</small>
                 </div>
                 <p class="pk-v18-eyebrow">SMALL STEPS · A BRIGHTER YOU</p>
                 <h1>今日も、あなたのペースで。</h1>
@@ -257,6 +254,7 @@
         @foreach ($dashboard['plan_tabs'] as $item)
             @php
                 $planRecommendation = $item['recommendation'];
+                $planCanEdit = (bool) ($item['can_edit'] ?? false);
                 $previousSession = $item['previous_session'];
                 $roadmapNodes = collect($item['roadmap']['nodes'] ?? []);
                 $nextMilestone = $roadmapNodes->first(fn ($node) => ! in_array($node['status'] ?? null, ['done', 'cancelled'], true) && ! ($node['is_current'] ?? false));
@@ -273,7 +271,9 @@
                             </div>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <a href="{{ route('plans.edit', $item['plan']) }}#plan-design" class="btn-secondary px-3 py-2 text-xs">🎨 デザイン</a>
+                            @if ($planCanEdit && (int) $item['plan']->user_id === (int) auth()->id())
+                                <a href="{{ route('plans.edit', $item['plan']) }}#plan-design" class="btn-secondary px-3 py-2 text-xs">🎨 デザイン</a>
+                            @endif
                             <a href="{{ route('plans.show', $item['plan']) }}" class="btn-secondary px-3 py-2 text-xs">詳細</a>
                         </div>
                     </div>
@@ -289,7 +289,7 @@
                                 <p class="mt-2 text-xs text-sky-300">次回ここから：{{ $previousSession->task->next_action_note }}</p>
                             @endif
                         </div>
-                        @if (! in_array($previousSession->task->status, ['done', 'cancelled'], true))
+                        @if ($planCanEdit && ! in_array($previousSession->task->status, ['done', 'cancelled'], true))
                             <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
                                 @csrf
                                 <input type="hidden" name="task_id" value="{{ $previousSession->task->id }}">
@@ -311,7 +311,7 @@
                     @include('plans.partials.roadmap', [
                         'roadmap' => $item['roadmap'],
                         'roadmapPlan' => $item['plan'],
-                        'roadmapCanEdit' => true,
+                        'roadmapCanEdit' => $planCanEdit,
                         'roadmapMode' => 'dashboard',
                         'roadmapRecommendedMinutes' => $planRecommendation?->recommendedMinutes,
                         'roadmapRecommendationReasons' => $planRecommendation?->reasons ?? [],

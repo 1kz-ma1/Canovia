@@ -25,6 +25,7 @@ use App\Http\Controllers\RoadmapController;
 use App\Http\Controllers\TimelineController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PwaController;
+use App\Http\Controllers\PlanCollaborationController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -60,6 +61,21 @@ Route::get('/admin/feedback/login', [AdminFeedbackController::class, 'login'])->
 Route::post('/admin/feedback/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.feedback.authenticate');
 Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
 Route::patch('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('admin.feedback.status');
+
+
+// 共同計画。参加経路はURL/参加コードのどちらでもログイン必須。
+Route::middleware('auth')->group(function () {
+    Route::get('/collaboration/join', [PlanCollaborationController::class, 'joinForm'])->name('collaboration.join.form');
+    Route::post('/collaboration/join', [PlanCollaborationController::class, 'joinByCode'])->middleware('throttle:12,1')->name('collaboration.join.code');
+    Route::get('/join/{token}', [PlanCollaborationController::class, 'joinByToken'])->middleware('throttle:30,1')->name('collaboration.join.token');
+
+    Route::get('/plans/{plan}/collaboration', [PlanCollaborationController::class, 'settings'])->name('plans.collaboration.settings');
+    Route::post('/plans/{plan}/collaboration', [PlanCollaborationController::class, 'enable'])->name('plans.collaboration.enable');
+    Route::delete('/plans/{plan}/collaboration', [PlanCollaborationController::class, 'disable'])->name('plans.collaboration.disable');
+    Route::post('/plans/{plan}/collaboration/regenerate', [PlanCollaborationController::class, 'regenerateInvite'])->name('plans.collaboration.regenerate');
+    Route::patch('/plans/{plan}/collaboration/members/{member}', [PlanCollaborationController::class, 'updateMember'])->name('plans.collaboration.members.update');
+    Route::delete('/plans/{plan}/collaboration/members/{member}', [PlanCollaborationController::class, 'removeMember'])->name('plans.collaboration.members.remove');
+});
 
 Route::get('/dashboard/tools', [HomeController::class, 'legacy'])->name('dashboard.tools');
 Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');

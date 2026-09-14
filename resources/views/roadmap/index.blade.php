@@ -62,7 +62,7 @@
                     @include('plans.partials.roadmap', [
                         'roadmap' => $roadmap,
                         'roadmapPlan' => $plan,
-                        'roadmapCanEdit' => true,
+                        'roadmapCanEdit' => $canEdit,
                         'roadmapMode' => 'plan',
                         'roadmapRecommendedMinutes' => $recommendation?->recommendedMinutes,
                         'roadmapRecommendationReasons' => $recommendation?->reasons ?? [],

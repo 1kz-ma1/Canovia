@@ -28,6 +28,18 @@ class User extends Authenticatable
         return $this->hasMany(Plan::class);
     }
 
+    public function planMemberships()
+    {
+        return $this->hasMany(PlanMember::class);
+    }
+
+    public function collaborativePlans()
+    {
+        return $this->belongsToMany(Plan::class, 'plan_members')
+            ->withPivot(['role', 'joined_at'])
+            ->withTimestamps();
+    }
+
     protected function casts(): array
     {
         return [

@@ -54,10 +54,13 @@
                     <span class="badge {{ $plan->is_public ? 'badge-green' : 'badge-slate' }}">
                         {{ $plan->is_public ? '公開' : '非公開' }}
                     </span>
+                    @if ($plan->is_collaborative)
+                        <span class="badge badge-slate">共同計画 · {{ ($collaborationRole ?? 'viewer') === 'owner' ? 'オーナー' : (($collaborationRole ?? 'viewer') === 'editor' ? '編集者' : '閲覧者') }}</span>
+                    @endif
                 </div>
             </div>
 
-            @if ($canEdit ?? false)
+            @if ($canManage ?? false)
                 <div class="w-full md:w-auto">
                     <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-primary w-full md:w-auto">計画を更新</a>
                     <div class="mt-2 hidden flex-wrap gap-2 md:flex">
@@ -68,6 +71,7 @@
                         </form>
                         <a href="{{ route('plans.edit', $plan) }}#plan-design" class="btn-secondary">🎨 デザイン</a>
                         <a href="{{ route('plans.edit', $plan) }}" class="btn-secondary">計画を編集</a>
+                        @auth<a href="{{ route('plans.collaboration.settings', $plan) }}" class="btn-secondary">共同計画</a>@endauth
                     </div>
                     <details class="plan-secondary-actions mt-2 md:hidden">
                         <summary>その他の操作</summary>
@@ -79,6 +83,7 @@
                             </form>
                             <a href="{{ route('plans.edit', $plan) }}#plan-design" class="btn-secondary w-full">🎨 デザイン</a>
                             <a href="{{ route('plans.edit', $plan) }}" class="btn-secondary w-full">計画を編集</a>
+                            @auth<a href="{{ route('plans.collaboration.settings', $plan) }}" class="btn-secondary w-full">共同計画</a>@endauth
                         </div>
                     </details>
                 </div>
@@ -86,7 +91,7 @@
         </div>
     </section>
 
-    @if ($canEdit ?? false)
+    @if ($canManage ?? false)
         <section class="mb-8 adaptive-entry-card">
             <div>
                 <h2 class="mt-1 text-xl font-bold text-slate-900">計画外の作業も記録できます</h2>
@@ -134,7 +139,7 @@
                         <button type="submit" class="btn-primary">続きから開始</button>
                     </form>
                 @endif
-                @if ($continuity['needs_plan_update'])
+                @if ($continuity['needs_plan_update'] && ($canManage ?? false))
                     <a href="{{ route('plans.review_assistant.show', ['plan' => $plan, 'work_session_id' => $continuity['session_id']]) }}" class="btn-secondary">結果を計画へ反映</a>
                 @endif
             </div>
@@ -148,7 +153,7 @@
                 <h2 class="mt-1 text-2xl font-bold text-slate-50">現在地と、次に進む道</h2>
                 <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-400"><span class="md:hidden">今いる場所と、この先を見られます。</span><span class="hidden md:inline">今いる場所と、この先をひとつの流れで見られます。</span></p>
             </div>
-            @if ($canEdit ?? false)
+            @if ($canManage ?? false)
                 <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-secondary">ロードマップを更新</a>
             @endif
         </div>
@@ -192,7 +197,7 @@
                     <h2 class="mt-1 text-2xl font-bold text-slate-900">作業可能時間</h2>
                     <p class="mt-2 text-sm leading-7 text-slate-600">毎日同じ量を前提にせず、授業・休日・長期休暇などの現実の制約を進捗計算とおすすめ時間に使います。</p>
                 </div>
-                @if ($canEdit ?? false)
+                @if ($canManage ?? false)
                     <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-secondary">AIと作業可能時間を更新</a>
                 @endif
             </div>

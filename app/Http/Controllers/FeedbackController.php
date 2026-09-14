@@ -31,14 +31,14 @@ class FeedbackController extends Controller
 
         if ($task) {
             $taskPlan = $task->plan;
-            if (! $taskPlan || (! $taskPlan->is_public && ! $ownership->owns($request, $taskPlan))) {
+            if (! $taskPlan || (! $taskPlan->is_public && ! $ownership->canView($request, $taskPlan))) {
                 $task = null;
             } elseif (! $plan) {
                 $plan = $taskPlan;
             }
         }
 
-        if ($plan && ! $plan->is_public && ! $ownership->owns($request, $plan)) {
+        if ($plan && ! $plan->is_public && ! $ownership->canView($request, $plan)) {
             $plan = null;
         }
 

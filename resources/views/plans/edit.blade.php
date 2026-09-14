@@ -111,11 +111,22 @@
                             type="date"
                             name="deadline"
                             value="{{ old('deadline', $plan->deadline?->format('Y-m-d')) }}"
-                            required
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
                         >
                     </div>
                 </div>
+
+                @auth
+                    <div class="rounded-xl border border-violet-400/20 bg-violet-500/5 p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <span class="block font-medium text-slate-100">共同計画</span>
+                                <span class="mt-1 block text-sm leading-6 text-slate-400">共有URL・参加コード・メンバー権限を管理します。</span>
+                            </div>
+                            <a href="{{ route('plans.collaboration.settings', $plan) }}" class="btn-secondary">{{ $plan->is_collaborative ? '共有設定を開く' : '共同計画を設定' }}</a>
+                        </div>
+                    </div>
+                @endauth
 
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <input type="hidden" name="is_public" value="0">

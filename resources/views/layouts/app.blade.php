@@ -74,12 +74,9 @@
     @unless ($focusMode)
         <header class="desktop-app-header sticky top-0 z-50 hidden border-b border-slate-800/90 bg-slate-950/90 backdrop-blur-xl md:block">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-                <a href="{{ route('home') }}" class="pk-brand-lockup group inline-flex items-center gap-3" aria-label="PaceKeeper ホーム">
-                    <img src="/brand/logo-mark.svg" alt="" class="pk-brand-mark" width="44" height="44">
-                    <span>
-                        <span class="pk-brand-wordmark block text-xl font-black tracking-tight">PaceKeeper</span>
-                        <span class="block text-[11px] font-semibold tracking-[0.08em] text-slate-400">自分のペースで、前へ。</span>
-                    </span>
+                <a href="{{ route('home') }}" class="pk-brand-lockup pk-canovia-header-lockup group inline-flex items-center gap-3" aria-label="Canovia ホーム">
+                    <img src="/brand/canovia-wordmark.png" alt="Canovia カノーヴィア" class="pk-canovia-header-wordmark">
+                    <span class="sr-only">Canovia - 未来までの航路を、一緒に。</span>
                 </a>
 
                 <nav class="pk-desktop-nav flex flex-wrap items-center gap-1 rounded-2xl border border-slate-800 bg-slate-900/75 p-1 text-sm shadow-lg shadow-slate-950/20" aria-label="メインナビゲーション">
@@ -113,10 +110,10 @@
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
                 @else
-                    <a href="{{ route('home') }}" class="mobile-brand-mark pk-mobile-brand-mark" aria-label="PaceKeeper ホーム"><img src="/brand/logo-mark.svg" alt="" width="32" height="32"></a>
+                    <a href="{{ route('home') }}" class="mobile-brand-mark pk-mobile-brand-mark" aria-label="Canovia ホーム"><img src="/brand/logo-mark.svg" alt="" width="32" height="32"></a>
                 @endunless
                 <div class="min-w-0 flex-1">
-                    <p class="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300">PaceKeeper</p>
+                    <p class="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300">CANOVIA</p>
                     <p class="truncate text-sm font-bold text-slate-50">{{ $mobileSection }}</p>
                 </div>
                 <button type="button" class="mobile-utility-button" data-ui-settings-open aria-label="表示設定を開く" title="表示設定">
