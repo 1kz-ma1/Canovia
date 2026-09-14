@@ -8,7 +8,9 @@
     $nodeCount = $roadmapNodes->count();
     $gap = 126;
     $stageHeight = max(610, 190 + max(1, $nodeCount) * $gap);
-    $xPattern = [24, 45, 57, 42, 55, 67, 50, 71];
+    // Keep every node and its label inside the mobile viewport. The route gets
+    // visual movement from alternating sides instead of relying on a wide canvas.
+    $xPattern = [20, 36, 66, 42, 62, 76, 38, 68];
     $points = [];
     foreach ($roadmapNodes as $index => $node) {
         $x = $xPattern[$index % count($xPattern)];
@@ -66,8 +68,9 @@
             $isCancelled = ($node['status'] ?? null) === 'cancelled';
             $isGoal = $loop->last;
             $isLocked = ! $isDone && ! $isCurrent && ! ($node['startable'] ?? false) && ! $roadmapPreview;
-            $labelSide = $point['x'] >= 57 ? 'left' : 'right';
+            $labelSide = $point['x'] >= 50 ? 'left' : 'right';
             $phaseClass = $isDone ? 'is-done' : ($isCurrent ? 'is-current' : ($isLocked ? 'is-locked' : 'is-future'));
+            $detailPlacement = $point['y'] > ($stageHeight - 270) ? 'is-above' : 'is-below';
             $planetGlyph = $isDone ? '✓' : ($isCurrent ? '▤' : ($isLocked ? '⌕' : ($isGoal ? '⚑' : ($index + 1))));
         @endphp
         <details
@@ -79,26 +82,12 @@
             <summary>
                 <span class="pk-v19-planet" aria-hidden="true"><i>{{ $planetGlyph }}</i></span>
                 <span class="pk-v19-node-label is-{{ $labelSide }}">
-                    <strong>{{ $index + 1 }}. {{ $node['title'] }}</strong>
-                    <small>
-                        @if ($isDone)
-                            完了したステップ
-                        @elseif ($isCurrent)
-                            {{ $node['next_action_note'] ?: ($node['description'] ?: 'ここから進めよう') }}
-                        @elseif ($isGoal)
-                            ゴールへ向かうステップ
-                        @elseif ($isLocked)
-                            前のステップを終えると進めます
-                        @else
-                            {{ $node['description'] ?: '次につながるステップ' }}
-                        @endif
-                    </small>
-                    @if ($isCurrent)<em>次の一歩 ›</em>@endif
+                    <strong>{{ $node['title'] }}</strong>
                 </span>
                 @if ($isGoal)<span class="pk-v19-goal-flag" aria-hidden="true">⚑</span>@endif
             </summary>
 
-            <div class="pk-v19-node-detail is-{{ $labelSide }}">
+            <div class="pk-v19-node-detail is-{{ $labelSide }} {{ $detailPlacement }}">
                 <div class="pk-v19-node-detail-meta">
                     @if ($isCurrent)<span>今ここ</span>@endif
                     <span>{{ $node['status_label'] }}</span>

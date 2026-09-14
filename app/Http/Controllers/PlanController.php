@@ -33,10 +33,17 @@ class PlanController extends Controller
             'visual_icon' => ['nullable', 'string', 'max:16'],
             'accent_key' => ['nullable', Rule::in(Plan::ACCENT_KEYS)],
             'roadmap_world' => ['nullable', Rule::in(Plan::ROADMAP_WORLDS)],
-            'start_date' => ['required', 'date'],
-            'deadline' => ['required', 'date', 'after_or_equal:start_date'],
+            'start_date' => ['nullable', 'date'],
+            'deadline' => ['nullable', 'date'],
             'is_public' => ['nullable'],
         ]);
+
+        $startDate = $validated['start_date'] ?? now()->toDateString();
+        $deadline = $validated['deadline'] ?? null;
+
+        if ($deadline && Carbon::parse($deadline)->lt(Carbon::parse($startDate))) {
+            return back()->withErrors(['deadline' => '期限は開始日以降にしてください。'])->withInput();
+        }
 
         $ownerToken = Str::random(64);
         $plan = Plan::create([
@@ -49,8 +56,8 @@ class PlanController extends Controller
             'visual_icon' => $validated['visual_icon'] ?? null,
             'accent_key' => $validated['accent_key'] ?? 'sky',
             'roadmap_world' => $validated['roadmap_world'] ?? 'default',
-            'start_date' => $validated['start_date'],
-            'deadline' => $validated['deadline'],
+            'start_date' => $startDate,
+            'deadline' => $deadline,
             'is_public' => $request->boolean('is_public'),
         ]);
 
@@ -145,7 +152,9 @@ class PlanController extends Controller
         ]);
 
         $startDate = $validated['start_date'] ?? $plan->start_date?->format('Y-m-d');
-        $deadline = $validated['deadline'] ?? $plan->deadline?->format('Y-m-d');
+        $deadline = array_key_exists('deadline', $validated)
+            ? $validated['deadline']
+            : $plan->deadline?->format('Y-m-d');
 
         if ($startDate && $deadline && Carbon::parse($deadline)->lt(Carbon::parse($startDate))) {
             return back()->withErrors(['deadline' => '期限は開始日以降にしてください。'])->withInput();

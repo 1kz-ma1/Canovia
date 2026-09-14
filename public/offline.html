@@ -32,8 +32,8 @@
       <h2 id="taskTitle"></h2>
       <div id="taskNote" class="note hidden"></div>
       <div id="timer" class="timer hidden">00:00</div>
-      <div class="actions"><button id="startBtn" class="btn" type="button">オフラインで開始</button><button id="pauseBtn" class="btn secondary hidden" type="button">一時停止</button><button id="finishBtn" class="btn secondary hidden" type="button">記録して終了</button></div>
-      <p id="syncHint" class="small">接続でき次第、通常画面へ自動で戻ります。</p>
+      <div class="actions"><button id="startBtn" class="btn" type="button">オフラインで開始</button><button id="pauseBtn" class="btn secondary hidden" type="button">一時停止</button><button id="returnBtn" class="btn hidden" type="button">タイマーに戻る</button></div><p id="offlineLimit" class="small hidden">オフライン中は再生・一時停止だけ利用できます。記録して終了は接続後の「今日」画面で行えます。</p>
+      <p id="syncHint" class="small">接続できたら「タイマーに戻る」から今日の画面へ戻れます。</p>
     </div>
     <div id="roadmap" class="road"></div>
   </section>
@@ -42,52 +42,25 @@
 </main>
 <script>
 const DB='pacekeeper-offline-v1', STORE='state';
-let snapshot=null, offlineSession=null, timerId=null, serverReady=false;
+let snapshot=null, offlineSession=null, timerId=null, serverReady=false, handoffInProgress=false, probeTimer=null;
 function openDb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function get(k){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const r=tx.objectStore(STORE).get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})}
 async function put(k,v){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
 async function del(k){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
 function uuid(){return crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16)})}
 function elapsed(s){const now=Date.now();const end=s.ended_at?Date.parse(s.ended_at):now;const start=Date.parse(s.started_at);const pause=s.paused_seconds||0;const livePause=s.paused_at?Math.max(0,(now-Date.parse(s.paused_at))/1000):0;return Math.max(0,Math.floor((end-start)/1000-pause-livePause))}
-function fmt(sec){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+function fmt(sec){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=sec%60;return h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`}
 function renderTimer(){const el=document.getElementById('timer');if(!offlineSession){el.classList.add('hidden');return}el.classList.remove('hidden');el.textContent=fmt(elapsed(offlineSession))}
-function controls(){const started=!!offlineSession&&!offlineSession.ended_at;document.getElementById('startBtn').classList.toggle('hidden',started||!!offlineSession?.ended_at);document.getElementById('pauseBtn').classList.toggle('hidden',!started);document.getElementById('finishBtn').classList.toggle('hidden',!started);if(started)document.getElementById('pauseBtn').textContent=offlineSession.paused_at?'再開':'一時停止'}
-function render(){if(!snapshot)return;document.getElementById('planTitle').textContent=snapshot.plan?.title||'PaceKeeper';const current=snapshot.current;if(current){document.getElementById('currentCard').classList.remove('hidden');document.getElementById('taskTitle').textContent=current.title||'次のTask';const note=current.next_action_note||snapshot.continuity?.next_action_note;const ne=document.getElementById('taskNote');if(note){ne.textContent='次回ここから：'+note;ne.classList.remove('hidden')}else ne.classList.add('hidden')}const road=document.getElementById('roadmap');road.innerHTML='';(snapshot.roadmap||[]).slice(0,12).forEach((n,i,a)=>{const d=document.createElement('div');d.className='node '+(n.is_current?'current ':'')+(n.status==='done'?'done ':'');d.innerHTML=`<div class="rail"><span class="circle">${n.status==='done'?'✓':n.is_current?'◎':'○'}</span>${i<a.length-1?'<span class="line"></span>':''}</div><div class="node-main"><div class="node-title"></div><div class="node-meta"></div></div>`;d.querySelector('.node-title').textContent=n.title;d.querySelector('.node-meta').textContent=`${n.status_label||n.status||''} · ${n.progress_percent||0}% · 残り${n.remaining_minutes||0}分`;road.appendChild(d)});renderTimer();controls()}
-async function start(){if(!snapshot?.current?.task_id)return;offlineSession={client_session_id:uuid(),task_id:snapshot.current.task_id,task_title:snapshot.current.title,started_at:new Date().toISOString(),paused_at:null,paused_seconds:0,ended_at:null};await put('offline_session',offlineSession);render();timerId=setInterval(renderTimer,1000)}
-async function pauseResume(){if(!offlineSession||offlineSession.ended_at)return;if(offlineSession.paused_at){offlineSession.paused_seconds+=(Date.now()-Date.parse(offlineSession.paused_at))/1000;offlineSession.paused_at=null}else offlineSession.paused_at=new Date().toISOString();await put('offline_session',offlineSession);controls()}
-async function finish(){if(!offlineSession)return;if(offlineSession.paused_at){offlineSession.paused_seconds+=(Date.now()-Date.parse(offlineSession.paused_at))/1000;offlineSession.paused_at=null}offlineSession.ended_at=new Date().toISOString();offlineSession.actual_seconds=elapsed(offlineSession);await put('offline_session',offlineSession);controls();await trySync()}
-let handoffInProgress=false,probeTimer=null;
-function handoffToNetwork(){
-  if(handoffInProgress)return;
-  handoffInProgress=true;
-  if(probeTimer)clearInterval(probeTimer);
-  document.getElementById('netLabel').textContent='最新画面を読み込み中…';
-  const target=new URL(window.location.href);
-  target.searchParams.set('_pk_network','1');
-  setTimeout(()=>window.location.replace(target.href),300);
-}
-async function trySync(){if(!offlineSession?.ended_at||!snapshot?.csrf_token)return false;try{const r=await fetch('/offline/work-sessions/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':snapshot.csrf_token},body:JSON.stringify({client_session_id:offlineSession.client_session_id,task_id:offlineSession.task_id,started_at:offlineSession.started_at,ended_at:offlineSession.ended_at,actual_seconds:offlineSession.actual_seconds,intended_minutes:null})});if(!r.ok)return false;await del('offline_session');offlineSession=null;handoffToNetwork();return true}catch{return false}}
-async function probe(){
-  if(handoffInProgress)return;
-  try{
-    const r=await fetch('/health?ts='+Date.now(),{cache:'no-store',credentials:'same-origin'});
-    if(!r.ok)throw 0;
-    serverReady=true;
-    document.getElementById('netDot').classList.add('ok');
-    document.getElementById('netLabel').textContent='接続できました';
-    if(offlineSession?.ended_at){const synced=await trySync();if(!synced)handoffToNetwork();return}
-    if(!offlineSession){
-      // Retry exactly once through the SW's network-only path.
-      handoffToNetwork();
-    }
-  }catch{
-    serverReady=false;
-    document.getElementById('netDot').classList.remove('ok');
-    document.getElementById('netLabel').textContent=navigator.onLine?'サーバーを起動中…':'オフライン';
-  }
-}
-document.getElementById('startBtn').addEventListener('click',start);document.getElementById('pauseBtn').addEventListener('click',pauseResume);document.getElementById('finishBtn').addEventListener('click',finish);
-(async()=>{snapshot=await get('latest_snapshot');offlineSession=await get('offline_session');render();if(offlineSession&&!offlineSession.ended_at)timerId=setInterval(renderTimer,1000);await probe();if(!handoffInProgress)probeTimer=setInterval(probe,2500)})().catch(()=>{if(!handoffInProgress)probeTimer=setInterval(probe,2500);probe()});
+function controls(){const active=!!offlineSession&&!offlineSession.ended_at;const start=document.getElementById('startBtn'),pause=document.getElementById('pauseBtn'),ret=document.getElementById('returnBtn'),limit=document.getElementById('offlineLimit');start.classList.toggle('hidden',active||!!offlineSession?.ended_at);pause.classList.toggle('hidden',!active);ret.classList.toggle('hidden',!(active&&serverReady));limit.classList.toggle('hidden',!active||serverReady);if(active)pause.textContent=offlineSession.paused_at?'再開':'一時停止'}
+function render(){if(!snapshot)return;document.getElementById('planTitle').textContent=snapshot.plan?.title||'PaceKeeper';const current=snapshot.current;if(current){document.getElementById('currentCard').classList.remove('hidden');document.getElementById('taskTitle').textContent=current.title||'次のTask';const note=current.next_action_note||snapshot.continuity?.next_action_note;const ne=document.getElementById('taskNote');if(note){ne.textContent='次回ここから：'+note;ne.classList.remove('hidden')}else ne.classList.add('hidden')}const road=document.getElementById('roadmap');road.innerHTML='';(snapshot.roadmap||[]).slice(0,12).forEach((n,i,a)=>{const d=document.createElement('div');d.className='node '+(n.is_current?'current ':'')+(n.status==='done'?'done ':'');d.innerHTML=`<div class="rail"><span class="circle">${n.status==='done'?'✓':n.is_current?'◎':'○'}</span>${i<a.length-1?'<span class="line"></span>':''}</div><div class="node-main"><div class="node-title"></div><div class="node-meta"></div></div>`;d.querySelector('.node-title').textContent=n.title;d.querySelector('.node-meta').textContent=`${n.status_label||n.status||''} · ${n.progress_percent||0}%`;road.appendChild(d)});renderTimer();controls()}
+async function start(){if(!snapshot?.current?.task_id)return;offlineSession={client_session_id:uuid(),task_id:snapshot.current.task_id,task_title:snapshot.current.title,started_at:new Date().toISOString(),paused_at:null,paused_seconds:0,ended_at:null};await put('offline_session',offlineSession);render();if(!timerId)timerId=setInterval(renderTimer,1000)}
+async function pauseResume(){if(!offlineSession||offlineSession.ended_at)return;if(offlineSession.paused_at){offlineSession.paused_seconds+=(Date.now()-Date.parse(offlineSession.paused_at))/1000;offlineSession.paused_at=null}else offlineSession.paused_at=new Date().toISOString();await put('offline_session',offlineSession);controls();renderTimer()}
+function goToToday(){if(handoffInProgress)return;handoffInProgress=true;if(probeTimer)clearInterval(probeTimer);document.getElementById('netLabel').textContent='今日の画面を開いています…';const target=new URL('/navigate',window.location.origin);target.searchParams.set('resume_offline_timer','1');target.searchParams.set('_pk_network','1');window.location.assign(target.href)}
+function resumeOriginal(){if(handoffInProgress)return;handoffInProgress=true;if(probeTimer)clearInterval(probeTimer);const target=new URL(window.location.href);target.searchParams.set('_pk_network','1');window.location.assign(target.href)}
+async function trySyncFinished(){if(!offlineSession?.ended_at||!snapshot?.csrf_token)return false;try{const r=await fetch('/offline/work-sessions/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':snapshot.csrf_token},body:JSON.stringify({client_session_id:offlineSession.client_session_id,task_id:offlineSession.task_id,started_at:offlineSession.started_at,ended_at:offlineSession.ended_at,actual_seconds:offlineSession.actual_seconds,intended_minutes:null})});if(!r.ok)return false;await del('offline_session');offlineSession=null;return true}catch{return false}}
+async function probe(){if(handoffInProgress)return;try{const r=await fetch('/health?ts='+Date.now(),{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw 0;serverReady=true;document.getElementById('netDot').classList.add('ok');document.getElementById('netLabel').textContent='接続できました';if(offlineSession?.ended_at){await trySyncFinished();goToToday();return}if(offlineSession&&!offlineSession.ended_at){controls();return}resumeOriginal()}catch{serverReady=false;document.getElementById('netDot').classList.remove('ok');document.getElementById('netLabel').textContent=navigator.onLine?'サーバーを起動中…':'オフライン';controls()}}
+document.getElementById('startBtn').addEventListener('click',start);document.getElementById('pauseBtn').addEventListener('click',pauseResume);document.getElementById('returnBtn').addEventListener('click',goToToday);
+(async()=>{snapshot=await get('latest_snapshot');offlineSession=await get('offline_session');render();if(offlineSession&&!offlineSession.ended_at&&!timerId)timerId=setInterval(renderTimer,1000);await probe();if(!handoffInProgress)probeTimer=setInterval(probe,3000)})().catch(()=>{if(!handoffInProgress)probeTimer=setInterval(probe,3000);probe()});
 </script>
 </body>
 </html>

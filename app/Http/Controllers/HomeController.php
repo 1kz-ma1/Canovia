@@ -105,7 +105,10 @@ class HomeController extends Controller
                     return $priorityComparison;
                 }
 
-                return $left['plan']->deadline->timestamp <=> $right['plan']->deadline->timestamp;
+                $leftDeadline = $left['plan']->deadline?->timestamp ?? PHP_INT_MAX;
+                $rightDeadline = $right['plan']->deadline?->timestamp ?? PHP_INT_MAX;
+
+                return $leftDeadline <=> $rightDeadline;
             })
             ->values();
 
@@ -119,6 +122,7 @@ class HomeController extends Controller
                         && $plan->tasks->every(fn ($task) => in_array($task->status, ['done', 'cancelled'], true)));
 
                 return ! $isCompleted
+                    && $progress['remaining_days'] !== null
                     && $progress['remaining_days'] >= 0
                     && $progress['daily_required_minutes'] > 0;
             })

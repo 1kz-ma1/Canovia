@@ -213,7 +213,7 @@
                             <button type="button" class="home-plan-card plan-identity-shell text-left" data-plan-accent="{{ $item['plan']->accentKey() }}" data-open-dashboard-tab="plan-{{ $item['plan']->id }}">
                                 <div class="flex items-start justify-between gap-3"><span class="plan-identity-icon" aria-hidden="true">{{ $item['plan']->displayIcon() }}</span><span class="badge badge-slate">{{ $item['progress']['status'] }}</span></div>
                                 <h3 class="mt-2 line-clamp-2 font-black text-slate-100">{{ $item['plan']->title }}</h3>
-                                <div class="mt-2 flex items-end justify-between gap-3"><span class="text-xl font-black text-slate-50">{{ $item['progress']['weighted_progress_percent'] }}%</span><span class="text-[11px] text-slate-400">期限 {{ $item['plan']->deadline->format('m/d') }}</span></div>
+                                <div class="mt-2 flex items-end justify-between gap-3"><span class="text-xl font-black text-slate-50">{{ $item['progress']['weighted_progress_percent'] }}%</span><span class="text-[11px] text-slate-400">期限 {{ $item['plan']->deadline?->format('m/d') ?? '未設定' }}</span></div>
                             </button>
                         @endforeach
                     </div>
@@ -269,7 +269,7 @@
                             <div class="min-w-0">
                                 <p class="text-xs font-bold text-slate-400">{{ $item['progress']['status'] }}・進捗 {{ $item['progress']['weighted_progress_percent'] }}%</p>
                                 <h2 class="mt-1 text-lg font-black text-slate-100 sm:text-xl">{{ $item['plan']->title }}</h2>
-                                <p class="mt-2 text-xs text-slate-400">期限 {{ $item['plan']->deadline->format('Y/m/d') }}・残り約{{ round($item['progress']['remaining_minutes'] / 60, 1) }}時間</p>
+                                <p class="mt-2 text-xs text-slate-400">期限 {{ $item['plan']->deadline?->format('Y/m/d') ?? '未設定' }}・残り約{{ round($item['progress']['remaining_minutes'] / 60, 1) }}時間</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap gap-2">

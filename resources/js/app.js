@@ -416,6 +416,129 @@ async function deleteOfflineState(key) {
     });
 }
 
+function offlineSessionElapsedSeconds(session) {
+    if (!session?.started_at) return 0;
+    const now = Date.now();
+    const end = session.ended_at ? Date.parse(session.ended_at) : now;
+    const start = Date.parse(session.started_at);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
+
+    const pausedSeconds = Number(session.paused_seconds || 0);
+    const livePauseSeconds = session.paused_at
+        ? Math.max(0, (now - Date.parse(session.paused_at)) / 1000)
+        : 0;
+
+    return Math.max(0, Math.floor((end - start) / 1000 - pausedSeconds - livePauseSeconds));
+}
+
+async function syncOfflineWorkSession(session) {
+    if (!session?.ended_at || !csrfToken) return null;
+
+    const response = await fetch('/offline/work-sessions/sync', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify({
+            client_session_id: session.client_session_id,
+            task_id: session.task_id,
+            started_at: session.started_at,
+            ended_at: session.ended_at,
+            actual_seconds: session.actual_seconds,
+            intended_minutes: session.intended_minutes ?? null,
+        }),
+    });
+
+    if (!response.ok) return null;
+    return await response.json().catch(() => ({}));
+}
+
+async function mountOfflineTimerCard(session) {
+    const card = document.querySelector('[data-offline-timer-card]');
+    if (!card || !session || session.ended_at) return false;
+
+    const task = card.querySelector('[data-offline-timer-task]');
+    const status = card.querySelector('[data-offline-timer-status]');
+    const value = card.querySelector('[data-offline-timer-value]');
+    const toggle = card.querySelector('[data-offline-timer-toggle]');
+    const complete = card.querySelector('[data-offline-timer-complete]');
+    const note = card.querySelector('[data-offline-timer-note]');
+    let current = session;
+    let busy = false;
+
+    card.classList.remove('hidden');
+    if (task) task.textContent = current.task_title || 'オフライン作業';
+
+    const render = () => {
+        if (value) value.textContent = formatTimer(offlineSessionElapsedSeconds(current));
+        if (toggle) toggle.textContent = current.paused_at ? '再開' : '一時停止';
+        const online = navigator.onLine;
+        if (complete) {
+            complete.disabled = !online || busy;
+            complete.classList.toggle('opacity-50', !online || busy);
+        }
+        if (status) status.textContent = current.paused_at ? '一時停止中' : '計測中';
+        if (note) {
+            note.textContent = online
+                ? '接続できています。終了すると作業記録へ同期します。'
+                : 'オフライン中は再生・一時停止だけ利用できます。記録して終了は接続復帰後に使えます。';
+        }
+    };
+
+    toggle?.addEventListener('click', async () => {
+        if (busy || current.ended_at) return;
+        if (current.paused_at) {
+            current.paused_seconds = Number(current.paused_seconds || 0)
+                + Math.max(0, (Date.now() - Date.parse(current.paused_at)) / 1000);
+            current.paused_at = null;
+        } else {
+            current.paused_at = new Date().toISOString();
+        }
+        await writeOfflineState('offline_session', current).catch(() => {});
+        render();
+    });
+
+    complete?.addEventListener('click', async () => {
+        if (busy || !navigator.onLine || current.ended_at) return;
+        busy = true;
+        render();
+
+        if (current.paused_at) {
+            current.paused_seconds = Number(current.paused_seconds || 0)
+                + Math.max(0, (Date.now() - Date.parse(current.paused_at)) / 1000);
+            current.paused_at = null;
+        }
+        current.ended_at = new Date().toISOString();
+        current.actual_seconds = Math.max(1, offlineSessionElapsedSeconds(current));
+        await writeOfflineState('offline_session', current).catch(() => {});
+
+        if (status) status.textContent = '作業記録を同期中…';
+        const result = await syncOfflineWorkSession(current).catch(() => null);
+        if (result?.work_session_id) {
+            await deleteOfflineState('offline_session').catch(() => {});
+            setSyncStatus('online', 'オフライン作業を同期済み', 2200);
+            window.location.assign(`/work-sessions/${result.work_session_id}/review`);
+            return;
+        }
+
+        busy = false;
+        if (status) status.textContent = 'まだ同期できていません';
+        if (note) note.textContent = '記録は端末に残っています。接続を確認して、もう一度「記録して終了」を押してください。';
+        render();
+    });
+
+    window.addEventListener('online', render);
+    window.addEventListener('offline', render);
+    window.setInterval(() => {
+        if (!current.paused_at) render();
+    }, 1000);
+    render();
+    return true;
+}
+
 async function clearOfflineState() {
     await new Promise((resolve) => {
         const request = indexedDB.deleteDatabase(offlineDbName);
@@ -463,35 +586,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             const pendingOfflineSession = await readOfflineState('offline_session');
             if (pendingOfflineSession?.ended_at && csrfToken) {
                 setSyncStatus('syncing', '作業結果を同期中…');
-                const response = await fetch('/offline/work-sessions/sync', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    body: JSON.stringify({
-                        client_session_id: pendingOfflineSession.client_session_id,
-                        task_id: pendingOfflineSession.task_id,
-                        started_at: pendingOfflineSession.started_at,
-                        ended_at: pendingOfflineSession.ended_at,
-                        actual_seconds: pendingOfflineSession.actual_seconds,
-                        intended_minutes: null,
-                    }),
-                });
-                if (response.ok) {
+                const result = await syncOfflineWorkSession(pendingOfflineSession).catch(() => null);
+                if (result?.work_session_id) {
                     await deleteOfflineState('offline_session');
                     setSyncStatus('online', 'オフライン作業を同期済み', 2200);
                 } else {
                     setSyncStatus('pending', '未同期の作業があります');
                 }
             } else if (pendingOfflineSession && !pendingOfflineSession.ended_at) {
-                const banner = document.createElement('a');
-                banner.href = '/offline.html';
-                banner.className = 'offline-session-banner';
-                banner.textContent = 'オフラインで計測中 · タイマーへ戻る';
-                document.body.appendChild(banner);
+                const mounted = await mountOfflineTimerCard(pendingOfflineSession);
+                if (!mounted) {
+                    const banner = document.createElement('a');
+                    banner.href = '/navigate?resume_offline_timer=1';
+                    banner.className = 'offline-session-banner';
+                    banner.textContent = 'オフラインで計測中 · 今日のタイマーへ戻る';
+                    document.body.appendChild(banner);
+                }
                 setSyncStatus('pending', 'オフラインで計測中');
             }
         } catch (_) {
@@ -839,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selector: '[data-onboarding-target="plan-form"]',
             number: 2,
             title: '最初はざっくりでOK',
-            copy: 'タイトルと期限を入れて作成してください。開始日は今日を入れてあります。細かいタスクは次にAIと整えます。',
+            copy: 'まずはタイトルだけで作成できます。期限は決まっていれば入力し、まだなら空欄のままで大丈夫です。細かいタスクは次にAIと整えます。',
             next: 'ai-copy',
             largeTarget: true,
         },

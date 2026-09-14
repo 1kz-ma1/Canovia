@@ -78,7 +78,7 @@
                 <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-3">
                     @csrf
                     @foreach ($ownedPlans as $plan)
-                        <label class="chat-choice-card"><input type="radio" name="plan_id" value="{{ $plan->id }}" required><span><span class="block font-bold text-slate-100">{{ $plan->title }}</span><span class="mt-1 block text-sm text-slate-400">{{ $plan->category ?? 'カテゴリ未設定' }}・期限 {{ $plan->deadline->format('Y-m-d') }}</span></span></label>
+                        <label class="chat-choice-card"><input type="radio" name="plan_id" value="{{ $plan->id }}" required><span><span class="block font-bold text-slate-100">{{ $plan->title }}</span><span class="mt-1 block text-sm text-slate-400">{{ $plan->category ?? 'カテゴリ未設定' }}・期限 {{ $plan->deadline?->format('Y-m-d') ?? '未設定' }}</span></span></label>
                     @endforeach
                     <button type="submit" class="btn-primary mt-2">この計画を選ぶ</button>
                 </form>

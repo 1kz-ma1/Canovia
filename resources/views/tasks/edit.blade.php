@@ -223,7 +223,7 @@
                     </span>
 
                     <span class="mt-1 block text-sm text-slate-500">
-                        {{ $task->plan->start_date }} 〜 {{ $task->plan->deadline }}
+                        {{ $task->plan->start_date }} 〜 {{ $task->plan->deadline?->format('Y-m-d') ?? '期限未設定' }}
                     </span>
                 </a>
             </div>
