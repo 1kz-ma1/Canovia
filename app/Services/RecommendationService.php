@@ -52,7 +52,8 @@ class RecommendationService
         foreach ($plans as $plan) {
             $context = $planContext[$plan->id];
             $progress = $context['progress'];
-            $gap = max(0, $progress['expected_progress_percent'] - $progress['weighted_progress_percent']);
+            $expectedProgress = $progress['expected_progress_percent'];
+            $gap = $expectedProgress === null ? 0 : max(0, $expectedProgress - $progress['weighted_progress_percent']);
             $remainingDays = $progress['remaining_days'];
 
             foreach ($plan->tasks as $task) {
@@ -95,7 +96,7 @@ class RecommendationService
                     $this->reason($reasonScores, '実績進捗が期待進捗を下回っているため', $bonus);
                 }
 
-                if ($remainingDays <= 7) {
+                if ($remainingDays !== null && $remainingDays <= 7) {
                     $bonus = $weights['deadline_urgency'] * ($remainingDays <= 2 ? 1 : 0.6);
                     $score += $bonus;
                     $this->reason(

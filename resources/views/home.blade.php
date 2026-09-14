@@ -480,13 +480,13 @@
                             <div>
                                 <h3 class="text-lg font-bold text-slate-900">{{ $plan->title }}</h3>
                                 <p class="mt-1 text-sm text-slate-500">
-                                    残り{{ $progress['remaining_days'] }}日・進捗{{ $progress['weighted_progress_percent'] }}%
+                                    {{ $progress['remaining_days'] === null ? '期限未設定' : '残り' . $progress['remaining_days'] . '日' }}・進捗{{ $progress['weighted_progress_percent'] }}%
                                 </p>
                             </div>
 
                             <div class="text-right">
                                 <p class="text-xl font-bold text-slate-900">
-                                    {{ $progress['daily_required_minutes'] }}分 / 日
+                                    {{ $progress['remaining_days'] === null ? '期限設定後に算出' : $progress['daily_required_minutes'] . '分 / 日' }}
                                 </p>
                                 <p class="mt-1 text-sm font-semibold text-emerald-600">
                                     全体の{{ $sharePercent }}%
@@ -564,7 +564,7 @@
                         </div>
 
                         <p class="mb-3 text-sm text-slate-500">
-                            {{ $plan->start_date }} 〜 {{ $plan->deadline }}
+                            {{ $plan->start_date }} 〜 {{ $plan->deadline?->format('Y-m-d') ?? '期限未設定' }}
                         </p>
 
                         <div class="mb-3">

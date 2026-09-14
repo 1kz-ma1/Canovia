@@ -47,7 +47,7 @@
 
                         <div class="rounded-lg bg-slate-50 p-3">
                             <p class="text-xs text-slate-500">期限</p>
-                            <p class="font-semibold text-slate-900">{{ $plan->deadline }}</p>
+                            <p class="font-semibold text-slate-900">{{ $plan->deadline?->format('Y-m-d') ?? '期限未設定' }}</p>
                         </div>
                     </div>
 

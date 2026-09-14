@@ -7,6 +7,7 @@ use App\Models\PlanAdjustment;
 use App\Models\Task;
 use App\Services\PlanProgressService;
 use App\Services\PlanOwnershipService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +21,7 @@ class AiTaskAssistantController extends Controller
         $plan->load(['tasks' => fn ($query) => $query->orderBy('sort_order')->orderBy('id')]);
         $title = json_encode($plan->title, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $category = json_encode($plan->category, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $deadline = $plan->deadline?->format('Y-m-d') ?? '未設定';
 
         $prompt = <<<PROMPT
 あなたはPace Keeperの計画生成アシスタントです。目標を実行可能なタスクへ分解してください。
@@ -29,7 +31,7 @@ class AiTaskAssistantController extends Controller
 - ID: {$plan->id}
 - タイトル: {$plan->title}
 - 概要: {$plan->description}
-- 期間: {$plan->start_date->format('Y-m-d')} ～ {$plan->deadline->format('Y-m-d')}
+- 期間: {$plan->start_date->format('Y-m-d')} ～ {$deadline}
 
 最終回答は説明やMarkdownを付けず、次のJSON 2.0だけにしてください。
 {
@@ -38,6 +40,10 @@ class AiTaskAssistantController extends Controller
   "target_plan": {"id": {$plan->id}, "title": {$title}, "category": {$category}},
   "summary": "生成した計画の要約",
   "operations": [
+    {
+      "type": "update_plan",
+      "deadline": "YYYY-MM-DD"
+    },
     {
       "type": "add_task",
       "client_ref": "task_1",
@@ -59,6 +65,7 @@ class AiTaskAssistantController extends Controller
   ]
 }
 
+期限が未設定なら、タスク生成前にユーザーへ希望時期・使える時間・現在地を質問してください。会話で期限が決まった場合だけupdate_planを含め、まだ決めない場合はupdate_planを省略してください。
 進捗率は最新の完成条件に対する絶対値、remaining_minutesは今後実際に必要な時間として別々に判断してください。
 activation_costは1～5で、難易度ではなく「そのTaskを始めるまでの心理的・準備的な重さ」を推定してください。1はすぐ始められ、5はかなり準備や集中が必要です。
 PROMPT;
@@ -95,10 +102,10 @@ PROMPT;
         }
 
         $taskOperations = collect($operations)->filter(fn ($operation) => ($operation['type'] ?? null) === 'add_task')->values();
-        $unsupported = collect($operations)->reject(fn ($operation) => in_array($operation['type'] ?? null, ['add_task', 'reorder_tasks'], true));
+        $unsupported = collect($operations)->reject(fn ($operation) => in_array($operation['type'] ?? null, ['update_plan', 'add_task', 'reorder_tasks'], true));
 
         if ($taskOperations->isEmpty() || $unsupported->isNotEmpty()) {
-            throw ValidationException::withMessages(['tasks_json' => '計画生成ではadd_taskとreorder_tasksだけを使用できます。']);
+            throw ValidationException::withMessages(['tasks_json' => '計画生成ではupdate_plan、add_task、reorder_tasksだけを使用できます。']);
         }
 
         $normalizedTasks = $taskOperations->map(function ($operation, $index) {
@@ -138,6 +145,26 @@ PROMPT;
             throw ValidationException::withMessages(['tasks_json' => 'add_taskのclient_refが重複しています。']);
         }
 
+        $planUpdate = collect($operations)->firstWhere('type', 'update_plan');
+        $normalizedDeadline = null;
+
+        if ($planUpdate !== null) {
+            $deadlineValue = trim((string) ($planUpdate['deadline'] ?? ''));
+            if ($deadlineValue === '') {
+                throw ValidationException::withMessages(['tasks_json' => 'update_planを使う場合はdeadlineを指定してください。']);
+            }
+
+            try {
+                $normalizedDeadline = Carbon::parse($deadlineValue)->format('Y-m-d');
+            } catch (\Throwable $e) {
+                throw ValidationException::withMessages(['tasks_json' => 'update_planのdeadlineはYYYY-MM-DD形式にしてください。']);
+            }
+
+            if (Carbon::parse($normalizedDeadline)->lt($plan->start_date->copy()->startOfDay())) {
+                throw ValidationException::withMessages(['tasks_json' => '期限は開始日以降にしてください。']);
+            }
+        }
+
         $reorder = collect($operations)->firstWhere('type', 'reorder_tasks');
 
         if ($reorder !== null) {
@@ -156,10 +183,15 @@ PROMPT;
 
         $metricsBefore = $progressService->calculate($plan);
 
-        DB::transaction(function () use ($plan, $decoded, $json, $normalizedTasks, $metricsBefore, $progressService) {
-            $sortOrder = (int) $plan->tasks()->max('sort_order');
+        DB::transaction(function () use ($plan, $decoded, $json, $normalizedTasks, $normalizedDeadline, $metricsBefore, $progressService) {
             $applied = [];
 
+            if ($normalizedDeadline !== null) {
+                $plan->update(['deadline' => $normalizedDeadline]);
+                $applied[] = ['type' => 'update_plan', 'deadline' => $normalizedDeadline];
+            }
+
+            $sortOrder = (int) $plan->tasks()->max('sort_order');
             foreach ($normalizedTasks as $taskData) {
                 $task = Task::create(array_merge($taskData, [
                     'plan_id' => $plan->id,

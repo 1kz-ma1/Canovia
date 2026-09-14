@@ -23,6 +23,20 @@
             @endif
         </header>
 
+        <section class="pk-offline-resume-card hidden" data-offline-timer-card aria-live="polite">
+            <div class="min-w-0">
+                <p class="pk-v18-eyebrow">OFFLINE TIMER / RESUME</p>
+                <h2 class="mt-1 break-words text-base font-black text-slate-100" data-offline-timer-task>オフライン作業</h2>
+                <p class="mt-1 text-xs leading-5 text-slate-400" data-offline-timer-status>端末にタイマーを保持しています。</p>
+            </div>
+            <p class="pk-offline-resume-time" data-offline-timer-value>00:00</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" class="btn-secondary w-full justify-center" data-offline-timer-toggle>一時停止</button>
+                <button type="button" class="btn-primary w-full justify-center" data-offline-timer-complete>記録して終了</button>
+            </div>
+            <p class="text-[11px] leading-5 text-slate-500" data-offline-timer-note>接続中はここから終了・記録できます。</p>
+        </section>
+
         @if ($scopePlan)
             <div class="rounded-2xl border border-sky-400/20 bg-sky-500/10 px-4 py-3 text-sm text-slate-200">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">

@@ -21,8 +21,8 @@ class PlanProgressService
         $totalActualMinutes = (int) $workLogs->sum('actual_minutes');
 
         $today = Carbon::today();
-        $deadline = Carbon::parse($plan->deadline)->startOfDay();
-        $remainingDays = (int) $today->diffInDays($deadline, false);
+        $deadline = $plan->deadline?->copy()->startOfDay();
+        $remainingDays = $deadline ? (int) $today->diffInDays($deadline, false) : null;
         $weightedProgressPercent = $this->calculateWeightedProgressPercent($activeTasks);
 
         $remainingMinutes = (int) $activeTasks->sum(function ($task) {
@@ -38,9 +38,9 @@ class PlanProgressService
         $remainingMinutesByTime = max($totalEstimatedMinutes - $totalActualMinutes, 0);
         $availability = new PlanAvailabilityService();
         $availabilityConfigured = $availability->isConfigured($plan);
-        $remainingAvailableMinutes = $availabilityConfigured && $remainingDays >= 0
+        $remainingAvailableMinutes = $availabilityConfigured && $deadline && $remainingDays >= 0
             ? $availability->capacityBetween($plan, $today, $deadline)
-            : 0;
+            : null;
         $todayAvailableMinutes = $availabilityConfigured
             ? $availability->minutesForDate($plan, $today)
             : null;
@@ -48,29 +48,35 @@ class PlanProgressService
             ->filter(fn ($log) => $log->worked_on?->isToday())
             ->sum('actual_minutes');
 
-        $requiredCapacityRatio = $availabilityConfigured && $remainingAvailableMinutes > 0
+        $requiredCapacityRatio = $availabilityConfigured && $remainingAvailableMinutes !== null && $remainingAvailableMinutes > 0
             ? round($remainingMinutes / $remainingAvailableMinutes, 3)
             : null;
 
-        if ($availabilityConfigured) {
-            if ($remainingMinutes <= 0) {
-                $dailyRequiredMinutes = 0;
-            } elseif ($remainingAvailableMinutes <= 0) {
-                $dailyRequiredMinutes = $remainingMinutes;
-            } else {
-                $dailyRequiredMinutes = (int) ceil(max(0, (int) $todayAvailableMinutes) * $requiredCapacityRatio);
-            }
+        if (! $deadline) {
+            $dailyRequiredMinutes = 0;
+            $expectedProgressPercent = null;
+            $status = '期限未設定';
         } else {
-            $dailyRequiredMinutes = $remainingDays > 0
-                ? (int) ceil($remainingMinutes / $remainingDays)
-                : $remainingMinutes;
-        }
+            if ($availabilityConfigured) {
+                if ($remainingMinutes <= 0) {
+                    $dailyRequiredMinutes = 0;
+                } elseif (($remainingAvailableMinutes ?? 0) <= 0) {
+                    $dailyRequiredMinutes = $remainingMinutes;
+                } else {
+                    $dailyRequiredMinutes = (int) ceil(max(0, (int) $todayAvailableMinutes) * $requiredCapacityRatio);
+                }
+            } else {
+                $dailyRequiredMinutes = $remainingDays > 0
+                    ? (int) ceil($remainingMinutes / $remainingDays)
+                    : $remainingMinutes;
+            }
 
-        $expectedProgressPercent = $this->calculateExpectedProgressPercent($plan, $availability, $availabilityConfigured);
-        $status = $this->judgeStatus($remainingDays, $weightedProgressPercent, $expectedProgressPercent);
+            $expectedProgressPercent = $this->calculateExpectedProgressPercent($plan, $availability, $availabilityConfigured);
+            $status = $this->judgeStatus($remainingDays, $weightedProgressPercent, $expectedProgressPercent);
 
-        if ($availabilityConfigured && $remainingMinutes > $remainingAvailableMinutes && $remainingDays >= 0) {
-            $status = '作業時間不足';
+            if ($availabilityConfigured && $remainingAvailableMinutes !== null && $remainingMinutes > $remainingAvailableMinutes && $remainingDays >= 0) {
+                $status = '作業時間不足';
+            }
         }
 
         return [
@@ -107,7 +113,11 @@ class PlanProgressService
         Plan $plan,
         PlanAvailabilityService $availability,
         bool $availabilityConfigured
-    ): float {
+    ): ?float {
+        if (! $plan->deadline) {
+            return null;
+        }
+
         $startDate = Carbon::parse($plan->start_date)->startOfDay();
         $deadline = Carbon::parse($plan->deadline)->startOfDay();
         $today = Carbon::today();

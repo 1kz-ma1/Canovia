@@ -68,7 +68,7 @@
             </div>
             <div class="metric-card">
                 <p class="text-xs text-slate-500">{{ ($progress['availability_configured'] ?? false) ? '今日の作業目安' : '1日必要時間' }}</p>
-                <p class="mt-1 text-xl font-bold text-slate-900">{{ $progress['daily_required_minutes'] }}分</p>
+                <p class="mt-1 text-xl font-bold text-slate-900">{{ $progress['remaining_days'] === null ? '—' : $progress['daily_required_minutes'] . '分' }}</p>
                 @if (($progress['availability_configured'] ?? false) && $progress['today_available_minutes'] !== null)
                     <p class="mt-1 text-xs text-slate-500">作業可能 {{ $progress['today_available_minutes'] }}分</p>
                 @endif

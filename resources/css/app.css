@@ -3422,3 +3422,147 @@ html[data-theme-resolved="light"] .pk-v19-roadmap-quote { color:rgb(15 23 42); }
     .pk-v19-node-label.is-right { left:calc(100% + .35rem); }
     .pk-v19-node-label.is-left { right:calc(100% + .35rem); }
 }
+
+/* --------------------------------------------------------------------------
+   v20 Focus fixes: responsive roadmap + safe mobile plan list
+   -------------------------------------------------------------------------- */
+.pk-v19-roadmap-page,
+.pk-v19-roadmap-surface,
+.pk-v19-orbit-stage {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.pk-v19-orbit-node {
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+}
+
+.pk-v19-orbit-node[open] {
+    z-index: 80;
+}
+
+.pk-v19-orbit-node > summary {
+    left: var(--node-x);
+    pointer-events: auto;
+}
+
+.pk-v19-node-label {
+    width: clamp(6.6rem, 34vw, 10.5rem);
+    max-width: 40vw;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.pk-v19-node-label strong {
+    display: block;
+    font-size: clamp(.72rem, 3.6vw, .88rem);
+    line-height: 1.4;
+    font-weight: 900;
+    text-wrap: pretty;
+}
+
+.pk-v19-node-label small,
+.pk-v19-node-label em {
+    display: none;
+}
+
+.pk-v19-node-detail {
+    z-index: 90;
+    left: 50% !important;
+    right: auto !important;
+    width: min(18rem, calc(100% - 1.25rem));
+    max-width: calc(100% - 1.25rem);
+    transform: translateX(-50%);
+    pointer-events: auto;
+}
+
+.pk-v19-node-detail.is-below {
+    top: 3rem;
+    bottom: auto;
+}
+
+.pk-v19-node-detail.is-above {
+    top: auto;
+    bottom: 3rem;
+}
+
+.pk-v20-plan-list-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.pk-v20-plan-list-card > *,
+.pk-v20-plan-list-card h2,
+.pk-v20-plan-list-card p,
+.pk-v20-plan-list-card a,
+.pk-v20-plan-list-card .metric-card {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.pk-v20-plan-list-card h2,
+.pk-v20-plan-list-card p {
+    overflow-wrap: anywhere;
+}
+
+.pk-v20-plan-metrics .metric-card {
+    padding: .85rem;
+}
+
+@media (max-width: 767px) {
+    .pk-v19-roadmap-surface {
+        overflow: hidden;
+    }
+
+    .pk-v19-orbit-stage {
+        overflow: hidden;
+    }
+
+    .pk-v19-node-label {
+        width: clamp(6.2rem, 35vw, 8.7rem);
+        max-width: 36vw;
+    }
+
+    .pk-v19-node-label.is-right {
+        left: calc(100% + .3rem);
+    }
+
+    .pk-v19-node-label.is-left {
+        right: calc(100% + .3rem);
+    }
+
+    .pk-v19-node-detail {
+        width: calc(100% - .9rem);
+        max-width: calc(100% - .9rem);
+    }
+}
+
+.pk-offline-resume-card {
+    display: grid;
+    gap: .8rem;
+    border: 1px solid rgb(94 130 255 / .34);
+    border-radius: 1.15rem;
+    background:
+        radial-gradient(circle at 88% 12%, rgb(125 103 255 / .18), transparent 10rem),
+        linear-gradient(145deg, rgb(9 22 55 / .96), rgb(5 13 35 / .97));
+    padding: 1rem;
+    box-shadow: 0 16px 38px rgb(0 2 18 / .3), inset 0 1px 0 rgb(255 255 255 / .04);
+}
+
+.pk-offline-resume-time {
+    font-size: clamp(2.6rem, 14vw, 4.8rem);
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: -.05em;
+    font-variant-numeric: tabular-nums;
+    color: rgb(245 248 255);
+    text-align: center;
+    text-shadow: 0 0 22px rgb(91 124 255 / .18);
+}
+.pk-offline-resume-card.hidden { display: none; }

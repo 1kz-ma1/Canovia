@@ -55,7 +55,7 @@
         <div class="info-card p-5">
             <p class="text-sm text-slate-500">期間</p>
             <p class="mt-2 font-bold text-slate-900">
-                {{ $plan->start_date }} 〜 {{ $plan->deadline }}
+                {{ $plan->start_date }} 〜 {{ $plan->deadline?->format('Y-m-d') ?? '期限未設定' }}
             </p>
         </div>
 
@@ -101,7 +101,7 @@
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div class="metric-card">
                 <p class="text-sm text-slate-500">残り日数</p>
-                <p class="mt-1 text-xl font-bold text-slate-900">{{ $progress['remaining_days'] }}日</p>
+                <p class="mt-1 text-xl font-bold text-slate-900">{{ $progress['remaining_days'] === null ? '—' : $progress['remaining_days'] . '日' }}</p>
             </div>
 
             <div class="metric-card">
@@ -111,12 +111,12 @@
 
             <div class="metric-card">
                 <p class="text-sm text-slate-500">期待進捗率</p>
-                <p class="mt-1 text-xl font-bold text-slate-900">{{ $progress['expected_progress_percent'] }}%</p>
+                <p class="mt-1 text-xl font-bold text-slate-900">{{ $progress['expected_progress_percent'] === null ? '—' : $progress['expected_progress_percent'] . '%' }}</p>
             </div>
 
             <div class="metric-card">
                 <p class="text-sm text-slate-500">必要時間 / 日</p>
-                <p class="mt-1 text-xl font-bold text-slate-900">{{ $progress['daily_required_minutes'] }}分</p>
+                <p class="mt-1 text-xl font-bold text-slate-900">{{ $progress['remaining_days'] === null ? '—' : $progress['daily_required_minutes'] . '分' }}</p>
             </div>
         </div>
     </section>

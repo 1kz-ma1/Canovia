@@ -3,184 +3,123 @@
 @section('title', '計画作成 | Pace Keeper')
 
 @section('content')
-    <section class="mb-8">
-        <h1 class="text-3xl font-bold tracking-tight text-slate-900">
-            新しい計画
-        </h1>
+    <div class="mx-auto max-w-3xl space-y-5">
+        <header class="pk-v18-page-hero min-h-[9rem]">
+            <div class="relative z-10 min-w-0">
+                <p class="pk-v18-eyebrow">QUICK CREATE</p>
+                <h1>まず、やりたいことだけ。</h1>
+                <p>細かい設定はあとで大丈夫。30秒で計画を作って、PaceKeeperを始めよう。</p>
+            </div>
+            <div class="pk-v18-page-guide" aria-hidden="true">
+                <span>最初は<br>ざっくりでOK ✦</span>
+                <img src="/brand/mascot-guide.webp" alt="">
+            </div>
+        </header>
 
-        <p class="mt-3 max-w-3xl leading-7 text-slate-600">
-            まずは分かる範囲で大丈夫です。あとからいつでも変えられます。
-        </p>
-    </section>
+        @if ($errors->any())
+            <div class="assistant-notice assistant-notice-error">
+                <p class="font-bold">入力内容を確認してください。</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5 text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-    <section class="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            @if ($errors->any())
-                <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    <h2 class="mb-2 font-bold">入力内容を確認してください</h2>
+        <form action="{{ route('plans.store') }}" method="POST" class="page-card space-y-5 p-5 sm:p-6" data-onboarding-target="plan-form">
+            @csrf
 
-                    <ul class="list-inside list-disc">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+            <div>
+                <label for="title" class="form-label">何を達成したい？</label>
+                <input
+                    id="title"
+                    type="text"
+                    name="title"
+                    value="{{ old('title') }}"
+                    placeholder="例：応用情報技術者試験に合格する"
+                    required
+                    autofocus
+                    class="form-control mt-2 text-base font-semibold"
+                >
+                <p class="mt-2 text-xs leading-5 text-slate-500">計画名だけでも作成できます。タスクや進め方は次の画面でAIと整えられます。</p>
+            </div>
+
+            <div class="rounded-2xl border border-sky-400/15 bg-sky-500/5 p-4">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <label for="deadline" class="form-label">期限 <span class="font-normal text-slate-500">（任意）</span></label>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">まだ決めていなければ空欄でOK。あとからAIと相談して決められます。</p>
+                    </div>
+                    <span class="shrink-0 rounded-full border border-slate-700 px-2 py-1 text-[10px] font-bold text-slate-400">あとで設定可</span>
                 </div>
-            @endif
+                <input
+                    id="deadline"
+                    type="date"
+                    name="deadline"
+                    value="{{ old('deadline') }}"
+                    class="form-control mt-3"
+                >
+            </div>
 
-            <form action="{{ route('plans.store') }}" method="POST" class="space-y-6" data-onboarding-target="plan-form">
-                @csrf
+            <details class="rounded-2xl border border-slate-800 bg-slate-950/30 p-4" @if(old('description') || old('category') || old('start_date') || old('is_public') || old('visual_icon') || old('accent_key') || old('roadmap_world')) open @endif>
+                <summary class="cursor-pointer list-none font-semibold text-slate-200">
+                    <span class="flex items-center justify-between gap-3">
+                        <span>詳細設定</span>
+                        <span class="text-xs font-normal text-slate-500">必要な人だけ</span>
+                    </span>
+                </summary>
 
-                <div>
-                    <label for="title" class="mb-2 block text-sm font-medium text-slate-700">
-                        計画タイトル
-                    </label>
-
-                    <input
-                        id="title"
-                        type="text"
-                        name="title"
-                        value="{{ old('title') }}"
-                        placeholder="例：応用情報技術者試験 合格"
-                        required
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-                    >
-                </div>
-
-                <div>
-                    <label for="description" class="mb-2 block text-sm font-medium text-slate-700">
-                        説明
-                    </label>
-
-                    <textarea
-                        id="description"
-                        name="description"
-                        rows="5"
-                        placeholder="この計画の目的や概要"
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-                    >{{ old('description') }}</textarea>
-                </div>
-
-                <div>
-                    <label for="category" class="mb-2 block text-sm font-medium text-slate-700">
-                        カテゴリ
-                    </label>
-
-                    <select
-                        id="category"
-                        name="category"
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-                    >
-                        <option value="">選択してください</option>
-                        <option value="資格学習" @selected(old('category') === '資格学習')>資格学習</option>
-                        <option value="個人開発" @selected(old('category') === '個人開発')>個人開発</option>
-                        <option value="制作活動" @selected(old('category') === '制作活動')>制作活動</option>
-                        <option value="ゲーム開発" @selected(old('category') === 'ゲーム開発')>ゲーム開発</option>
-                        <option value="その他" @selected(old('category') === 'その他')>その他</option>
-                    </select>
-                </div>
-
-                @include('plans.partials.visual-picker')
-
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="mt-5 space-y-5 border-t border-slate-800/80 pt-5">
                     <div>
-                        <label for="start_date" class="mb-2 block text-sm font-medium text-slate-700">
-                            開始日
-                        </label>
-
-                        <input
-                            id="start_date"
-                            type="date"
-                            name="start_date"
-                            value="{{ old('start_date', now()->toDateString()) }}"
-                            required
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-                        >
+                        <label for="description" class="form-label">説明</label>
+                        <textarea id="description" name="description" rows="3" placeholder="目的や完成条件など" class="form-control mt-2">{{ old('description') }}</textarea>
                     </div>
 
-                    <div>
-                        <label for="deadline" class="mb-2 block text-sm font-medium text-slate-700">
-                            期限
-                        </label>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="category" class="form-label">カテゴリ</label>
+                            <select id="category" name="category" class="form-control mt-2">
+                                <option value="">未設定</option>
+                                <option value="資格学習" @selected(old('category') === '資格学習')>資格学習</option>
+                                <option value="個人開発" @selected(old('category') === '個人開発')>個人開発</option>
+                                <option value="制作活動" @selected(old('category') === '制作活動')>制作活動</option>
+                                <option value="ゲーム開発" @selected(old('category') === 'ゲーム開発')>ゲーム開発</option>
+                                <option value="その他" @selected(old('category') === 'その他')>その他</option>
+                            </select>
+                        </div>
 
-                        <input
-                            id="deadline"
-                            type="date"
-                            name="deadline"
-                            value="{{ old('deadline') }}"
-                            required
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-                        >
+                        <div>
+                            <label for="start_date" class="form-label">開始日</label>
+                            <input id="start_date" type="date" name="start_date" value="{{ old('start_date', now()->toDateString()) }}" class="form-control mt-2">
+                        </div>
                     </div>
-                </div>
 
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <label class="flex items-start gap-3">
-                        <input
-                            type="checkbox"
-                            name="is_public"
-                            value="1"
-                            @checked(old('is_public'))
-                            class="mt-1"
-                        >
+                    <details class="rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                        <summary class="cursor-pointer text-sm font-semibold text-slate-300">見た目を変更する</summary>
+                        <div class="mt-4">
+                            @include('plans.partials.visual-picker')
+                        </div>
+                    </details>
 
+                    <label class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/35 p-4">
+                        <input type="checkbox" name="is_public" value="1" @checked(old('is_public')) class="mt-1">
                         <span>
-                            <span class="block font-medium text-slate-900">
-                                この計画を公開する
-                            </span>
-
-                            <span class="mt-1 block text-sm leading-6 text-slate-600">
-                                公開すると、共有URLを知っている人がこの計画を見られます。
-                                公開ページでは編集や作業ログの追加はできません。
-                            </span>
+                            <span class="block font-medium text-slate-200">この計画を公開する</span>
+                            <span class="mt-1 block text-xs leading-5 text-slate-500">共有URLを知っている人が閲覧できます。編集はできません。</span>
                         </span>
                     </label>
                 </div>
+            </details>
 
-                <div class="flex flex-wrap gap-3">
-                    <button
-                        type="submit"
-                        class="btn-primary"
-                        data-onboarding-target="create-plan-submit"
-                    >
-                        計画を作成する
-                    </button>
-
-                    <a
-                        href="{{ route('home') }}"
-                        class="btn-secondary"
-                    >
-                        ホームへ戻る
-                    </a>
-                </div>
-            </form>
-        </div>
-
-        <aside class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 class="text-lg font-bold text-slate-900">
-                作成後にできること
-            </h2>
-
-            <ul class="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                <li class="rounded-lg bg-slate-50 p-3">
-                    タスクを追加し、想定作業時間と進捗率を管理できます。
-                </li>
-
-                <li class="rounded-lg bg-slate-50 p-3">
-                    作業ログを記録すると、実績時間と進捗が反映されます。
-                </li>
-
-                <li class="rounded-lg bg-slate-50 p-3">
-                    期限までに必要な1日あたりの作業時間を確認できます。
-                </li>
-
-                <li class="rounded-lg bg-slate-50 p-3">
-                    必要なら共有URLで他の人に見せられます。
-                </li>
-            </ul>
-
-            <div class="mt-6 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
-                計画を作ったあと、必要ならAIと一緒にタスクを整えられます。
+            <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <button type="submit" class="btn-primary w-full justify-center py-3 text-base" data-onboarding-target="create-plan-submit">
+                    まず始める
+                </button>
+                <a href="{{ route('home') }}" class="btn-secondary justify-center">キャンセル</a>
             </div>
-        </aside>
-    </section>
+
+            <p class="text-center text-xs leading-5 text-slate-500">作成後すぐに、AIとタスク・期限・使える時間を整えられます。</p>
+        </form>
+    </div>
 @endsection

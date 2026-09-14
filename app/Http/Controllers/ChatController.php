@@ -846,6 +846,9 @@ class ChatController extends Controller
             : '変更なし';
         $description = $plan->description ?: '未設定';
         $category = $plan->category ?: '未設定';
+        $deadlineText = $plan->deadline?->format('Y-m-d') ?? '未設定';
+        $expectedProgressText = $progress['expected_progress_percent'] === null ? '未設定' : $progress['expected_progress_percent'] . '%';
+        $remainingDaysText = $progress['remaining_days'] === null ? '未設定' : $progress['remaining_days'] . '日';
         $targetTitleJson = json_encode($plan->title, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $targetCategoryJson = json_encode($plan->category, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
@@ -895,14 +898,14 @@ AIに依頼したいこと:
 計画ID: {$plan->id}
 タイトル: {$plan->title}
 カテゴリ: {$category}
-期間: {$plan->start_date->format('Y-m-d')} ～ {$plan->deadline->format('Y-m-d')}
+期間: {$plan->start_date->format('Y-m-d')} ～ {$deadlineText}
 登録済み概要:
 {$description}
 
 【登録タスク基準の暫定評価】
 進捗率: {$progress['weighted_progress_percent']}%
-期待進捗率: {$progress['expected_progress_percent']}%
-残り日数: {$progress['remaining_days']}日
+期待進捗率: {$expectedProgressText}
+残り日数: {$remainingDaysText}
 1日必要時間: {$progress['daily_required_minutes']}分
 状態: {$progress['status']}
 
@@ -1043,6 +1046,9 @@ PROMPT;
         $question = $answers['question'] !== '' ? $answers['question'] : 'まず現在の状況を整理し、次に考えるべきことを提案してください。';
         $description = $plan->description ?: '未設定';
         $category = $plan->category ?: '未設定';
+        $deadlineText = $plan->deadline?->format('Y-m-d') ?? '未設定';
+        $expectedProgressText = $progress['expected_progress_percent'] === null ? '未設定' : $progress['expected_progress_percent'] . '%';
+        $remainingDaysText = $progress['remaining_days'] === null ? '未設定' : $progress['remaining_days'] . '日';
         $modeText = $isDiff
             ? '既に計画全体を共有済みの同じAIチャットへ追加する、前回共有後の差分情報'
             : '新しいAIチャットへ貼る、計画全体の登録情報と最新相談';
@@ -1096,14 +1102,14 @@ Pace Keeperの登録情報は、現在のデータベース上のスナップシ
 計画ID: {$plan->id}
 タイトル: {$plan->title}
 カテゴリ: {$category}
-期間: {$plan->start_date->format('Y-m-d')} ～ {$plan->deadline->format('Y-m-d')}
+期間: {$plan->start_date->format('Y-m-d')} ～ {$deadlineText}
 登録済み概要・方針:
 {$description}
 
 【登録タスク基準の暫定評価】
 進捗率: {$progress['weighted_progress_percent']}%
-期待進捗率: {$progress['expected_progress_percent']}%
-残り日数: {$progress['remaining_days']}日
+期待進捗率: {$expectedProgressText}
+残り日数: {$remainingDaysText}
 残り作業時間: {$progress['remaining_minutes_by_progress']}分
 1日必要時間: {$progress['daily_required_minutes']}分
 状態: {$progress['status']}

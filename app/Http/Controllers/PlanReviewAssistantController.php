@@ -735,6 +735,9 @@ class PlanReviewAssistantController extends Controller
         $desiredOutcome = trim((string) ($draft['desired_outcome'] ?? '')) ?: '現在の会話とPace Keeperの記録を使い、必要な計画更新を判断してほしい';
         $description = $plan->description ?: '未設定';
         $category = $plan->category ?: '未設定';
+        $deadlineText = $plan->deadline?->format('Y-m-d') ?? '未設定';
+        $expectedProgressText = $progress['expected_progress_percent'] === null ? '未設定' : $progress['expected_progress_percent'] . '%';
+        $remainingDaysText = $progress['remaining_days'] === null ? '未設定' : $progress['remaining_days'] . '日';
         $targetTitleJson = json_encode($plan->title, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $targetCategoryJson = json_encode($plan->category, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $flow = 'result_recording';
@@ -846,14 +849,14 @@ JSON;
 計画ID: {$plan->id}
 タイトル: {$plan->title}
 カテゴリ: {$category}
-期間: {$plan->start_date->format('Y-m-d')} ～ {$plan->deadline->format('Y-m-d')}
+期間: {$plan->start_date->format('Y-m-d')} ～ {$deadlineText}
 登録済み概要:
 {$description}
 
 【登録タスク基準の暫定評価】
 進捗率: {$progress['weighted_progress_percent']}%
-期待進捗率: {$progress['expected_progress_percent']}%
-残り日数: {$progress['remaining_days']}日
+期待進捗率: {$expectedProgressText}
+残り日数: {$remainingDaysText}
 1日必要時間: {$progress['daily_required_minutes']}分
 状態: {$progress['status']}
 
@@ -1141,9 +1144,10 @@ PROMPT;
         }
 
         $startDate = Carbon::parse($normalized['start_date'] ?? $plan->start_date);
-        $deadline = Carbon::parse($normalized['deadline'] ?? $plan->deadline);
+        $deadlineValue = $normalized['deadline'] ?? $plan->deadline?->format('Y-m-d');
+        $deadline = $deadlineValue ? Carbon::parse($deadlineValue) : null;
 
-        if ($deadline->lt($startDate)) {
+        if ($deadline && $deadline->lt($startDate)) {
             throw ValidationException::withMessages([
                 'operations_json' => "{$rowNumber}件目の期限は開始日以降にしてください。",
             ]);
