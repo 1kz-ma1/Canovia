@@ -27,7 +27,11 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        // Installed PWAs should survive browser restarts and deploys. The web form
+        // sends an explicit value, while older/alternate clients default to remember.
+        $remember = $request->has('remember') ? $request->boolean('remember') : true;
+
+        if (! Auth::attempt($credentials, $remember)) {
             throw ValidationException::withMessages([
                 'email' => 'メールアドレスまたはパスワードが正しくありません。',
             ]);

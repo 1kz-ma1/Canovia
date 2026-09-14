@@ -116,6 +116,16 @@
                     <p class="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300">CANOVIA</p>
                     <p class="truncate text-sm font-bold text-slate-50">{{ $mobileSection }}</p>
                 </div>
+                <button type="button" class="mobile-feedback-action" data-feedback-open aria-label="Canoviaへフィードバックを送る" title="フィードバック">
+                    <span class="mobile-feedback-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M5.2 5.7h13.6a2.2 2.2 0 0 1 2.2 2.2v7.2a2.2 2.2 0 0 1-2.2 2.2h-7.1L7.3 20l.9-2.7h-3A2.2 2.2 0 0 1 3 15.1V7.9a2.2 2.2 0 0 1 2.2-2.2Z"/>
+                            <path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01"/>
+                        </svg>
+                        <i></i>
+                    </span>
+                    <span>フィードバック</span>
+                </button>
                 <button type="button" class="mobile-utility-button" data-ui-settings-open aria-label="表示設定を開く" title="表示設定">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a1.6 1.6 0 0 0 0-3.2h-.9a1.8 1.8 0 0 1 0-3.6H15A6 6 0 0 0 15 3h-3Zm-4.5 7.5h.01M9 6.8h.01M14.8 6.6h.01M17.2 10h.01"/></svg>
                 </button>
@@ -227,7 +237,7 @@
             </div>
         </div>
 
-        <button type="button" class="feedback-fab" data-feedback-open aria-label="PaceKeeperへフィードバックを送る">意見</button>
+        <button type="button" class="feedback-fab hidden md:inline-flex" data-feedback-open aria-label="Canoviaへフィードバックを送る">意見</button>
         <dialog class="feedback-dialog" data-feedback-dialog aria-labelledby="feedback-title">
             <form method="POST" action="{{ route('feedback.store') }}" class="feedback-dialog-card">
                 @csrf

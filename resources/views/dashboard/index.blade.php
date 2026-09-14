@@ -27,23 +27,24 @@
     @endphp
 
     <div id="behaviorDashboard" class="pk-v18-dashboard space-y-5 md:space-y-6" data-event-url="{{ route('behavior_events.store') }}" data-navigation-url="{{ route('navigation.index') }}" data-work-started="{{ $activeSession ? 1 : 0 }}" data-onboarding-new-user="{{ $dashboard['plan_tabs']->isEmpty() ? '1' : '0' }}">
-        <header class="pk-v18-hero pk-home-heading">
-            <div class="pk-v18-hero-copy">
-                <div class="pk-v18-hero-brand pk-canovia-hero-brand" aria-label="Canovia カノーヴィア">
-                    <img src="/brand/canovia-wordmark.png" alt="Canovia カノーヴィア" class="pk-canovia-wordmark">
-                    <small>未来までの航路を、一緒に。</small>
+        <div class="pk-v22-hero-stage">
+            <header class="pk-v18-hero pk-home-heading">
+                <div class="pk-v18-hero-copy">
+                    <h1>今日も、あなたのペースで。</h1>
+                    <p class="pk-v18-hero-lead">小さな一歩が、やがて大きな未来をつくる。</p>
                 </div>
-                <p class="pk-v18-eyebrow">SMALL STEPS · A BRIGHTER YOU</p>
-                <h1>今日も、あなたのペースで。</h1>
-                <p class="pk-v18-hero-lead">小さな一歩が、やがて大きな未来をつくる。</p>
+                <div class="pk-v18-hero-guide" aria-hidden="true">
+                    <img src="/brand/mascot-guide.webp" alt="">
+                </div>
+                <div class="pk-v18-hero-orbit" aria-hidden="true"></div>
+                <div class="pk-v18-hero-planet" aria-hidden="true"></div>
+            </header>
+            <div class="pk-v18-hero-brand pk-canovia-hero-brand pk-v22-hero-brand-layer" aria-label="Canovia カノーヴィア">
+                <img src="/brand/canovia-wordmark.png" alt="Canovia カノーヴィア" class="pk-canovia-wordmark">
+                <small>未来までの航路を、一緒に。</small>
             </div>
-            <div class="pk-v18-hero-guide" aria-hidden="true">
-                <span class="pk-v18-guide-bubble">今日もいい一歩が<br>待ってるよ！</span>
-                <img src="/brand/mascot-guide.webp" alt="">
-            </div>
-            <div class="pk-v18-hero-orbit" aria-hidden="true"></div>
-            <div class="pk-v18-hero-planet" aria-hidden="true"></div>
-        </header>
+            <span class="pk-v18-guide-bubble pk-v22-guide-bubble-layer" aria-hidden="true">今日もいい一歩が<br>待ってるよ！</span>
+        </div>
 
         <div class="pk-v18-quick-actions" aria-label="ホームの操作">
             <a href="{{ route('plans.create') }}" class="pk-v18-action-chip is-primary" data-onboarding-target="create-plan"><span>＋</span> 新しい計画</a>

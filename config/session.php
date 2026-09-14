@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Str;
-
 return [
 
     /*
@@ -18,7 +16,7 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => env('APP_ENV') === 'production' ? 'database' : env('SESSION_DRIVER', 'database'),
 
     /*
     |--------------------------------------------------------------------------
@@ -32,9 +30,13 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 10080),
+    'lifetime' => env('APP_ENV') === 'production'
+        ? max(10080, (int) env('SESSION_LIFETIME', 10080))
+        : (int) env('SESSION_LIFETIME', 10080),
 
-    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+    'expire_on_close' => env('APP_ENV') === 'production'
+        ? false
+        : env('SESSION_EXPIRE_ON_CLOSE', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -127,10 +129,9 @@ return [
     |
     */
 
-    'cookie' => env(
-        'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
-    ),
+    // Keep the cookie name independent from APP_NAME so a PaceKeeper -> Canovia
+    // brand rename does not silently log every installed PWA out on deploy.
+    'cookie' => env('SESSION_COOKIE', 'pace-keeper-session'),
 
     /*
     |--------------------------------------------------------------------------
