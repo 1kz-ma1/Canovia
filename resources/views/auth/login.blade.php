@@ -20,8 +20,9 @@
                 <input type="password" name="password" autocomplete="current-password" required class="form-control mt-2">
             </label>
             <label class="flex min-h-11 items-center gap-3 text-sm text-slate-300">
-                <input type="checkbox" name="remember" value="1" class="h-5 w-5 rounded border-slate-600 bg-slate-900">
-                この端末でログイン状態を保持
+                <input type="hidden" name="remember" value="0">
+                <input type="checkbox" name="remember" value="1" checked class="h-5 w-5 rounded border-slate-600 bg-slate-900">
+                この端末でログイン状態を保持（おすすめ）
             </label>
             <button type="submit" class="btn-primary w-full">ログイン</button>
             <a href="{{ route('password.request') }}" class="block text-center text-sm font-semibold text-sky-300 hover:text-sky-200">パスワードを忘れた場合</a>

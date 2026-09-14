@@ -24,8 +24,17 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\RoadmapController;
 use App\Http\Controllers\TimelineController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\PwaController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// PWA identity bridge. Safari and an iOS Home Screen app may use separate
+// cookie stores, so the manifest/start flow carries a short-lived one-time
+// handoff instead of assuming browser cookies will magically be shared.
+Route::get('/app.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/pwa/install', [PwaController::class, 'prepareInstall'])->name('pwa.install.prepare');
+Route::get('/pwa/install/{token}', [PwaController::class, 'installGuide'])->name('pwa.install.guide');
+Route::get('/pwa/handoff/{token}', [PwaController::class, 'handoff'])->name('pwa.handoff');
 
 Route::get('/health', fn () => response()->noContent()
     ->header('Access-Control-Allow-Origin', '*')

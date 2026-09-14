@@ -549,10 +549,10 @@ function applyUiPreferences() {
 
 function resolveRoadmapView(root) {
     const planId = root.dataset.roadmapPlanId || 'preview';
-    const key = `pacekeeper.roadmap.view.${planId}`;
+    const key = `pacekeeper.roadmap.v19.view.${planId}`;
     const stored = localStorage.getItem(key);
     if (stored === 'map' || stored === 'list') return stored;
-    return window.matchMedia('(max-width: 767px)').matches ? 'map' : 'list';
+    return 'map';
 }
 
 function setRoadmapView(root, view, persist = true) {
@@ -567,7 +567,7 @@ function setRoadmapView(root, view, persist = true) {
         panel.hidden = panel.dataset.roadmapViewPanel !== view;
     });
     if (persist && planId !== 'preview') {
-        localStorage.setItem(`pacekeeper.roadmap.view.${planId}`, view);
+        localStorage.setItem(`pacekeeper.roadmap.v19.view.${planId}`, view);
     }
 }
 
@@ -670,6 +670,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // v13: Roadmap Plan pager. Tabs provide discoverability; swipe provides speed.
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-roadmap-overview]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const root = button.closest('[data-roadmap-view-root]');
+            if (!root) return;
+            setRoadmapView(root, 'map');
+            root.querySelectorAll('[data-map-stop][open]').forEach((stop) => stop.removeAttribute('open'));
+            root.querySelector('[data-roadmap-map]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    });
+
     document.querySelectorAll('[data-roadmap-plan-pager]').forEach((pager) => {
         let startX = 0;
         let startY = 0;
@@ -714,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const activePlanTab = document.querySelector('[data-roadmap-plan-tabs] .roadmap-plan-tab.is-active');
+    const activePlanTab = document.querySelector('[data-roadmap-plan-tabs] .pk-v19-plan-card.is-active, [data-roadmap-plan-tabs] .roadmap-plan-tab.is-active');
     activePlanTab?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
 });
 
@@ -1130,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isIos) {
             installAction.textContent = '手順を確認しました';
             installAction.disabled = false;
-            if (installCopy) installCopy.textContent = 'Safariの共有メニューから追加できます。';
+            if (installCopy) installCopy.textContent = 'データを引き継ぐ専用画面を開いてから、Safariの共有メニューで追加します。';
             return;
         }
         installAction.textContent = '手順を確認しました';
@@ -1185,7 +1195,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return;
         }
-        // iOS and browsers without beforeinstallprompt require the browser menu.
+        // iOS Home Screen apps can have a separate cookie jar from Safari.
+        // Move to the protected install page first so the saved launch URL can
+        // carry a one-time account/Guest handoff into the standalone context.
+        if (isIos && body?.dataset.pwaInstallUrl) {
+            window.location.href = body.dataset.pwaInstallUrl;
+            return;
+        }
+
+        // Browsers without beforeinstallprompt still use their menu. The
+        // dynamic manifest already contains a short-lived protected start URL.
         localStorage.removeItem('pacekeeper.install.offer-pending');
         pacekeeperCloseDialog(installDialog);
     });

@@ -35,7 +35,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PaceKeeper">
-    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="manifest" href="{{ route('pwa.manifest') }}" crossorigin="use-credentials">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
     <title>@yield('title', 'Pace Keeper')</title>
@@ -62,7 +62,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body data-focus-mode="{{ $focusMode ? '1' : '0' }}" data-onboarding-version="{{ $onboardingVersion }}" data-onboarding-auto="{{ $onboardingAuto ? '1' : '0' }}" data-onboarding-authenticated="{{ auth()->check() ? '1' : '0' }}" data-route-name="{{ request()->route()?->getName() }}" class="pk-cosmic-shell min-h-screen bg-slate-950 text-slate-100 antialiased {{ $focusMode ? 'pace-focus-mode' : '' }}">
+<body data-focus-mode="{{ $focusMode ? '1' : '0' }}" data-onboarding-version="{{ $onboardingVersion }}" data-onboarding-auto="{{ $onboardingAuto ? '1' : '0' }}" data-onboarding-authenticated="{{ auth()->check() ? '1' : '0' }}" data-pwa-install-url="{{ route('pwa.install.prepare') }}" data-route-name="{{ request()->route()?->getName() }}" class="pk-cosmic-shell min-h-screen bg-slate-950 text-slate-100 antialiased {{ $focusMode ? 'pace-focus-mode' : '' }}">
     <div class="pk-cosmic-backdrop pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
         <span class="pk-space-glow pk-space-glow-a"></span>
         <span class="pk-space-glow pk-space-glow-b"></span>
@@ -139,8 +139,8 @@
         @guest
             @if (request()->routeIs('home') || request()->routeIs('plans.*') || request()->routeIs('navigation.*') || request()->routeIs('work_sessions.*') || request()->routeIs('my_plans.*'))
                 <div class="guest-protection-banner mb-4">
-                    <span><strong>この端末だけに保存中</strong>。アカウントを作ると、端末を変えても続けられます。</span>
-                    <a href="{{ route('auth.register.form') }}">アカウントを作る</a>
+                    <span><strong>Guestデータを保護しておくと安心です</strong>。ホーム画面版には専用の引き継ぎを使えますが、アカウントを作れば端末変更やCookie削除にも強くなります。</span>
+                    <a href="{{ route('auth.register.form') }}">データを保護する</a>
                 </div>
             @endif
         @endguest
