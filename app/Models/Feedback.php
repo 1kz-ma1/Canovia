@@ -22,6 +22,7 @@ class Feedback extends Model
         'app_version',
         'context',
         'status',
+        'archived_at',
     ];
 
     protected function casts(): array
@@ -29,6 +30,7 @@ class Feedback extends Model
         return [
             'rating' => 'integer',
             'context' => 'array',
+            'archived_at' => 'datetime',
         ];
     }
     public function user()
