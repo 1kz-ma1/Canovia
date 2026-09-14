@@ -41,7 +41,16 @@
         </section>
 
         <section class="page-card p-4 sm:p-5">
+            <div class="mb-4 flex flex-wrap gap-2">
+                <a href="{{ route('admin.feedback.index', array_filter(['rating' => request('rating'), 'type' => request('type'), 'status' => request('status')])) }}"
+                   class="{{ ! $showArchived ? 'btn-primary' : 'btn-secondary' }} px-4 py-2 text-sm">通常</a>
+                <a href="{{ route('admin.feedback.index', array_filter(['archived' => '1', 'rating' => request('rating'), 'type' => request('type'), 'status' => request('status')])) }}"
+                   class="{{ $showArchived ? 'btn-primary' : 'btn-secondary' }} px-4 py-2 text-sm">アーカイブ済み</a>
+            </div>
             <form method="GET" action="{{ route('admin.feedback.index') }}" class="grid gap-3 sm:grid-cols-4">
+                @if ($showArchived)
+                    <input type="hidden" name="archived" value="1">
+                @endif
                 <select name="rating" class="form-control">
                     <option value="">すべての評価</option>
                     @foreach (range(5, 1) as $rating)
@@ -92,18 +101,34 @@
                                 <span class="badge badge-slate">{{ $typeLabel }}</span>
                                 <span class="badge badge-slate">{{ $statusLabel }}</span>
                             </div>
-                            <p class="mt-2 text-xs text-slate-500">{{ $feedback->created_at?->format('Y/m/d H:i') }} ・ {{ $feedback->app_version ?: 'version不明' }}</p>
+                            <p class="mt-2 text-xs text-slate-500">{{ $feedback->created_at?->format('Y/m/d H:i') }} ・ {{ $feedback->app_version ?: 'version不明' }}@if($feedback->archived_at) ・ アーカイブ: {{ $feedback->archived_at->format('Y/m/d H:i') }}@endif</p>
                         </div>
-                        <form method="POST" action="{{ route('admin.feedback.status', $feedback) }}" class="flex gap-2">
-                            @csrf
-                            @method('PATCH')
-                            <select name="status" class="form-control min-w-28 py-2 text-xs">
-                                <option value="new" @selected($feedback->status === 'new')>未対応</option>
-                                <option value="reviewing" @selected($feedback->status === 'reviewing')>確認中</option>
-                                <option value="resolved" @selected($feedback->status === 'resolved')>対応済み</option>
-                            </select>
-                            <button class="btn-secondary px-3 py-2 text-xs" type="submit">更新</button>
-                        </form>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <form method="POST" action="{{ route('admin.feedback.status', $feedback) }}" class="flex gap-2">
+                                @csrf
+                                @method('PATCH')
+                                <select name="status" class="form-control min-w-28 py-2 text-xs">
+                                    <option value="new" @selected($feedback->status === 'new')>未対応</option>
+                                    <option value="reviewing" @selected($feedback->status === 'reviewing')>確認中</option>
+                                    <option value="resolved" @selected($feedback->status === 'resolved')>対応済み</option>
+                                </select>
+                                <button class="btn-secondary px-3 py-2 text-xs" type="submit">更新</button>
+                            </form>
+
+                            @if ($feedback->archived_at)
+                                <form method="POST" action="{{ route('admin.feedback.restore', $feedback) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="btn-secondary px-3 py-2 text-xs" type="submit">復元</button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('admin.feedback.archive', $feedback) }}" onsubmit="return confirm('このフィードバックをアーカイブしますか？分析対象から除外されます。')">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="btn-secondary px-3 py-2 text-xs" type="submit">アーカイブ</button>
+                                </form>
+                            @endif
+                        </div>
                     </div>
 
                     <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-200">{{ $feedback->message }}</p>

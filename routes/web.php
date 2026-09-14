@@ -61,6 +61,8 @@ Route::get('/admin/feedback/login', [AdminFeedbackController::class, 'login'])->
 Route::post('/admin/feedback/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.feedback.authenticate');
 Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
 Route::patch('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('admin.feedback.status');
+Route::patch('/admin/feedback/{feedback}/archive', [AdminFeedbackController::class, 'archive'])->name('admin.feedback.archive');
+Route::patch('/admin/feedback/{feedback}/restore', [AdminFeedbackController::class, 'restore'])->name('admin.feedback.restore');
 
 
 // 共同計画。参加経路はURL/参加コードのどちらでもログイン必須。

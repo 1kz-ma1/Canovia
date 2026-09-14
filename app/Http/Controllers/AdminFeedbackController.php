@@ -48,9 +48,16 @@ class AdminFeedbackController extends Controller
             'type' => ['nullable', Rule::in(['usability', 'bug', 'request', 'positive'])],
             'status' => ['nullable', Rule::in(['new', 'reviewing', 'resolved'])],
             'rating' => ['nullable', 'integer', 'between:1,5'],
+            'archived' => ['nullable', Rule::in(['0', '1'])],
         ]);
 
-        $query = Feedback::query()->with(['user', 'plan', 'task']);
+        $showArchived = ($validated['archived'] ?? '0') === '1';
+
+        $query = Feedback::query()->with(['user', 'plan', 'task'])
+            ->when($showArchived,
+                fn ($query) => $query->whereNotNull('archived_at'),
+                fn ($query) => $query->whereNull('archived_at')
+            );
         if (! empty($validated['type'])) {
             $query->where('type', $validated['type']);
         }
@@ -62,7 +69,8 @@ class AdminFeedbackController extends Controller
         }
 
         $feedbacks = $query->latest()->paginate(30)->withQueryString();
-        $ratedQuery = Feedback::query()->whereNotNull('rating');
+        // Archived feedback is intentionally excluded from all analysis metrics.
+        $ratedQuery = Feedback::query()->whereNull('archived_at')->whereNotNull('rating');
         $ratedCount = (clone $ratedQuery)->count();
         $averageRating = $ratedCount > 0 ? round((float) (clone $ratedQuery)->avg('rating'), 2) : null;
         $distributionRaw = (clone $ratedQuery)
@@ -72,7 +80,7 @@ class AdminFeedbackController extends Controller
         $distribution = collect(range(5, 1))->mapWithKeys(
             fn (int $rating) => [$rating => (int) ($distributionRaw[$rating] ?? 0)]
         );
-        $newCount = Feedback::query()->where('status', 'new')->count();
+        $newCount = Feedback::query()->whereNull('archived_at')->where('status', 'new')->count();
 
         return view('admin.feedback.index', compact(
             'feedbacks',
@@ -80,6 +88,7 @@ class AdminFeedbackController extends Controller
             'averageRating',
             'distribution',
             'newCount',
+            'showArchived',
         ));
     }
 
@@ -94,6 +103,29 @@ class AdminFeedbackController extends Controller
         $feedback->update(['status' => $validated['status']]);
 
         return back()->with('status', 'フィードバックの状態を更新しました。');
+    }
+
+
+    public function archive(Request $request, Feedback $feedback)
+    {
+        $this->ensureAuthorized($request);
+
+        if ($feedback->archived_at === null) {
+            $feedback->update(['archived_at' => now()]);
+        }
+
+        return back()->with('status', 'フィードバックをアーカイブしました。分析対象から除外されます。');
+    }
+
+    public function restore(Request $request, Feedback $feedback)
+    {
+        $this->ensureAuthorized($request);
+
+        if ($feedback->archived_at !== null) {
+            $feedback->update(['archived_at' => null]);
+        }
+
+        return back()->with('status', 'フィードバックを復元しました。');
     }
 
     private function ensureAuthorized(Request $request): void
