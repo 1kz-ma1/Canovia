@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'pacekeeper-shell-v20';
+const CACHE_VERSION = 'pacekeeper-shell-v21';
 const STATIC_ASSETS = [
     '/offline.html',
     '/icons/icon-180.png',
@@ -30,6 +30,13 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
+let serverWarmUntil = 0;
+
+function markServerWarm(response) {
+    if (response?.ok) serverWarmUntil = Date.now() + 120000;
+    return response;
+}
+
 function timeoutAfter(ms) {
     return new Promise((_, reject) => setTimeout(() => reject(new Error('network-timeout')), ms));
 }
@@ -49,15 +56,16 @@ self.addEventListener('fetch', (event) => {
         if (url.searchParams.get('_pk_network') === '1') {
             event.respondWith(
                 fetch(request, { cache: 'no-store' })
+                    .then(markServerWarm)
                     .catch(() => caches.match('/offline.html'))
             );
             return;
         }
 
-        const networkRequest = fetch(request, { cache: 'no-store' });
+        const networkRequest = fetch(request, { cache: 'no-store' }).then(markServerWarm);
         event.waitUntil(networkRequest.then(() => undefined).catch(() => undefined));
         event.respondWith(
-            Promise.race([networkRequest, timeoutAfter(1200)])
+            Promise.race([networkRequest, timeoutAfter(Date.now() < serverWarmUntil ? 8000 : 1200)])
                 .catch(() => caches.match('/offline.html'))
         );
         return;

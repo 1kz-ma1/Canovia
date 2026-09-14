@@ -36,12 +36,9 @@ class WorkSessionController extends Controller
         }
 
         $actorToken = $identity->resolve($request);
-        $activeQuery = WorkSession::query()->whereIn('status', ['active', 'paused']);
-        if ($request->user()) {
-            $activeQuery->whereHas('plan', fn ($query) => $query->where('user_id', $request->user()->id));
-        } else {
-            $activeQuery->where('actor_token', $actorToken);
-        }
+        $activeQuery = WorkSession::query()
+            ->whereIn('status', ['active', 'paused'])
+            ->where('actor_token', $actorToken);
         $active = $activeQuery->latest('started_at')->first();
 
         if ($active) {
@@ -304,17 +301,14 @@ class WorkSessionController extends Controller
     ): void {
         $workSession->loadMissing('plan');
 
-        if ($workSession->plan?->user_id !== null) {
-            $ownership->authorizePlan($request, $workSession->plan);
-            return;
-        }
-
-        if (! hash_equals($workSession->actor_token, $identity->resolve($request))) {
+        if (! $workSession->plan) {
             abort(403);
         }
 
-        if ($workSession->plan) {
-            $ownership->authorizePlan($request, $workSession->plan);
+        $ownership->authorizeEdit($request, $workSession->plan);
+
+        if (! hash_equals($workSession->actor_token, $identity->resolve($request))) {
+            abort(403, '他のメンバーの作業タイマーは操作できません。');
         }
     }
 }

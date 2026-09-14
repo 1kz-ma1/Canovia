@@ -3566,3 +3566,35 @@ html[data-theme-resolved="light"] .pk-v19-roadmap-quote { color:rgb(15 23 42); }
     text-shadow: 0 0 22px rgb(91 124 255 / .18);
 }
 .pk-offline-resume-card.hidden { display: none; }
+
+
+/* Canovia brand swap — large visible lockups only */
+.pk-canovia-header-lockup { min-width: 0; }
+.pk-canovia-header-wordmark {
+    display: block;
+    width: clamp(10.5rem, 16vw, 13.5rem);
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 14px rgb(var(--pk-cosmic-violet) / .18));
+}
+.pk-canovia-hero-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .15rem;
+}
+.pk-v18-hero-brand .pk-canovia-wordmark {
+    width: clamp(11.5rem, 38vw, 17rem);
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 18px rgb(var(--pk-v18-purple) / .22));
+}
+.pk-canovia-hero-brand small {
+    margin-top: -.05rem;
+    padding-left: .35rem;
+    letter-spacing: .14em;
+}
+@media (max-width: 767px) {
+    .pk-v18-hero-brand .pk-canovia-wordmark { width: clamp(10rem, 50vw, 13.25rem); }
+    .pk-canovia-hero-brand small { font-size: .5rem; letter-spacing: .1em; }
+}

@@ -35,8 +35,10 @@ class RoadmapController extends Controller
         $continuity = null;
         $previousPlan = null;
         $nextPlan = null;
+        $canEdit = false;
 
         if ($plan) {
+            $canEdit = $ownership->canEdit($request, $plan);
             $planIndex = $plans->values()->search(fn ($candidate) => $candidate->id === $plan->id);
             if ($planIndex !== false) {
                 $previousPlan = $planIndex > 0 ? $plans->values()->get($planIndex - 1) : null;
@@ -68,6 +70,7 @@ class RoadmapController extends Controller
             'continuity',
             'previousPlan',
             'nextPlan',
+            'canEdit',
         ));
     }
 }

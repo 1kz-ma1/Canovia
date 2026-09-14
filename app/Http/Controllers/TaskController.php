@@ -119,6 +119,6 @@ class TaskController extends Controller
 
     private function authorizePlanOwner(Plan $plan): void
     {
-        app(PlanOwnershipService::class)->authorizePlan(request(), $plan);
+        app(PlanOwnershipService::class)->authorizeEdit(request(), $plan);
     }
 }

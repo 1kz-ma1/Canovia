@@ -25,6 +25,7 @@ class DashboardPresentationService
         UserBehaviorBaselineData $baseline,
         UserStateData $state,
         array $excludedTaskIds = [],
+        array $editablePlanIds = [],
     ): array {
         $plans = collect($plans->all());
         $previousSessions = WorkSession::with(['plan', 'task'])
@@ -36,17 +37,21 @@ class DashboardPresentationService
             ->groupBy('plan_id')
             ->map(fn ($sessions) => $sessions->first());
 
-        $planTabs = $plans->map(function ($plan) use ($state, $actorToken, $previousSessions) {
+        $editablePlanIds = collect($editablePlanIds)->map(fn ($id) => (int) $id)->flip();
+        $planTabs = $plans->map(function ($plan) use ($state, $actorToken, $previousSessions, $editablePlanIds) {
             $progress = $this->progressService->calculate($plan);
             $todayMinutes = (int) $plan->workLogs
                 ->filter(fn ($log) => $log->worked_on?->isToday())
                 ->sum('actual_minutes');
-            $recommendation = $this->recommendationService->recommend(
-                collect([$plan]),
-                $state,
-                actorToken: $actorToken,
-                preferredPlanId: $plan->id,
-            );
+            $canEdit = $editablePlanIds->has((int) $plan->id);
+            $recommendation = $canEdit
+                ? $this->recommendationService->recommend(
+                    collect([$plan]),
+                    $state,
+                    actorToken: $actorToken,
+                    preferredPlanId: $plan->id,
+                )
+                : null;
             $previousSession = $previousSessions->get($plan->id);
             $roadmap = $this->roadmapService->build(
                 $plan,
@@ -62,6 +67,7 @@ class DashboardPresentationService
                 'recent_logs' => $plan->workLogs->sortByDesc('worked_on')->take(3)->values(),
                 'recommendation' => $recommendation,
                 'roadmap' => $roadmap,
+                'can_edit' => $canEdit,
             ];
         })->values();
 
@@ -74,8 +80,9 @@ class DashboardPresentationService
         $totalDailyRequired = (int) $planTabs->sum(fn ($item) => $item['progress']['daily_required_minutes']);
         $todayMinutes = (int) $planTabs->sum('today_minutes');
         $remainingMinutes = (int) $planTabs->sum(fn ($item) => $item['progress']['remaining_minutes']);
+        $recommendationPlans = $plans->filter(fn ($plan) => $editablePlanIds->has((int) $plan->id))->values();
         $recommendation = $this->recommendationService->recommend(
-            $plans,
+            $recommendationPlans,
             $state,
             excludedTaskIds: $excludedTaskIds,
             actorToken: $actorToken,

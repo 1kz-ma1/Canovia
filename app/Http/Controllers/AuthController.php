@@ -65,7 +65,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $claimed = $claimService->claim($request, $user);
 
-        return redirect()->route('home')->with(
+        return redirect()->intended(route('home'))->with(
             'status',
             $claimed > 0
                 ? "アカウントを作成し、{$claimed}件のGuest計画を保護しました。"

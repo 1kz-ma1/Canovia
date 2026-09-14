@@ -1,5 +1,32 @@
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-copy-text]');
+    if (!button) return;
+
+    const text = button.dataset.copyText || '';
+    if (!text) return;
+
+    const original = button.textContent;
+    try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = 'コピーしました';
+    } catch (_) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+        button.textContent = 'コピーしました';
+    }
+    window.setTimeout(() => { button.textContent = original; }, 1600);
+});
+
 function recordBehavior(root, eventType, payload = {}) {
     if (!root?.dataset.eventUrl || !csrfToken) return;
 

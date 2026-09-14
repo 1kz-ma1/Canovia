@@ -6,6 +6,7 @@ use App\Models\Plan;
 use App\Services\BehaviorIdentityService;
 use App\Services\ContinuityService;
 use App\Services\PlanOwnershipService;
+use App\Services\PlanCollaborationService;
 use App\Services\PlanProgressService;
 use App\Services\PlanTimelineService;
 use App\Services\RecommendationService;
@@ -24,7 +25,7 @@ class PlanController extends Controller
         return view('plans.create');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, PlanCollaborationService $collaboration)
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -36,6 +37,7 @@ class PlanController extends Controller
             'start_date' => ['nullable', 'date'],
             'deadline' => ['nullable', 'date'],
             'is_public' => ['nullable'],
+            'is_collaborative' => ['nullable'],
         ]);
 
         $startDate = $validated['start_date'] ?? now()->toDateString();
@@ -43,6 +45,10 @@ class PlanController extends Controller
 
         if ($deadline && Carbon::parse($deadline)->lt(Carbon::parse($startDate))) {
             return back()->withErrors(['deadline' => '期限は開始日以降にしてください。'])->withInput();
+        }
+
+        if ($request->boolean('is_collaborative') && ! $request->user()) {
+            return back()->withErrors(['is_collaborative' => '共同計画を作るにはログインが必要です。'])->withInput();
         }
 
         $ownerToken = Str::random(64);
@@ -59,7 +65,16 @@ class PlanController extends Controller
             'start_date' => $startDate,
             'deadline' => $deadline,
             'is_public' => $request->boolean('is_public'),
+            'is_collaborative' => false,
         ]);
+
+        if ($request->boolean('is_collaborative') && $request->user()) {
+            if (! $collaboration->canOwnCollaborativePlan($request->user())) {
+                $plan->delete();
+                abort(403, '共同計画の作成権限がありません。');
+            }
+            $collaboration->enable($plan);
+        }
 
         if (! $request->user()) {
             cookie()->queue('pace_keeper_owner_token_' . $plan->id, $ownerToken, 60 * 24 * 365, '/', null, app()->environment('production') || $request->isSecure(), true, false, 'lax');
@@ -82,13 +97,16 @@ class PlanController extends Controller
         RoadmapService $roadmapService,
         ContinuityService $continuityService,
     ) {
-        $canEdit = $ownership->owns($request, $plan);
+        $canView = $ownership->canView($request, $plan);
+        $canEdit = $ownership->canEdit($request, $plan);
+        $canManage = $ownership->owns($request, $plan);
+        $collaborationRole = $ownership->role($request, $plan);
 
         // The numeric Plan detail route contains private operational context
         // (work logs, adjustments, recommendation state). Public sharing uses
         // the dedicated random-slug route instead, so non-owners never receive
         // the full Plan detail even when is_public is enabled.
-        if (! $canEdit) {
+        if (! $canView) {
             abort(404);
         }
 
@@ -125,7 +143,7 @@ class PlanController extends Controller
             $continuity['task_id'] ?? null,
         );
 
-        return view('plans.show', compact('plan', 'progress', 'timeline', 'canEdit', 'recommendation', 'continuity', 'roadmap'));
+        return view('plans.show', compact('plan', 'progress', 'timeline', 'canEdit', 'canManage', 'collaborationRole', 'recommendation', 'continuity', 'roadmap'));
     }
 
     public function edit(Request $request, Plan $plan, PlanOwnershipService $ownership)
@@ -149,6 +167,7 @@ class PlanController extends Controller
             'start_date' => ['nullable', 'date'],
             'deadline' => ['nullable', 'date'],
             'is_public' => ['nullable'],
+            'is_collaborative' => ['nullable'],
         ]);
 
         $startDate = $validated['start_date'] ?? $plan->start_date?->format('Y-m-d');

@@ -19,7 +19,7 @@ class Plan extends Model
 
     public const ROADMAP_WORLDS = ['default', 'study', 'sweet', 'halloween', 'space', 'forest'];
 
-    protected $hidden = ['owner_token'];
+    protected $hidden = ['owner_token', 'collaboration_share_token', 'collaboration_join_code'];
 
     protected $fillable = [
         'user_id',
@@ -31,6 +31,9 @@ class Plan extends Model
         'start_date',
         'deadline',
         'is_public',
+        'is_collaborative',
+        'collaboration_join_code',
+        'collaboration_share_token',
         'last_ai_context_exported_at',
         'visual_icon',
         'accent_key',
@@ -43,6 +46,7 @@ class Plan extends Model
             'start_date' => 'date',
             'deadline' => 'date',
             'is_public' => 'boolean',
+            'is_collaborative' => 'boolean',
             'last_ai_context_exported_at' => 'datetime',
         ];
     }
@@ -50,6 +54,18 @@ class Plan extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function memberships()
+    {
+        return $this->hasMany(PlanMember::class);
+    }
+
+    public function members()
+    {
+        return $this->belongsToMany(User::class, 'plan_members')
+            ->withPivot(['role', 'joined_at'])
+            ->withTimestamps();
     }
 
     public function tasks()

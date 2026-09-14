@@ -35,6 +35,7 @@ class NavigationController extends Controller
             'tasks' => fn ($query) => $query->with('prerequisite')->orderBy('sort_order')->orderBy('id'),
             'workLogs' => fn ($query) => $query->latest('worked_on')->latest('id'),
         ]);
+        $plans = $plans->filter(fn ($plan) => $ownership->canEdit($request, $plan))->values();
         $baseline = $behaviorService->baseline($actorToken);
         $state = $stateService->calculate($actorToken, $baseline, $plans);
 
@@ -154,7 +155,9 @@ class NavigationController extends Controller
         BehaviorEventLogger $logger,
     ) {
         $actorToken = $identity->resolve($request);
-        $plans = $ownership->ownedPlans($request, ['tasks', 'workLogs']);
+        $plans = $ownership->ownedPlans($request, ['tasks', 'workLogs'])
+            ->filter(fn ($plan) => $ownership->canEdit($request, $plan))
+            ->values();
         $state = $stateService->calculate($actorToken, $behaviorService->baseline($actorToken), $plans);
         $validated = $request->validate([
             'intent' => ['required', Rule::in(array_keys($flowService->intentOptions($state)))],
@@ -196,7 +199,9 @@ class NavigationController extends Controller
         ]);
 
         if (($draft['intent'] ?? null) === 'preferred') {
-            $plan = $ownership->ownedPlans($request)->firstWhere('id', (int) ($validated['preferred_plan_id'] ?? 0));
+            $plan = $ownership->ownedPlans($request)
+                ->filter(fn ($candidate) => $ownership->canEdit($request, $candidate))
+                ->firstWhere('id', (int) ($validated['preferred_plan_id'] ?? 0));
 
             if (! $plan) {
                 throw ValidationException::withMessages(['preferred_plan_id' => '進めたいPlanを選択してください。']);

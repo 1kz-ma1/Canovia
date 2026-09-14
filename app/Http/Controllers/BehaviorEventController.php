@@ -36,11 +36,11 @@ class BehaviorEventController extends Controller
         $task = isset($validated['task_id']) ? Task::with('plan')->find($validated['task_id']) : null;
 
         if ($plan) {
-            $ownership->authorizePlan($request, $plan);
+            $ownership->authorizeView($request, $plan);
         }
 
         if ($task) {
-            $ownership->authorizeTask($request, $task);
+            $ownership->authorizeTaskView($request, $task);
 
             if ($plan && $task->plan_id !== $plan->id) {
                 throw ValidationException::withMessages(['task_id' => 'TaskとPlanの組み合わせが正しくありません。']);

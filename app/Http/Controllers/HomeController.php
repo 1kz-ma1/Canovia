@@ -40,8 +40,9 @@ class HomeController extends Controller
             $request,
             metadata: ['owned_plan_count' => $plans->count()],
         );
+        $editablePlans = $plans->filter(fn ($plan) => $ownership->canEdit($request, $plan))->values();
         $baseline = $behaviorService->baseline($actorToken);
-        $state = $stateService->calculate($actorToken, $baseline, $plans);
+        $state = $stateService->calculate($actorToken, $baseline, $editablePlans);
         $stateService->captureDaily($actorToken, $state);
         $dashboard = $dashboardService->build(
             $plans,
@@ -49,9 +50,10 @@ class HomeController extends Controller
             $baseline,
             $state,
             $request->session()->get('dashboard.recommendation_excluded', []),
+            $editablePlans->pluck('id')->all(),
         );
 
-        $continuity = $continuityService->forPlans($plans, $actorToken);
+        $continuity = $continuityService->forPlans($editablePlans, $actorToken);
         $dashboard['continuity'] = $continuity;
         $dashboard['calendar_week'] = $calendarService->weekSummary($plans);
 
