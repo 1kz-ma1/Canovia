@@ -61,6 +61,11 @@ class Plan extends Model
         return $this->hasMany(PlanMember::class);
     }
 
+    public function activityLogs()
+    {
+        return $this->hasMany(\App\Models\PlanActivityLog::class)->latest('created_at')->latest('id');
+    }
+
     public function members()
     {
         return $this->belongsToMany(User::class, 'plan_members')

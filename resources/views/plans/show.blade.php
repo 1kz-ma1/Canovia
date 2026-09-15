@@ -91,6 +91,50 @@
         </div>
     </section>
 
+    @if ($plan->is_collaborative)
+        @php
+            $activityLabels = [
+                'member_joined' => '共同計画に参加',
+                'member_role_changed' => '権限を変更',
+                'member_removed' => 'メンバーを外しました',
+                'plan_updated' => '計画を更新',
+                'task_created' => 'タスクを追加',
+                'task_updated' => 'タスクを更新',
+                'task_completed' => 'タスクを完了',
+                'task_deleted' => 'タスクを削除',
+                'plan_ai_updated' => 'AI更新を反映',
+                'invite_regenerated' => '招待情報を再発行',
+            ];
+        @endphp
+        <section class="mb-6 page-card p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-cyan-300">TOGETHER / ACTIVITY</p>
+                    <h2 class="mt-1 text-lg font-bold text-slate-50">共同計画の最新情報</h2>
+                </div>
+                @if ($canManage ?? false)
+                    <a href="{{ route('plans.collaboration.settings', $plan) }}" class="text-xs font-bold text-cyan-300 hover:text-cyan-200">共有設定</a>
+                @endif
+            </div>
+            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+                @forelse (($recentActivities ?? collect()) as $activity)
+                    @php
+                        $meta = $activity->metadata ?? [];
+                        $targetTitle = $meta['task_title'] ?? $meta['member_name'] ?? null;
+                    @endphp
+                    <div class="rounded-2xl border border-white/8 bg-white/[0.035] p-3">
+                        <p class="text-sm leading-6 text-slate-200">
+                            <strong class="text-slate-50">{{ $activity->user?->name ?? 'Canovia' }}</strong>が{{ $activityLabels[$activity->action] ?? '計画を更新' }}@if($targetTitle)<span class="text-slate-400">「{{ $targetTitle }}」</span>@endif
+                        </p>
+                        <p class="mt-1 text-[11px] text-slate-500">{{ $activity->created_at?->diffForHumans() }}</p>
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-500">まだ共同更新はありません。</p>
+                @endforelse
+            </div>
+        </section>
+    @endif
+
     @if ($canManage ?? false)
         <section class="mb-8 adaptive-entry-card">
             <div>

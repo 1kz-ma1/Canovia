@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Plan;
 use App\Models\Task;
 use App\Services\PlanOwnershipService;
+use App\Services\PlanActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
-    public function store(Request $request, Plan $plan)
+    public function store(Request $request, Plan $plan, PlanActivityService $activity)
     {
         $this->authorizePlanOwner($plan);
 
@@ -31,7 +32,7 @@ class TaskController extends Controller
             ],
         ]);
 
-        Task::create([
+        $task = Task::create([
             'plan_id' => $plan->id,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
@@ -46,6 +47,10 @@ class TaskController extends Controller
             'sort_order' => 0,
         ]);
 
+        $activity->record($plan, $request->user(), 'task_created', 'task', (int) $task->id, [
+            'task_title' => $task->title,
+        ]);
+
         return redirect()->route('plans.show', $plan);
     }
 
@@ -58,7 +63,7 @@ class TaskController extends Controller
         return view('tasks.edit', compact('task'));
     }
 
-    public function update(Request $request, Task $task)
+    public function update(Request $request, Task $task, PlanActivityService $activity)
     {
         $task->load('plan');
 
@@ -83,6 +88,9 @@ class TaskController extends Controller
             ],
         ]);
 
+        $beforeStatus = $task->status;
+        $beforeTitle = $task->title;
+
         $task->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
@@ -96,18 +104,28 @@ class TaskController extends Controller
             'depends_on_task_id' => $validated['depends_on_task_id'] ?? null,
         ]);
 
+        $action = $beforeStatus !== 'done' && $task->status === 'done' ? 'task_completed' : 'task_updated';
+        $activity->record($task->plan, $request->user(), $action, 'task', (int) $task->id, [
+            'task_title' => $task->title ?: $beforeTitle,
+        ]);
+
         return redirect()->route('plans.show', $task->plan);
     }
 
-    public function destroy(Task $task)
+    public function destroy(Task $task, PlanActivityService $activity)
     {
         $task->load('plan');
 
         $this->authorizeOwner($task);
 
         $plan = $task->plan;
+        $taskTitle = $task->title;
+        $taskId = (int) $task->id;
 
         $task->delete();
+        $activity->record($plan, request()->user(), 'task_deleted', 'task', $taskId, [
+            'task_title' => $taskTitle,
+        ]);
 
         return redirect()->route('plans.show', $plan);
     }
