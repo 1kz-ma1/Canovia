@@ -33,6 +33,7 @@ class HomeController extends Controller
         $plans = $ownership->ownedPlans($request, [
             'tasks' => fn ($query) => $query->with('prerequisite')->orderBy('sort_order')->orderBy('id'),
             'workLogs' => fn ($query) => $query->with('task')->latest('worked_on')->latest('id'),
+            'memberships',
         ]);
         $eventLogger->recordOnce(
             $actorToken,
@@ -41,6 +42,14 @@ class HomeController extends Controller
             metadata: ['owned_plan_count' => $plans->count()],
         );
         $editablePlans = $plans->filter(fn ($plan) => $ownership->canEdit($request, $plan))->values();
+        $collaborationPlans = $plans
+            ->filter(fn ($plan) => (bool) $plan->is_collaborative)
+            ->map(fn ($plan) => [
+                'plan' => $plan,
+                'role' => $ownership->role($request, $plan),
+                'member_count' => 1 + $plan->memberships->count(),
+            ])
+            ->values();
         $baseline = $behaviorService->baseline($actorToken);
         $state = $stateService->calculate($actorToken, $baseline, $editablePlans);
         $stateService->captureDaily($actorToken, $state);
@@ -70,7 +79,7 @@ class HomeController extends Controller
             );
         }
 
-        return view('dashboard.index', compact('dashboard'));
+        return view('dashboard.index', compact('dashboard', 'collaborationPlans'));
     }
 
     public function legacy(Request $request, PlanProgressService $progressService, PlanOwnershipService $ownership)

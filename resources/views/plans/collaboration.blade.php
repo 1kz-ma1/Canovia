@@ -6,7 +6,7 @@
 <section class="mb-6 flex flex-wrap items-start justify-between gap-4">
     <div>
         <p class="pk-v18-eyebrow">CANOVIA / TOGETHER</p>
-        <h1 class="mt-2 text-2xl font-bold text-slate-50">共同計画の設定</h1>
+        <h1 class="mt-2 text-2xl font-bold text-slate-50">{{ ($canManage ?? false) ? '共同計画の設定' : '共同計画' }}</h1>
         <p class="mt-2 text-sm text-slate-400">{{ $plan->title }}</p>
     </div>
     <a href="{{ route('plans.show', $plan) }}" class="btn-secondary">計画へ戻る</a>
@@ -20,10 +20,12 @@
     <section class="page-card p-6 sm:p-8">
         <h2 class="text-xl font-bold text-slate-50">共同計画はオフです</h2>
         <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-300">有効にすると共有URLと参加コードを発行できます。参加者はデフォルトで閲覧者になり、オーナーだけが編集権限を付与できます。</p>
-        <form method="POST" action="{{ route('plans.collaboration.enable', $plan) }}" class="mt-5">
-            @csrf
-            <button class="btn-primary" type="submit">共同計画を有効にする</button>
-        </form>
+        @if ($canManage ?? false)
+            <form method="POST" action="{{ route('plans.collaboration.enable', $plan) }}" class="mt-5">
+                @csrf
+                <button class="btn-primary" type="submit">共同計画を有効にする</button>
+            </form>
+        @endif
     </section>
 @else
     @php
@@ -31,6 +33,7 @@
     @endphp
     <section class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div class="space-y-5">
+            @if ($canManage ?? false)
             <article class="page-card p-6">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -60,6 +63,17 @@
                     <button type="submit" class="btn-secondary">招待情報を再発行</button>
                 </form>
             </article>
+            @else
+            <article class="page-card p-6">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-50">共同計画に参加中</h2>
+                        <p class="mt-1 text-sm text-slate-400">この計画の最新情報や参加メンバーをここで確認できます。</p>
+                    </div>
+                    <span class="badge badge-green">{{ ($collaborationRole ?? null) === 'editor' ? '編集者' : '閲覧者' }}</span>
+                </div>
+            </article>
+            @endif
 
             <article class="page-card p-6">
                 <div>
@@ -71,7 +85,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4">
                         <div class="min-w-0">
                             <strong class="block truncate text-slate-50">{{ $plan->user?->name ?? 'オーナー' }}</strong>
-                            <span class="text-xs text-slate-400">{{ $plan->user?->email }}</span>
+                            @if ($canManage ?? false)<span class="text-xs text-slate-400">{{ $plan->user?->email }}</span>@endif
                         </div>
                         <span class="badge badge-green">オーナー</span>
                     </div>
@@ -81,22 +95,26 @@
                             <div class="flex flex-wrap items-center justify-between gap-3">
                                 <div class="min-w-0">
                                     <strong class="block truncate text-slate-50">{{ $member->user?->name ?? 'メンバー' }}</strong>
-                                    <span class="text-xs text-slate-400">{{ $member->user?->email }}</span>
+                                    @if ($canManage ?? false)<span class="text-xs text-slate-400">{{ $member->user?->email }}</span>@endif
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <form method="POST" action="{{ route('plans.collaboration.members.update', [$plan, $member]) }}" class="flex items-center gap-2">
-                                        @csrf
-                                        @method('PATCH')
-                                        <select name="role" class="form-control py-2 text-sm" onchange="this.form.submit()">
-                                            <option value="viewer" @selected($member->role === 'viewer')>閲覧者</option>
-                                            <option value="editor" @selected($member->role === 'editor')>編集者</option>
-                                        </select>
-                                    </form>
-                                    <form method="POST" action="{{ route('plans.collaboration.members.remove', [$plan, $member]) }}" onsubmit="return confirm('このメンバーを共同計画から外しますか？');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-secondary px-3 py-2 text-xs">外す</button>
-                                    </form>
+                                    @if ($canManage ?? false)
+                                        <form method="POST" action="{{ route('plans.collaboration.members.update', [$plan, $member]) }}" class="flex items-center gap-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <select name="role" class="form-control py-2 text-sm" onchange="this.form.submit()">
+                                                <option value="viewer" @selected($member->role === 'viewer')>閲覧者</option>
+                                                <option value="editor" @selected($member->role === 'editor')>編集者</option>
+                                            </select>
+                                        </form>
+                                        <form method="POST" action="{{ route('plans.collaboration.members.remove', [$plan, $member]) }}" onsubmit="return confirm('このメンバーを共同計画から外しますか？');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-secondary px-3 py-2 text-xs">外す</button>
+                                        </form>
+                                    @else
+                                        <span class="badge badge-slate">{{ $member->role === 'editor' ? '編集者' : '閲覧者' }}</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -164,6 +182,7 @@
                 </dl>
             </article>
 
+            @if ($canManage ?? false)
             <article class="page-card p-5">
                 <h2 class="font-bold text-slate-50">共同計画を停止</h2>
                 <p class="mt-2 text-sm leading-6 text-slate-400">参加リンクを無効化します。メンバー情報は保持するため、再開時に戻せます。</p>
@@ -173,6 +192,7 @@
                     <button type="submit" class="btn-secondary">共同計画を停止</button>
                 </form>
             </article>
+            @endif
         </aside>
     </section>
 @endif

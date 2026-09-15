@@ -49,6 +49,39 @@
         @endif
 
         @if ($plan && $roadmap)
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700/60 bg-slate-950/35 px-4 py-3 backdrop-blur">
+                <div class="min-w-0">
+                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">選択中の計画</p>
+                    <p class="mt-1 truncate text-sm font-bold text-slate-100">{{ $plan->title }}</p>
+                </div>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    <a href="{{ route('plans.show', $plan) }}" class="btn-secondary px-3 py-2 text-xs">計画詳細</a>
+                    <a href="{{ route('plans.collaboration.settings', $plan) }}" class="btn-secondary border-cyan-300/20 bg-cyan-300/[0.05] px-3 py-2 text-xs text-cyan-100">
+                        @if ($canManage ?? false)
+                            {{ $plan->is_collaborative ? '共同計画を管理' : '共同計画にする' }}
+                        @else
+                            共同計画を見る
+                        @endif
+                    </a>
+                    @if ($canManage ?? false)
+                        <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-primary px-3 py-2 text-xs">計画を更新</a>
+                        <details class="relative">
+                            <summary class="btn-secondary cursor-pointer list-none px-3 py-2 text-xs" aria-label="計画メニュー">…</summary>
+                            <div class="absolute right-0 z-[80] mt-2 w-52 rounded-2xl border border-slate-700 bg-slate-950/95 p-2 shadow-2xl backdrop-blur">
+                                <a href="{{ route('plans.edit', $plan) }}" class="block rounded-xl px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">計画を編集</a>
+                                @auth
+                                    <a href="{{ route('plans.collaboration.settings', $plan) }}" class="block rounded-xl px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">共同計画・共有</a>
+                                @endauth
+                            </div>
+                        </details>
+                    @elseif (($collaborationRole ?? null) === 'editor')
+                        <span class="rounded-full border border-cyan-300/20 bg-cyan-300/5 px-3 py-2 text-xs font-semibold text-cyan-100">編集者</span>
+                    @else
+                        <span class="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-400">閲覧のみ</span>
+                    @endif
+                </div>
+            </div>
+
             <div
                 class="roadmap-plan-pager"
                 data-roadmap-plan-pager
@@ -63,6 +96,7 @@
                         'roadmap' => $roadmap,
                         'roadmapPlan' => $plan,
                         'roadmapCanEdit' => $canEdit,
+                        'roadmapCanManage' => $canManage ?? false,
                         'roadmapMode' => 'plan',
                         'roadmapRecommendedMinutes' => $recommendation?->recommendedMinutes,
                         'roadmapRecommendationReasons' => $recommendation?->reasons ?? [],
