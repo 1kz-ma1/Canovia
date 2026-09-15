@@ -56,6 +56,51 @@
             <a href="{{ route('my_plans.index') }}" class="pk-v18-action-chip">計画一覧</a>
         </div>
 
+        <section class="page-card overflow-hidden p-4 sm:p-5" aria-labelledby="home-collaboration-title">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p class="pk-v18-card-kicker">CANOVIA / TOGETHER</p>
+                    <h2 id="home-collaboration-title" class="mt-1 text-base font-black text-slate-50 sm:text-lg">共同計画</h2>
+                    <p class="mt-1 text-xs leading-5 text-slate-400">同じゴールを、みんなで進める。</p>
+                </div>
+                <a href="{{ route('collaboration.join.form') }}" class="btn-secondary px-3 py-2 text-xs">参加コードを入力</a>
+            </div>
+
+            @if (($collaborationPlans ?? collect())->isNotEmpty())
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach (($collaborationPlans ?? collect())->take(4) as $collaborationItem)
+                        @php
+                            $collaborationPlan = $collaborationItem['plan'];
+                            $collaborationRole = $collaborationItem['role'];
+                            $collaborationRoleLabel = match ($collaborationRole) {
+                                'owner' => 'オーナー',
+                                'editor' => '編集者',
+                                default => '閲覧者',
+                            };
+                        @endphp
+                        <a href="{{ route('plans.collaboration.settings', $collaborationPlan) }}" class="group rounded-2xl border border-cyan-300/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04]">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-bold text-slate-100">{{ $collaborationPlan->displayIcon() }} {{ $collaborationPlan->title }}</p>
+                                    <p class="mt-1 text-[11px] text-slate-500">{{ $collaborationItem['member_count'] }}人 · {{ $collaborationRoleLabel }}</p>
+                                </div>
+                                <span class="shrink-0 text-sm text-cyan-200 transition group-hover:translate-x-0.5">→</span>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="mt-4 rounded-2xl border border-dashed border-slate-700/80 bg-slate-950/25 p-4">
+                    <p class="text-sm font-bold text-slate-200">まだ共同計画はありません</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">計画のロードマップから共同計画を有効にするか、もらった参加コードを入力できます。</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <a href="{{ $roadmapUrl }}" class="btn-secondary px-3 py-2 text-xs">ロードマップから設定</a>
+                        <a href="{{ route('collaboration.join.form') }}" class="btn-secondary px-3 py-2 text-xs">共同計画に参加</a>
+                    </div>
+                </div>
+            @endif
+        </section>
+
         @if (session('success'))
             <div class="assistant-notice assistant-notice-success">{{ session('success') }}</div>
         @endif

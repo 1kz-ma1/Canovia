@@ -14,11 +14,13 @@ class PlanCollaborationController extends Controller
 {
     public function settings(Request $request, Plan $plan, PlanOwnershipService $ownership)
     {
-        $ownership->authorizePlan($request, $plan);
+        $ownership->authorizeView($request, $plan);
         $plan->load(['user', 'memberships.user', 'activityLogs.user']);
         $recentActivities = $plan->activityLogs()->with('user')->limit(20)->get();
+        $canManage = $ownership->owns($request, $plan);
+        $collaborationRole = $ownership->role($request, $plan);
 
-        return view('plans.collaboration', compact('plan', 'recentActivities'));
+        return view('plans.collaboration', compact('plan', 'recentActivities', 'canManage', 'collaborationRole'));
     }
 
     public function enable(
