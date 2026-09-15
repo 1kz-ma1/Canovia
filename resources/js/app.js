@@ -262,16 +262,30 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             if (inFlight) return;
 
+            // Async review forms manage their own loading state. Make sure an
+            // older/global overlay can never trap the user on this screen.
+            window.clearTimeout(loadingTimer);
+            loadingOverlay?.classList.remove('is-visible');
+            loadingOverlay?.setAttribute('aria-hidden', 'true');
+
             inFlight = true;
-            const originalLabel = submitButton?.textContent || '変更内容を読み込んで確認';
+            const originalLabel = submitButton?.textContent || '送信';
+            const isPromptGeneration = form.action.includes('/review-assistant/prompt');
+            const isReset = form.action.includes('/review-assistant/reset');
+            const pendingLabel = isPromptGeneration ? 'プロンプトを生成中…' : (isReset ? 'リセット中…' : '変更内容を確認中…');
+            const pendingMessage = isPromptGeneration
+                ? 'AI用プロンプトを生成しています。通常は数秒で完了します。'
+                : (isReset ? '入力内容をリセットしています。' : 'AIの更新内容を確認しています。通常は数秒で完了します。');
+
             if (submitButton) {
                 submitButton.disabled = true;
-                submitButton.textContent = '変更内容を確認中…';
+                submitButton.textContent = pendingLabel;
             }
-            setStatus('AIの更新内容を確認しています。通常は数秒で完了します。');
+            setStatus(pendingMessage);
 
             const controller = new AbortController();
             const timeout = window.setTimeout(() => controller.abort(), 25000);
+            let navigating = false;
 
             try {
                 const response = await fetch(form.action, {
@@ -292,29 +306,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (!response.ok) {
                     const errors = payload?.errors ? Object.values(payload.errors).flat() : [];
-                    throw new Error(errors[0] || payload?.message || `読み込みに失敗しました (${response.status})`);
+                    throw new Error(errors[0] || payload?.message || `処理に失敗しました (${response.status})`);
                 }
 
                 const redirect = payload?.redirect;
                 if (!redirect) {
-                    throw new Error('確認画面の移動先を取得できませんでした。もう一度お試しください。');
+                    throw new Error('次の画面の移動先を取得できませんでした。もう一度お試しください。');
                 }
 
-                setStatus('確認できました。プレビューを開きます。');
+                setStatus(payload?.message || '完了しました。画面を更新します。');
+                navigating = true;
                 window.location.assign(redirect);
             } catch (error) {
                 if (error?.name === 'AbortError') {
-                    setStatus('読み込みに時間がかかりすぎたため中断しました。通信状態を確認して、もう一度お試しください。', 'error');
+                    setStatus('処理に時間がかかりすぎたため中断しました。通信状態を確認して、もう一度お試しください。', 'error');
                 } else {
-                    setStatus(error?.message || '変更内容を読み込めませんでした。もう一度お試しください。', 'error');
-                }
-                inFlight = false;
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = originalLabel;
+                    setStatus(error?.message || '処理を完了できませんでした。もう一度お試しください。', 'error');
                 }
             } finally {
                 window.clearTimeout(timeout);
+                window.clearTimeout(loadingTimer);
+                loadingOverlay?.classList.remove('is-visible');
+                loadingOverlay?.setAttribute('aria-hidden', 'true');
+
+                if (!navigating) {
+                    inFlight = false;
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalLabel;
+                    }
+                }
             }
         });
     });
@@ -840,13 +861,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const roadmapDetailTimers = new WeakMap();
+    const ROADMAP_DETAIL_AUTO_CLOSE_MS = 4000;
+
+    const clearRoadmapDetailTimer = (stop) => {
+        const timer = roadmapDetailTimers.get(stop);
+        if (timer) {
+            window.clearTimeout(timer);
+            roadmapDetailTimers.delete(stop);
+        }
+    };
+
+    const scheduleRoadmapDetailClose = (stop) => {
+        clearRoadmapDetailTimer(stop);
+        if (!stop.open) return;
+
+        const viewRoot = stop.closest('[data-roadmap-view-root]');
+        if (viewRoot?.dataset.roadmapPlanId === 'preview') return;
+
+        const timer = window.setTimeout(() => {
+            if (stop.open) stop.removeAttribute('open');
+            roadmapDetailTimers.delete(stop);
+        }, ROADMAP_DETAIL_AUTO_CLOSE_MS);
+
+        roadmapDetailTimers.set(stop, timer);
+    };
+
     document.querySelectorAll('[data-map-stop]').forEach((stop) => {
         stop.addEventListener('toggle', () => {
-            if (!stop.open) return;
+            if (!stop.open) {
+                clearRoadmapDetailTimer(stop);
+                return;
+            }
+
             const root = stop.closest('[data-roadmap-map]');
             root?.querySelectorAll('[data-map-stop][open]').forEach((other) => {
-                if (other !== stop && !other.classList.contains('is-current')) other.removeAttribute('open');
+                if (other === stop) return;
+                clearRoadmapDetailTimer(other);
+                other.removeAttribute('open');
             });
+
+            scheduleRoadmapDetailClose(stop);
+        });
+
+        // Keep the detail open while the user is interacting with its controls/content.
+        stop.addEventListener('pointerdown', () => clearRoadmapDetailTimer(stop));
+        stop.addEventListener('focusin', () => clearRoadmapDetailTimer(stop));
+        stop.addEventListener('pointerleave', () => scheduleRoadmapDetailClose(stop));
+        stop.addEventListener('focusout', (event) => {
+            if (!stop.contains(event.relatedTarget)) scheduleRoadmapDetailClose(stop);
         });
     });
 });
