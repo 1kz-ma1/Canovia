@@ -176,7 +176,7 @@
                             外部AIとの対話後、最終的に返されたJSONを貼り付けます。
                         </p>
 
-                        <form method="POST" action="{{ route('plans.review_assistant.preview', $plan) }}" class="mt-4 space-y-4" data-async-plan-review data-reveal-target="#review-proposal-section">
+                        <form method="POST" action="{{ route('plans.review_assistant.preview', $plan) }}" class="mt-4 space-y-4" data-async-plan-review data-reveal-target="#review-proposal-section" data-loading-skip>
                             @csrf
                             <textarea
                                 name="operations_json"
@@ -186,9 +186,10 @@
                                 placeholder='{"schema_version":"2.0","flow":"result_recording","target_plan":{"id":{{ $plan->id }},"title":"計画名","category":"カテゴリ"},"summary":"AIが判断した更新内容","operations":[]}'
                             >{{ old('operations_json') }}</textarea>
 
-                            <button type="submit" class="btn-primary w-full md:w-auto">
+                            <button type="submit" class="btn-primary w-full md:w-auto" data-async-plan-review-submit>
                                 変更内容を読み込んで確認
                             </button>
+                            <div class="hidden rounded-xl border px-3 py-2 text-sm leading-6" data-async-plan-review-status aria-live="polite"></div>
                         </form>
                     </div>
                     <div class="assistant-avatar assistant-avatar-user">YOU</div>
@@ -257,6 +258,18 @@
                             </div>
                         @endif
 
+                        @if ($proposalCanApply)
+                            <div class="sticky top-3 z-40 mt-5 rounded-2xl border border-cyan-300/20 bg-slate-950/90 p-3 shadow-[0_14px_40px_rgba(2,6,23,.42)] backdrop-blur-xl">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-slate-50">この内容で計画を更新しますか？</p>
+                                        <p class="mt-1 text-xs text-slate-400">詳細を確認したら、そのまま確定できます。</p>
+                                    </div>
+                                    <button type="submit" form="review-apply-form" class="btn-primary shrink-0">この内容で確定して更新</button>
+                                </div>
+                            </div>
+                        @endif
+
                         <details class="mt-5 rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
                             <summary class="cursor-pointer font-bold text-slate-200">変更前のロードマップを見る</summary>
                             <div class="mt-4 opacity-80">
@@ -285,7 +298,7 @@
                             ])
                         </div>
 
-                        <form method="POST" action="{{ route('plans.review_assistant.apply', $plan) }}" class="mt-5 space-y-4">
+                        <form id="review-apply-form" method="POST" action="{{ route('plans.review_assistant.apply', $plan) }}" class="mt-5 space-y-4">
                             @csrf
                             <input type="hidden" name="proposal_token" value="{{ $proposal['token'] }}">
 
@@ -319,7 +332,7 @@
                             @if ($proposalCanApply)
                                 <div class="flex flex-wrap gap-3 pt-2">
                                     <button type="submit" class="btn-primary">
-                                        {{ $proposalAtomic ? 'このRoadmapへ一括更新' : '選択した変更を反映' }}
+                                        {{ $proposalAtomic ? 'この内容で確定して一括更新' : 'この内容で確定して更新' }}
                                     </button>
                                 </div>
                             @endif

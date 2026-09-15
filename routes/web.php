@@ -65,12 +65,12 @@ Route::patch('/admin/feedback/{feedback}/archive', [AdminFeedbackController::cla
 Route::patch('/admin/feedback/{feedback}/restore', [AdminFeedbackController::class, 'restore'])->name('admin.feedback.restore');
 
 
-// 共同計画。参加経路はURL/参加コードのどちらでもログイン必須。
+// 共同計画。共有URLは未ログインでも招待内容を確認でき、認証後に元の招待へ戻ります。
+Route::get('/join/{token}', [PlanCollaborationController::class, 'joinByToken'])->middleware('throttle:30,1')->name('collaboration.join.token');
+
 Route::middleware('auth')->group(function () {
     Route::get('/collaboration/join', [PlanCollaborationController::class, 'joinForm'])->name('collaboration.join.form');
     Route::post('/collaboration/join', [PlanCollaborationController::class, 'joinByCode'])->middleware('throttle:12,1')->name('collaboration.join.code');
-    Route::get('/join/{token}', [PlanCollaborationController::class, 'joinByToken'])->middleware('throttle:30,1')->name('collaboration.join.token');
-
     Route::get('/plans/{plan}/collaboration', [PlanCollaborationController::class, 'settings'])->name('plans.collaboration.settings');
     Route::post('/plans/{plan}/collaboration', [PlanCollaborationController::class, 'enable'])->name('plans.collaboration.enable');
     Route::delete('/plans/{plan}/collaboration', [PlanCollaborationController::class, 'disable'])->name('plans.collaboration.disable');

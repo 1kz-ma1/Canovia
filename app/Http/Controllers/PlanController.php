@@ -7,6 +7,7 @@ use App\Services\BehaviorIdentityService;
 use App\Services\ContinuityService;
 use App\Services\PlanOwnershipService;
 use App\Services\PlanCollaborationService;
+use App\Services\PlanActivityService;
 use App\Services\PlanProgressService;
 use App\Services\PlanTimelineService;
 use App\Services\RecommendationService;
@@ -143,7 +144,11 @@ class PlanController extends Controller
             $continuity['task_id'] ?? null,
         );
 
-        return view('plans.show', compact('plan', 'progress', 'timeline', 'canEdit', 'canManage', 'collaborationRole', 'recommendation', 'continuity', 'roadmap'));
+        $recentActivities = $plan->is_collaborative
+            ? $plan->activityLogs()->with('user')->limit(8)->get()
+            : collect();
+
+        return view('plans.show', compact('plan', 'progress', 'timeline', 'canEdit', 'canManage', 'collaborationRole', 'recommendation', 'continuity', 'roadmap', 'recentActivities'));
     }
 
     public function edit(Request $request, Plan $plan, PlanOwnershipService $ownership)
@@ -153,7 +158,7 @@ class PlanController extends Controller
         return view('plans.edit', compact('plan'));
     }
 
-    public function update(Request $request, Plan $plan, PlanOwnershipService $ownership)
+    public function update(Request $request, Plan $plan, PlanOwnershipService $ownership, PlanActivityService $activity)
     {
         $ownership->authorizePlan($request, $plan);
 
@@ -179,6 +184,8 @@ class PlanController extends Controller
             return back()->withErrors(['deadline' => '期限は開始日以降にしてください。'])->withInput();
         }
 
+        $before = $plan->only(['title', 'description', 'category', 'start_date', 'deadline', 'is_public']);
+
         $plan->update([
             'title' => $validated['title'],
             'description' => array_key_exists('description', $validated) ? $validated['description'] : $plan->description,
@@ -189,6 +196,15 @@ class PlanController extends Controller
             'start_date' => $startDate,
             'deadline' => $deadline,
             'is_public' => $request->has('is_public') ? $request->boolean('is_public') : $plan->is_public,
+        ]);
+
+        $changedFields = collect($plan->only(array_keys($before)))
+            ->filter(fn ($value, $key) => (string) ($before[$key] ?? '') !== (string) $value)
+            ->keys()
+            ->values()
+            ->all();
+        $activity->record($plan, $request->user(), 'plan_updated', 'plan', (int) $plan->id, [
+            'changed_fields' => $changedFields,
         ]);
 
         return redirect()->route('plans.show', $plan)->with('success', '計画を更新しました。');

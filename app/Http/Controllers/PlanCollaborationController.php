@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Plan;
 use App\Models\PlanMember;
 use App\Services\PlanCollaborationService;
+use App\Services\PlanActivityService;
 use App\Services\PlanOwnershipService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,9 +15,10 @@ class PlanCollaborationController extends Controller
     public function settings(Request $request, Plan $plan, PlanOwnershipService $ownership)
     {
         $ownership->authorizePlan($request, $plan);
-        $plan->load(['user', 'memberships.user']);
+        $plan->load(['user', 'memberships.user', 'activityLogs.user']);
+        $recentActivities = $plan->activityLogs()->with('user')->limit(20)->get();
 
-        return view('plans.collaboration', compact('plan'));
+        return view('plans.collaboration', compact('plan', 'recentActivities'));
     }
 
     public function enable(
@@ -59,10 +61,12 @@ class PlanCollaborationController extends Controller
         Plan $plan,
         PlanOwnershipService $ownership,
         PlanCollaborationService $collaboration,
+        PlanActivityService $activity,
     ) {
         $ownership->authorizePlan($request, $plan);
         abort_unless($plan->is_collaborative, 404);
         $collaboration->regenerateInvite($plan);
+        $activity->record($plan, $request->user(), 'invite_regenerated', 'plan', (int) $plan->id);
 
         return redirect()->route('plans.collaboration.settings', $plan)
             ->with('status', '共有リンクと参加コードを再発行しました。以前の招待情報は使えません。');
@@ -98,9 +102,19 @@ class PlanCollaborationController extends Controller
     public function joinByToken(Request $request, string $token, PlanCollaborationService $collaboration)
     {
         $plan = Plan::query()
+            ->with('user')
             ->where('is_collaborative', true)
             ->where('collaboration_share_token', $token)
             ->firstOrFail();
+
+        if (! $request->user()) {
+            $request->session()->put('url.intended', $request->fullUrl());
+
+            return view('plans.join_invite', [
+                'plan' => $plan,
+                'token' => $token,
+            ]);
+        }
 
         return $this->join($request, $plan, $collaboration);
     }
@@ -110,6 +124,7 @@ class PlanCollaborationController extends Controller
         Plan $plan,
         PlanMember $member,
         PlanOwnershipService $ownership,
+        PlanActivityService $activity,
     ) {
         $ownership->authorizePlan($request, $plan);
         abort_unless((int) $member->plan_id === (int) $plan->id, 404);
@@ -118,7 +133,13 @@ class PlanCollaborationController extends Controller
             'role' => ['required', Rule::in(PlanMember::ROLES)],
         ]);
 
+        $beforeRole = $member->role;
         $member->update(['role' => $validated['role']]);
+        $activity->record($plan, $request->user(), 'member_role_changed', 'user', (int) $member->user_id, [
+            'before_role' => $beforeRole,
+            'after_role' => $validated['role'],
+            'member_name' => $member->user?->name,
+        ]);
 
         return redirect()->route('plans.collaboration.settings', $plan)
             ->with('status', 'メンバー権限を更新しました。');
@@ -129,10 +150,16 @@ class PlanCollaborationController extends Controller
         Plan $plan,
         PlanMember $member,
         PlanOwnershipService $ownership,
+        PlanActivityService $activity,
     ) {
         $ownership->authorizePlan($request, $plan);
         abort_unless((int) $member->plan_id === (int) $plan->id, 404);
+        $memberName = $member->user?->name;
+        $memberUserId = (int) $member->user_id;
         $member->delete();
+        $activity->record($plan, $request->user(), 'member_removed', 'user', $memberUserId, [
+            'member_name' => $memberName,
+        ]);
 
         return redirect()->route('plans.collaboration.settings', $plan)
             ->with('status', 'メンバーを共同計画から外しました。');
@@ -145,6 +172,11 @@ class PlanCollaborationController extends Controller
         }
 
         $member = $collaboration->addViewer($plan, $request->user(), $plan->user);
+        if ($member->wasRecentlyCreated) {
+            app(PlanActivityService::class)->record($plan, $request->user(), 'member_joined', 'user', (int) $request->user()->id, [
+                'member_name' => $request->user()->name,
+            ]);
+        }
         $message = $member->wasRecentlyCreated
             ? '共同計画に参加しました。最初の権限は閲覧のみです。'
             : 'すでにこの共同計画へ参加しています。';

@@ -8,6 +8,7 @@ use App\Models\Task;
 use App\Models\WorkLog;
 use App\Models\WorkSession;
 use App\Services\PlanProgressService;
+use App\Services\PlanActivityService;
 use Carbon\Carbon;
 use App\Services\PlanOwnershipService;
 use App\Services\RoadmapService;
@@ -142,6 +143,13 @@ class PlanReviewAssistantController extends Controller
 
         $proposal = $this->buildProposal($plan, $decoded, $operations, $jsonText, $action);
         $request->session()->put($this->proposalSessionKey($plan), $proposal);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'redirect' => route('plans.review_assistant.show', $plan),
+            ]);
+        }
 
         return redirect()
             ->route('plans.review_assistant.show', $plan)
@@ -302,7 +310,7 @@ class PlanReviewAssistantController extends Controller
             ->with('status', 'ダッシュボードのAI JSON読み込み内容を取り消しました。');
     }
 
-    public function apply(Request $request, Plan $plan, PlanProgressService $progressService)
+    public function apply(Request $request, Plan $plan, PlanProgressService $progressService, PlanActivityService $activity)
     {
         $this->authorizePlanOwner($plan);
 
@@ -606,6 +614,10 @@ class PlanReviewAssistantController extends Controller
                 ->whereKey((int) $draft['work_session_id'])
                 ->update(['needs_plan_update' => false, 'plan_updated_at' => now()]);
         }
+
+        $activity->record($plan, $request->user(), 'plan_ai_updated', 'plan', (int) $plan->id, [
+            'operation_count' => count($selectedOperations),
+        ]);
 
         $request->session()->forget([
             $this->draftSessionKey($plan),

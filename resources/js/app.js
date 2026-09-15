@@ -221,6 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('submit', (event) => {
         const form = event.target;
         if (!(form instanceof HTMLFormElement) || form.target === '_blank') return;
+        if (form.hasAttribute('data-loading-skip')) return;
         showLoading();
     });
 
@@ -239,6 +240,83 @@ document.addEventListener('DOMContentLoaded', () => {
         window.clearTimeout(loadingTimer);
         loadingOverlay?.classList.remove('is-visible');
         loadingOverlay?.setAttribute('aria-hidden', 'true');
+    });
+
+    document.querySelectorAll('[data-async-plan-review]').forEach((form) => {
+        const submitButton = form.querySelector('[data-async-plan-review-submit]');
+        const statusBox = form.querySelector('[data-async-plan-review-status]');
+        let inFlight = false;
+
+        const setStatus = (message, mode = 'info') => {
+            if (!statusBox) return;
+            statusBox.textContent = message;
+            statusBox.classList.remove('hidden', 'border-red-400/30', 'bg-red-400/10', 'text-red-100', 'border-cyan-300/20', 'bg-cyan-300/5', 'text-cyan-100');
+            if (mode === 'error') {
+                statusBox.classList.add('border-red-400/30', 'bg-red-400/10', 'text-red-100');
+            } else {
+                statusBox.classList.add('border-cyan-300/20', 'bg-cyan-300/5', 'text-cyan-100');
+            }
+        };
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (inFlight) return;
+
+            inFlight = true;
+            const originalLabel = submitButton?.textContent || '変更内容を読み込んで確認';
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = '変更内容を確認中…';
+            }
+            setStatus('AIの更新内容を確認しています。通常は数秒で完了します。');
+
+            const controller = new AbortController();
+            const timeout = window.setTimeout(() => controller.abort(), 25000);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                let payload = null;
+                try {
+                    payload = await response.json();
+                } catch (_) {}
+
+                if (!response.ok) {
+                    const errors = payload?.errors ? Object.values(payload.errors).flat() : [];
+                    throw new Error(errors[0] || payload?.message || `読み込みに失敗しました (${response.status})`);
+                }
+
+                const redirect = payload?.redirect;
+                if (!redirect) {
+                    throw new Error('確認画面の移動先を取得できませんでした。もう一度お試しください。');
+                }
+
+                setStatus('確認できました。プレビューを開きます。');
+                window.location.assign(redirect);
+            } catch (error) {
+                if (error?.name === 'AbortError') {
+                    setStatus('読み込みに時間がかかりすぎたため中断しました。通信状態を確認して、もう一度お試しください。', 'error');
+                } else {
+                    setStatus(error?.message || '変更内容を読み込めませんでした。もう一度お試しください。', 'error');
+                }
+                inFlight = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalLabel;
+                }
+            } finally {
+                window.clearTimeout(timeout);
+            }
+        });
     });
 
     document.querySelectorAll('[data-candidate-carousel]').forEach((carousel) => {
