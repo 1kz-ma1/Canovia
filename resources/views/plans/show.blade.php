@@ -60,9 +60,14 @@
                 </div>
             </div>
 
-            @if ($canManage ?? false)
-                <div class="w-full md:w-auto">
-                    <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-primary w-full md:w-auto">計画を更新</a>
+            <div class="w-full md:w-auto">
+                <div class="flex flex-wrap gap-2">
+                    @if ($canManage ?? false)
+                        <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-primary flex-1 md:flex-none">計画を更新</a>
+                    @endif
+                    <a href="{{ route('plans.resources.index', $plan) }}" class="btn-secondary flex-1 md:flex-none">関連資料{{ $plan->resources->isNotEmpty() ? ' · '.$plan->resources->count() : '' }}</a>
+                </div>
+                @if ($canManage ?? false)
                     <div class="mt-2 hidden flex-wrap gap-2 md:flex">
                         <form method="POST" action="{{ route('chat.start', 'ai_context') }}">
                             @csrf
@@ -86,8 +91,8 @@
                             @auth<a href="{{ route('plans.collaboration.settings', $plan) }}" class="btn-secondary w-full">共同計画</a>@endauth
                         </div>
                     </details>
-                </div>
-            @endif
+                @endif
+            </div>
         </div>
     </section>
 
@@ -104,6 +109,10 @@
                 'task_deleted' => 'タスクを削除',
                 'plan_ai_updated' => 'AI更新を反映',
                 'invite_regenerated' => '招待情報を再発行',
+                'resource_created' => '関連資料を追加',
+                'resource_updated' => '関連資料を更新',
+                'resource_deleted' => '関連資料を削除',
+                'resource_ai_assigned' => 'AIで資料を整理',
             ];
         @endphp
         <section class="mb-6 page-card p-4 sm:p-5">
@@ -120,7 +129,7 @@
                 @forelse (($recentActivities ?? collect()) as $activity)
                     @php
                         $meta = $activity->metadata ?? [];
-                        $targetTitle = $meta['task_title'] ?? $meta['member_name'] ?? null;
+                        $targetTitle = $meta['task_title'] ?? $meta['resource_title'] ?? $meta['member_name'] ?? null;
                     @endphp
                     <div class="rounded-2xl border border-white/8 bg-white/[0.035] p-3">
                         <p class="text-sm leading-6 text-slate-200">
@@ -388,6 +397,13 @@
                                 <p class="mt-2 text-sm leading-6 text-slate-600">{{ $task->description ?? '説明なし' }}</p>
                                 @if ($task->prerequisite)
                                     <p class="mt-2 text-xs font-medium text-amber-700">前提：{{ $task->prerequisite->title }}（{{ $task->prerequisite->status === 'done' ? '完了' : '未完了' }}）</p>
+                                @endif
+                                @if ($task->resources->isNotEmpty())
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        @foreach ($task->resources as $resource)
+                                            <a href="{{ $resource->url }}" target="_blank" rel="noopener noreferrer" class="rounded-full border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-300/[0.12]">📎 {{ $resource->title }}</a>
+                                        @endforeach
+                                    </div>
                                 @endif
                             </div>
 

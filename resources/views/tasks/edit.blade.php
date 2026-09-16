@@ -186,6 +186,36 @@
                     </div>
                 </div>
 
+                <div class="rounded-2xl border border-cyan-200/20 bg-cyan-50/50 p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-bold text-slate-900">関連資料</p>
+                            <p class="mt-1 text-xs leading-5 text-slate-500">このタスクを進めるときに使う資料を選べます。後から何度でも付け替え可能です。</p>
+                        </div>
+                        <a href="{{ route('plans.resources.index', $task->plan) }}" class="text-xs font-bold text-cyan-700 hover:text-cyan-600">資料ライブラリを開く</a>
+                    </div>
+
+                    @php
+                        $selectedResourceIds = collect(old('resource_ids', $task->resources->pluck('id')->all()))->map(fn ($id) => (int) $id)->all();
+                    @endphp
+
+                    @if ($task->plan->resources->isEmpty())
+                        <p class="mt-3 text-sm text-slate-500">まだ計画に関連資料がありません。資料ライブラリから追加できます。</p>
+                    @else
+                        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                            @foreach ($task->plan->resources as $resource)
+                                <label class="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                                    <input type="checkbox" name="resource_ids[]" value="{{ $resource->id }}" class="mt-1" @checked(in_array($resource->id, $selectedResourceIds))>
+                                    <span class="min-w-0">
+                                        <strong class="block break-words text-slate-900">{{ $resource->title }}</strong>
+                                        <span class="mt-1 block text-xs text-slate-500">{{ $resource->providerLabel() }} · {{ $resource->resourceTypeLabel() }}</span>
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
                 <div class="flex flex-wrap gap-3">
                     <button
                         type="submit"

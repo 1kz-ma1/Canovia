@@ -78,6 +78,11 @@ class Plan extends Model
         return $this->hasMany(Task::class);
     }
 
+    public function resources()
+    {
+        return $this->hasMany(PlanResource::class);
+    }
+
     public function workLogs()
     {
         return $this->hasMany(WorkLog::class);

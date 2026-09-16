@@ -1,6 +1,7 @@
 @php
     $roadmapMode = $roadmapMode ?? 'plan';
     $roadmapCanEdit = $roadmapCanEdit ?? false;
+    $roadmapCanManage = $roadmapCanManage ?? false;
     $roadmapPlan = $roadmapPlan ?? $plan ?? null;
     $roadmapPreview = $roadmapMode === 'preview';
     $roadmapRecommendedMinutes = $roadmapRecommendedMinutes ?? null;
@@ -99,11 +100,22 @@
                 @elseif (! empty($node['description']))
                     <p>{{ $node['description'] }}</p>
                 @endif
+                @if (! empty($node['resources']))
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach ($node['resources'] as $resource)
+                            <a href="{{ $resource['url'] }}" target="_blank" rel="noopener noreferrer" class="rounded-full border border-cyan-300/20 bg-cyan-300/[0.08] px-2.5 py-1 text-[11px] font-semibold text-cyan-100">📎 {{ $resource['title'] }}</a>
+                        @endforeach
+                    </div>
+                @endif
                 <div class="pk-v19-node-detail-stats">
                     @if ($isCurrent && $roadmapRecommendedMinutes)<span>今回 {{ $roadmapRecommendedMinutes }}分</span>@endif
                     <span>残り {{ $node['remaining_minutes'] }}分</span>
                     <span>{{ $node['progress_percent'] }}%</span>
                 </div>
+                @if ($isCurrent && $roadmapCanManage && ! $roadmapPreview && $roadmapPlan)
+                    <a href="{{ route('plans.review_assistant.show', $roadmapPlan) }}" class="btn-secondary mt-3 w-full text-center sm:w-auto">計画を更新</a>
+                @endif
+
                 @if ($roadmapCanEdit && ! $roadmapPreview && ($node['startable'] ?? false) && ! empty($node['task_id']))
                     <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
                         @csrf
