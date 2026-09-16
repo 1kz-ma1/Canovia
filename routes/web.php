@@ -26,6 +26,8 @@ use App\Http\Controllers\TimelineController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\PlanCollaborationController;
+use App\Http\Controllers\PlanResourceController;
+use App\Http\Controllers\PlanResourceAssistantController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -132,6 +134,14 @@ Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show')
 Route::get('/plans/{plan}/edit', [PlanController::class, 'edit'])->name('plans.edit');
 Route::put('/plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
 Route::delete('/plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
+Route::get('/plans/{plan}/resources', [PlanResourceController::class, 'index'])->name('plans.resources.index');
+Route::post('/plans/{plan}/resources', [PlanResourceController::class, 'store'])->name('plans.resources.store');
+Route::get('/plans/{plan}/resources/assistant', [PlanResourceAssistantController::class, 'show'])->name('plans.resources.assistant');
+Route::post('/plans/{plan}/resources/assistant/preview', [PlanResourceAssistantController::class, 'preview'])->name('plans.resources.assistant.preview');
+Route::post('/plans/{plan}/resources/assistant/apply', [PlanResourceAssistantController::class, 'apply'])->name('plans.resources.assistant.apply');
+Route::post('/plans/{plan}/resources/assistant/reset', [PlanResourceAssistantController::class, 'reset'])->name('plans.resources.assistant.reset');
+Route::put('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'update'])->name('plans.resources.update');
+Route::delete('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'destroy'])->name('plans.resources.destroy');
 Route::get('/plans/{plan}/ai-task-assistant', [AiTaskAssistantController::class, 'show'])
     ->name('plans.ai_task_assistant.show');
 

@@ -56,7 +56,7 @@ class TaskController extends Controller
 
     public function edit(Task $task)
     {
-        $task->load('plan.tasks');
+        $task->load(['plan.tasks', 'plan.resources', 'resources']);
 
         $this->authorizeOwner($task);
 
@@ -86,6 +86,12 @@ class TaskController extends Controller
                     ->where(fn ($query) => $query->where('plan_id', $task->plan_id)),
                 Rule::notIn([$task->id]),
             ],
+            'resource_ids' => ['nullable', 'array', 'max:100'],
+            'resource_ids.*' => [
+                'integer',
+                Rule::exists('plan_resources', 'id')
+                    ->where(fn ($query) => $query->where('plan_id', $task->plan_id)),
+            ],
         ]);
 
         $beforeStatus = $task->status;
@@ -103,6 +109,13 @@ class TaskController extends Controller
             'next_action_note' => $validated['next_action_note'] ?? null,
             'depends_on_task_id' => $validated['depends_on_task_id'] ?? null,
         ]);
+
+        $task->resources()->sync(collect($validated['resource_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all());
 
         $action = $beforeStatus !== 'done' && $task->status === 'done' ? 'task_completed' : 'task_updated';
         $activity->record($task->plan, $request->user(), $action, 'task', (int) $task->id, [

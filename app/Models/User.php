@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'onboarding_version', 'onboarding_completed_at', 'onboarding_skipped_at'])]
+#[Fillable(['name', 'email', 'password', 'onboarding_version', 'onboarding_completed_at', 'onboarding_skipped_at', 'last_resource_provider'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -38,6 +38,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Plan::class, 'plan_members')
             ->withPivot(['role', 'joined_at'])
             ->withTimestamps();
+    }
+
+    public function createdPlanResources()
+    {
+        return $this->hasMany(PlanResource::class, 'created_by_user_id');
     }
 
     protected function casts(): array

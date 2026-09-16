@@ -146,6 +146,10 @@
                         'task_completed' => 'タスクを完了',
                         'task_deleted' => 'タスクを削除',
                         'plan_ai_updated' => 'AI更新を反映',
+                        'resource_created' => '関連資料を追加',
+                        'resource_updated' => '関連資料を更新',
+                        'resource_deleted' => '関連資料を削除',
+                        'resource_ai_assigned' => 'AIで資料を整理',
                         'invite_regenerated' => '招待情報を再発行',
                     ];
                 @endphp

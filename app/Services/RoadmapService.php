@@ -10,7 +10,7 @@ class RoadmapService
 {
     public function build(Plan $plan, ?int $currentTaskId = null, ?int $lastWorkedTaskId = null): array
     {
-        $plan->loadMissing(['tasks.prerequisite']);
+        $plan->loadMissing(['tasks.prerequisite', 'tasks.resources']);
 
         $nodes = $plan->tasks
             ->values()
@@ -24,7 +24,7 @@ class RoadmapService
 
     public function project(Plan $plan, array $operations): array
     {
-        $plan->loadMissing(['tasks.prerequisite']);
+        $plan->loadMissing(['tasks.prerequisite', 'tasks.resources']);
 
         $tasks = $plan->tasks
             ->mapWithKeys(fn (Task $task) => [$task->id => [
@@ -46,6 +46,12 @@ class RoadmapService
                 'continuation_of_task_id' => $task->continuation_of_task_id,
                 'source_task_ids' => $task->lineage_source_task_ids ?: ($task->continuation_of_task_id ? [(int) $task->continuation_of_task_id] : []),
                 'source_task_snapshots' => $task->lineage_source_snapshots ?? [],
+                'resources' => $task->resources->map(fn ($resource) => [
+                    'id' => (int) $resource->id,
+                    'title' => $resource->title,
+                    'url' => $resource->url,
+                    'provider' => $resource->provider,
+                ])->values()->all(),
                 'change_type' => 'unchanged',
                 'operation_indexes' => [],
             ]])
@@ -114,6 +120,7 @@ class RoadmapService
                     'source_task_ids' => $sourceTaskIds,
                     'source_task_snapshots' => $operation['source_task_snapshots'] ?? [],
                     'progress_origin' => $operation['progress_origin'] ?? null,
+                    'resources' => [],
                     'change_type' => 'created',
                     'operation_indexes' => [(int) $index],
                 ];
@@ -167,6 +174,12 @@ class RoadmapService
             'continuation_of_task_id' => $task->continuation_of_task_id,
             'source_task_ids' => $task->lineage_source_task_ids ?: ($task->continuation_of_task_id ? [(int) $task->continuation_of_task_id] : []),
             'source_task_snapshots' => $task->lineage_source_snapshots ?? [],
+            'resources' => $task->resources->map(fn ($resource) => [
+                'id' => (int) $resource->id,
+                'title' => $resource->title,
+                'url' => $resource->url,
+                'provider' => $resource->provider,
+            ])->values()->all(),
             'change_type' => 'unchanged',
             'operation_indexes' => [],
             'is_current' => $currentTaskId !== null && $task->id === $currentTaskId,

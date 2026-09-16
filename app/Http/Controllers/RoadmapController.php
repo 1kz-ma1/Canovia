@@ -24,7 +24,7 @@ class RoadmapController extends Controller
         ContinuityService $continuityService,
     ) {
         $plans = $ownership->ownedPlans($request, [
-            'tasks' => fn ($query) => $query->with('prerequisite')->orderBy('sort_order')->orderBy('id'),
+            'tasks' => fn ($query) => $query->with(['prerequisite', 'resources'])->orderBy('sort_order')->orderBy('id'),
             'workLogs' => fn ($query) => $query->with('task')->latest('worked_on'),
         ]);
 
@@ -36,9 +36,13 @@ class RoadmapController extends Controller
         $previousPlan = null;
         $nextPlan = null;
         $canEdit = false;
+        $canManage = false;
+        $collaborationRole = null;
 
         if ($plan) {
             $canEdit = $ownership->canEdit($request, $plan);
+            $canManage = $ownership->owns($request, $plan);
+            $collaborationRole = $ownership->role($request, $plan);
             $planIndex = $plans->values()->search(fn ($candidate) => $candidate->id === $plan->id);
             if ($planIndex !== false) {
                 $previousPlan = $planIndex > 0 ? $plans->values()->get($planIndex - 1) : null;
@@ -71,6 +75,8 @@ class RoadmapController extends Controller
             'previousPlan',
             'nextPlan',
             'canEdit',
+            'canManage',
+            'collaborationRole',
         ));
     }
 }

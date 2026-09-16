@@ -1,6 +1,7 @@
 @php
     $roadmapMode = $roadmapMode ?? 'plan';
     $roadmapCanEdit = $roadmapCanEdit ?? false;
+    $roadmapCanManage = $roadmapCanManage ?? false;
     $roadmapPlan = $roadmapPlan ?? $plan ?? null;
     $roadmapPreview = $roadmapMode === 'preview';
     $roadmapRecommendedMinutes = $roadmapRecommendedMinutes ?? null;
@@ -99,6 +100,14 @@
                         </div>
                     @endif
 
+                    @if (! empty($node['resources']))
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            @foreach ($node['resources'] as $resource)
+                                <a href="{{ $resource['url'] }}" target="_blank" rel="noopener noreferrer" class="rounded-full border border-cyan-300/20 bg-cyan-300/[0.08] px-3 py-1 text-xs font-semibold text-cyan-100">📎 {{ $resource['title'] }}</a>
+                            @endforeach
+                        </div>
+                    @endif
+
                     <div class="mt-4 flex flex-wrap gap-2 text-xs">
                         @if (! $roadmapPreview && $roadmapRecommendedMinutes)<span class="badge badge-green">今回 {{ $roadmapRecommendedMinutes }}分</span>@endif
                         <span class="badge badge-slate">残り {{ $node['remaining_minutes'] }}分</span>
@@ -112,6 +121,10 @@
                                 <li>・{{ $reason }}</li>
                             @endforeach
                         </ul>
+                    @endif
+
+                    @if ($roadmapCanManage && ! $roadmapPreview && $roadmapPlan)
+                        <a href="{{ route('plans.review_assistant.show', $roadmapPlan) }}" class="btn-secondary mt-5 w-full sm:w-auto">計画を更新</a>
                     @endif
 
                     @if ($roadmapCanEdit && ! $roadmapPreview && ($node['startable'] ?? false) && ! empty($node['task_id']))
@@ -158,6 +171,13 @@
                         @endif
                         @if (! empty($node['lineage_children']))
                             <p class="mt-2 text-xs text-emerald-300">ここから分かれたタスク：{{ collect($node['lineage_children'])->pluck('title')->implode(' / ') }}</p>
+                        @endif
+                        @if (! empty($node['resources']))
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                @foreach ($node['resources'] as $resource)
+                                    <a href="{{ $resource['url'] }}" target="_blank" rel="noopener noreferrer" class="rounded-full border border-cyan-300/20 bg-cyan-300/[0.08] px-3 py-1 text-xs font-semibold text-cyan-100">📎 {{ $resource['title'] }}</a>
+                                @endforeach
+                            </div>
                         @endif
                         @if ($roadmapCanEdit && ! $roadmapPreview && ($node['startable'] ?? false) && ! empty($node['task_id']))
                             <form method="POST" action="{{ route('work_sessions.start') }}" class="mt-4" data-work-start-form>
