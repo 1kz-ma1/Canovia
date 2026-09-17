@@ -123,3 +123,31 @@
         @endif
     </div>
 @endsection
+
+@section('offline_snapshot')
+@if ($plan && $roadmap)
+@php
+    $offlineCurrent = ! empty($roadmap['current'])
+        ? collect($roadmap['current'])->only(['task_id', 'title', 'status', 'status_label', 'progress_percent', 'remaining_minutes', 'next_action_note', 'is_current'])->all()
+        : null;
+    $offlineSnapshot = [
+        'type' => 'roadmap',
+        'captured_at' => now()->toIso8601String(),
+        'csrf_token' => csrf_token(),
+        'plan' => ['id' => $plan->id, 'title' => $plan->title, 'category' => $plan->category],
+        'current' => $offlineCurrent,
+        'roadmap' => collect($roadmap['nodes'] ?? [])
+            ->map(fn ($node) => collect($node)->only(['task_id', 'title', 'status', 'status_label', 'progress_percent', 'remaining_minutes', 'next_action_note', 'is_current'])->all())
+            ->values()
+            ->all(),
+        'plans' => $plans->map(fn ($item) => [
+            'id' => $item->id,
+            'title' => $item->title,
+        ])->values()->all(),
+        'continuity' => $continuity,
+    ];
+@endphp
+<script type="application/json" id="pacekeeper-offline-snapshot">{!! json_encode($offlineSnapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+@endif
+@endsection
+

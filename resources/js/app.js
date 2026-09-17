@@ -695,6 +695,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const snapshot = JSON.parse(snapshotElement.textContent || '{}');
             if (snapshot && typeof snapshot === 'object') {
+                snapshot.last_path = window.location.pathname + window.location.search;
+                snapshot.last_title = document.title;
+                snapshot.client_captured_at = new Date().toISOString();
                 await writeOfflineState('latest_snapshot', snapshot);
             }
         } catch (_) {}
@@ -737,16 +740,73 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    let wakeRequest = null;
+    let hiddenAt = null;
+
+    const warmCanoviaServer = async ({ announce = true } = {}) => {
+        if (!navigator.onLine) {
+            setSyncStatus('offline', 'オフライン');
+            return false;
+        }
+        if (wakeRequest) return wakeRequest;
+
+        if (announce) setSyncStatus('syncing', 'Canoviaを準備中…');
+        wakeRequest = fetch(`/health?warm=${Date.now()}`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { 'Accept': 'text/plain' },
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error('health-check-failed');
+                setSyncStatus('online', '接続できました', 1800);
+                return true;
+            })
+            .catch(() => {
+                if (!navigator.onLine) setSyncStatus('offline', 'オフライン');
+                else setSyncStatus('pending', '接続を準備しています');
+                return false;
+            })
+            .finally(() => {
+                wakeRequest = null;
+            });
+
+        return wakeRequest;
+    };
+
     const updateNetworkState = () => {
         if (!navigator.onLine) {
             setSyncStatus('offline', 'オフライン');
             return;
         }
-        setSyncStatus('online', '最新状態です', 1800);
+        setSyncStatus('online', '接続済み', 1800);
     };
 
-    window.addEventListener('online', updateNetworkState);
+    window.addEventListener('online', () => {
+        updateNetworkState();
+        void warmCanoviaServer({ announce: true });
+    });
     window.addEventListener('offline', updateNetworkState);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            hiddenAt = Date.now();
+            return;
+        }
+
+        const sleptFor = hiddenAt ? Date.now() - hiddenAt : 0;
+        hiddenAt = null;
+        // Do not keep the free Render service alive in the background. Only
+        // pre-warm it when the user actually returns after a long absence.
+        if (sleptFor >= 10 * 60 * 1000) {
+            void warmCanoviaServer({ announce: true });
+        }
+    });
+
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) void warmCanoviaServer({ announce: true });
+    });
+
     updateNetworkState();
 });
 
