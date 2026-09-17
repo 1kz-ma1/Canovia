@@ -29,6 +29,7 @@ use App\Http\Controllers\PlanCollaborationController;
 use App\Http\Controllers\PlanResourceController;
 use App\Http\Controllers\PlanResourceAssistantController;
 use App\Http\Controllers\PlanArtifactController;
+use App\Http\Controllers\FutureMemoController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -82,6 +83,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/plans/{plan}/collaboration/regenerate', [PlanCollaborationController::class, 'regenerateInvite'])->name('plans.collaboration.regenerate');
     Route::patch('/plans/{plan}/collaboration/members/{member}', [PlanCollaborationController::class, 'updateMember'])->name('plans.collaboration.members.update');
     Route::delete('/plans/{plan}/collaboration/members/{member}', [PlanCollaborationController::class, 'removeMember'])->name('plans.collaboration.members.remove');
+
+    Route::get('/future-memos', [FutureMemoController::class, 'index'])->name('future_memos.index');
+    Route::post('/future-memos', [FutureMemoController::class, 'store'])->name('future_memos.store');
+    Route::put('/future-memos/{futureMemo}', [FutureMemoController::class, 'update'])->name('future_memos.update');
+    Route::delete('/future-memos/{futureMemo}', [FutureMemoController::class, 'destroy'])->name('future_memos.destroy');
+    Route::post('/future-memos/hint/snooze', [FutureMemoController::class, 'snoozeHint'])->name('future_memos.hint.snooze');
+    Route::get('/future-memos/assistant', [FutureMemoController::class, 'assistant'])->name('future_memos.assistant');
+    Route::post('/future-memos/assistant/prompt', [FutureMemoController::class, 'generatePrompt'])->name('future_memos.assistant.prompt');
+    Route::post('/future-memos/assistant/preview', [FutureMemoController::class, 'preview'])->name('future_memos.assistant.preview');
+    Route::post('/future-memos/assistant/reset', [FutureMemoController::class, 'reset'])->name('future_memos.assistant.reset');
 });
 
 Route::get('/dashboard/tools', [HomeController::class, 'legacy'])->name('dashboard.tools');
