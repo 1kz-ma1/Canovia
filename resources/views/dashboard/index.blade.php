@@ -54,7 +54,24 @@
             </form>
             <a href="{{ route('calendar.index') }}" class="pk-v18-action-chip">カレンダー</a>
             <a href="{{ route('my_plans.index') }}" class="pk-v18-action-chip">計画一覧</a>
+            <a href="{{ route('future_memos.index') }}" class="pk-v18-action-chip"><span>✦</span> 未来メモ</a>
         </div>
+
+        @if (($futureMemos ?? collect())->isEmpty())
+            <section class="page-card hidden border-cyan-300/20 p-4" data-future-memo-home-hint>
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="max-w-2xl">
+                        <p class="pk-v18-card-kicker">MAKE IT YOURS</p>
+                        <h2 class="mt-1 text-sm font-black text-slate-100 sm:text-base">未来メモを残すと、AIがあなたの希望を計画に反映しやすくなります</h2>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">やりたいこと・なりたい自分・今困っていることを、1つだけでも大丈夫。目標が決まっていない人はAIと方向を整理できます。</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('future_memos.index') }}" class="btn-primary px-3 py-2 text-xs">未来メモを作る</a>
+                        <button type="button" class="btn-secondary px-3 py-2 text-xs" data-future-memo-hint-later>あとで</button>
+                    </div>
+                </div>
+            </section>
+        @endif
 
         <section class="page-card overflow-hidden p-4 sm:p-5" aria-labelledby="home-collaboration-title">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -123,8 +140,11 @@
             <section class="empty-state page-card p-8 text-center">
                 <div class="text-4xl" aria-hidden="true">✦</div>
                 <h2 class="mt-3 text-xl font-black text-slate-100">最初の星を決めよう</h2>
-                <p class="mt-2 text-sm text-slate-400">ざっくりした目標で大丈夫。Canoviaが、今日の一歩までつなげます。</p>
-                <a href="{{ route('plans.create') }}" class="btn-primary mt-5">計画を作る</a>
+                <p class="mt-2 text-sm text-slate-400">ざっくりした目標で大丈夫。まだ決まっていなければ、未来メモから方向を探すこともできます。</p>
+                <div class="mt-5 flex flex-wrap justify-center gap-2">
+                    <a href="{{ route('plans.create') }}" class="btn-primary">計画を作る</a>
+                    <a href="{{ route('future_memos.organize') }}" class="btn-secondary">目標を一緒に探す</a>
+                </div>
             </section>
         @else
             @if ($recommendation)

@@ -7,6 +7,7 @@
         request()->routeIs('roadmap.*') => 'ロードマップ',
         request()->routeIs('timeline.*') => 'タイムライン',
         request()->routeIs('calendar.*') => 'カレンダー',
+        request()->routeIs('future_memos.*') => '未来メモ',
         request()->routeIs('chat.*'), request()->routeIs('achievements.*'), request()->routeIs('plans.review_assistant.*') => '計画を更新',
         request()->routeIs('public_plans.*') => '共有プラン',
         request()->routeIs('plans.*'), request()->routeIs('tasks.*'), request()->routeIs('my_plans.*') => '計画',
@@ -44,7 +45,7 @@
         (() => {
             try {
                 const root = document.documentElement;
-                const storedTheme = localStorage.getItem('pacekeeper.ui.theme') || 'system';
+                const storedTheme = localStorage.getItem('pacekeeper.ui.theme') || 'dark';
                 const storedAccent = localStorage.getItem('pacekeeper.ui.accent') || 'sky';
                 const storedDensity = localStorage.getItem('pacekeeper.ui.density');
                 const isMobile = window.matchMedia('(max-width: 767px)').matches;
@@ -194,7 +195,7 @@
                     <legend class="text-sm font-bold text-slate-200">テーマ</legend>
                     <div class="ui-choice-grid mt-3" data-ui-theme-options>
                         <button type="button" class="ui-choice" data-ui-theme-value="system"><span>◐</span><strong>自動</strong><small>端末に合わせる</small></button>
-                        <button type="button" class="ui-choice" data-ui-theme-value="dark"><span>●</span><strong>ダーク</strong><small>落ち着いた表示</small></button>
+                        <button type="button" class="ui-choice" data-ui-theme-value="dark"><span>●</span><strong>ダーク</strong><small>標準・おすすめ</small></button>
                         <button type="button" class="ui-choice" data-ui-theme-value="light"><span>○</span><strong>ライト</strong><small>明るい表示</small></button>
                     </div>
                 </fieldset>

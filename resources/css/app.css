@@ -3705,3 +3705,162 @@ html[data-theme-resolved="light"] .pk-v19-roadmap-quote { color:rgb(15 23 42); }
 }
 
 html[data-theme-resolved="light"] .mobile-feedback-action { color: rgb(79 70 229); }
+
+/* ========================================================================== 
+ * v31 Theme safety — dark by default, high-contrast blue/cyan light mode
+ * ========================================================================== */
+html[data-theme-resolved="light"] {
+    --canovia-light-ink: 7 73 117;
+    --canovia-light-body: 3 105 161;
+    --canovia-light-muted: 14 116 144;
+    --canovia-light-soft: 8 145 178;
+}
+
+html[data-theme-resolved="light"] body {
+    color: rgb(var(--canovia-light-ink)) !important;
+}
+
+/* Dark-surface utility classes are common across Canovia. On light mode,
+   normalize those surfaces before recoloring text so nothing disappears. */
+html[data-theme-resolved="light"] [class*="bg-slate-950"],
+html[data-theme-resolved="light"] [class*="bg-slate-900"],
+html[data-theme-resolved="light"] [class*="bg-slate-800"] {
+    background-color: rgb(248 252 255 / .96) !important;
+}
+html[data-theme-resolved="light"] [class*="border-slate-800"],
+html[data-theme-resolved="light"] [class*="border-slate-700"] {
+    border-color: rgb(186 220 235 / .92) !important;
+}
+
+/* Main typography: strong text is deep blue, supporting text is cyan-blue. */
+html[data-theme-resolved="light"] [class*="text-slate-50"],
+html[data-theme-resolved="light"] [class*="text-slate-100"],
+html[data-theme-resolved="light"] [class*="text-slate-200"],
+html[data-theme-resolved="light"] [class*="text-slate-900"],
+html[data-theme-resolved="light"] [class*="text-slate-800"],
+html[data-theme-resolved="light"] [class*="text-slate-700"] {
+    color: rgb(var(--canovia-light-ink)) !important;
+}
+html[data-theme-resolved="light"] [class*="text-slate-300"],
+html[data-theme-resolved="light"] [class*="text-slate-400"],
+html[data-theme-resolved="light"] [class*="text-slate-500"],
+html[data-theme-resolved="light"] [class*="text-slate-600"] {
+    color: rgb(var(--canovia-light-body)) !important;
+}
+html[data-theme-resolved="light"] [class*="text-white"] {
+    color: rgb(var(--canovia-light-ink)) !important;
+}
+html[data-theme-resolved="light"] [class*="text-sky-"],
+html[data-theme-resolved="light"] [class*="text-cyan-"],
+html[data-theme-resolved="light"] [class*="text-indigo-"],
+html[data-theme-resolved="light"] [class*="text-violet-"] {
+    color: rgb(var(--canovia-light-body)) !important;
+}
+
+/* Custom component text that does not use Tailwind color utilities. */
+html[data-theme-resolved="light"] .pk-cosmic-shell :where(h1,h2,h3,h4,h5,h6,label,strong,dt) {
+    color: rgb(var(--canovia-light-ink));
+}
+html[data-theme-resolved="light"] .pk-cosmic-shell :where(p,small,dd,li) {
+    color: rgb(var(--canovia-light-body));
+}
+html[data-theme-resolved="light"] .pk-v18-card-kicker,
+html[data-theme-resolved="light"] .pk-v18-eyebrow,
+html[data-theme-resolved="light"] .pk-cosmic-kicker,
+html[data-theme-resolved="light"] .assistant-speaker {
+    color: rgb(var(--canovia-light-muted)) !important;
+}
+
+/* Keep filled actions readable; blue/cyan typography rules must not recolor them. */
+html[data-theme-resolved="light"] .btn-primary,
+html[data-theme-resolved="light"] .btn-primary *,
+html[data-theme-resolved="light"] .pk-v18-start-cta,
+html[data-theme-resolved="light"] .pk-v18-start-cta *,
+html[data-theme-resolved="light"] .roadmap-view-button.is-active,
+html[data-theme-resolved="light"] .roadmap-view-button.is-active * {
+    color: rgb(255 255 255) !important;
+}
+html[data-theme-resolved="light"] .btn-secondary,
+html[data-theme-resolved="light"] .btn-secondary *,
+html[data-theme-resolved="light"] .ui-choice,
+html[data-theme-resolved="light"] .ui-choice * {
+    color: rgb(var(--canovia-light-ink)) !important;
+}
+
+/* Inputs and placeholders need independent contrast. */
+html[data-theme-resolved="light"] input,
+html[data-theme-resolved="light"] textarea,
+html[data-theme-resolved="light"] select,
+html[data-theme-resolved="light"] .form-control {
+    background: rgb(255 255 255) !important;
+    color: rgb(var(--canovia-light-ink)) !important;
+    border-color: rgb(148 199 221 / .9) !important;
+}
+html[data-theme-resolved="light"] input::placeholder,
+html[data-theme-resolved="light"] textarea::placeholder {
+    color: rgb(var(--canovia-light-muted) / .72) !important;
+    opacity: 1;
+}
+
+/* Cosmic v18/v19 components contain hard-coded dark-theme colors. */
+html[data-theme-resolved="light"] .pk-v18-hero h1,
+html[data-theme-resolved="light"] .pk-v18-page-hero h1,
+html[data-theme-resolved="light"] .pk-v18-recommendation h2,
+html[data-theme-resolved="light"] .pk-v18-recommendation h3,
+html[data-theme-resolved="light"] .pk-v18-progress-card h2,
+html[data-theme-resolved="light"] .pk-v18-mini-card h2,
+html[data-theme-resolved="light"] .pk-v18-mini-card h3,
+html[data-theme-resolved="light"] .pk-v19-roadmap-hero-copy h1,
+html[data-theme-resolved="light"] .pk-v19-plan-card-copy strong,
+html[data-theme-resolved="light"] .pk-v19-node-label,
+html[data-theme-resolved="light"] .pk-v19-node-detail,
+html[data-theme-resolved="light"] .pk-v19-roadmap-overview {
+    color: rgb(var(--canovia-light-ink)) !important;
+}
+html[data-theme-resolved="light"] .pk-v18-hero p,
+html[data-theme-resolved="light"] .pk-v18-page-hero p,
+html[data-theme-resolved="light"] .pk-v18-mini-card p,
+html[data-theme-resolved="light"] .pk-v18-quote-card p,
+html[data-theme-resolved="light"] .pk-v19-roadmap-hero-copy > p:last-child,
+html[data-theme-resolved="light"] .pk-v19-plan-card-copy small,
+html[data-theme-resolved="light"] .pk-v19-roadmap-overview small {
+    color: rgb(var(--canovia-light-body)) !important;
+}
+
+/* Semantic errors/warnings remain semantic instead of being forced blue. */
+html[data-theme-resolved="light"] .assistant-notice-error,
+html[data-theme-resolved="light"] .assistant-notice-error *,
+html[data-theme-resolved="light"] [class*="text-red-"],
+html[data-theme-resolved="light"] [class*="text-rose-"] {
+    color: rgb(190 18 60) !important;
+}
+
+html[data-theme-resolved="light"] .pk-v19-roadmap-hero,
+html[data-theme-resolved="light"] .pk-v19-roadmap-surface,
+html[data-theme-resolved="light"] .pk-v19-orbit-stage,
+html[data-theme-resolved="light"] .pk-v19-roadmap-quote,
+html[data-theme-resolved="light"] .pk-v19-plan-card,
+html[data-theme-resolved="light"] .pk-v19-node-label,
+html[data-theme-resolved="light"] .pk-v19-node-detail,
+html[data-theme-resolved="light"] .pk-v19-roadmap-overview,
+html[data-theme-resolved="light"] .pk-v19-roadmap-toolbar .roadmap-view-switch {
+    background: linear-gradient(145deg, rgb(255 255 255 / .98), rgb(238 249 255 / .98)) !important;
+    border-color: rgb(174 216 235 / .9) !important;
+    box-shadow: 0 12px 30px rgb(3 105 161 / .08) !important;
+}
+html[data-theme-resolved="light"] .pk-v19-plan-card.is-active {
+    background: linear-gradient(145deg, rgb(224 242 254 / .98), rgb(236 254 255 / .98)) !important;
+    border-color: rgb(56 189 248 / .72) !important;
+}
+html[data-theme-resolved="light"] .pk-v19-roadmap-guide-copy,
+html[data-theme-resolved="light"] .pk-v19-next-guide p {
+    background: rgb(240 249 255 / .98) !important;
+    border-color: rgb(125 211 252 / .78) !important;
+    color: rgb(var(--canovia-light-ink)) !important;
+}
+
+/* V31 light mode: normal accent copy also converges on the blue/cyan palette. */
+html[data-theme-resolved="light"] [class*="text-emerald-"],
+html[data-theme-resolved="light"] [class*="text-amber-"] {
+    color: rgb(var(--canovia-light-body)) !important;
+}

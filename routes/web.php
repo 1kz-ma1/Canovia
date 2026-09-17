@@ -29,8 +29,20 @@ use App\Http\Controllers\PlanCollaborationController;
 use App\Http\Controllers\PlanResourceController;
 use App\Http\Controllers\PlanResourceAssistantController;
 use App\Http\Controllers\PlanArtifactController;
+use App\Http\Controllers\FutureMemoController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// 未来メモ / goal discovery
+Route::get('/future-memos', [FutureMemoController::class, 'index'])->name('future_memos.index');
+Route::post('/future-memos', [FutureMemoController::class, 'store'])->name('future_memos.store');
+Route::put('/future-memos/{futureMemo}', [FutureMemoController::class, 'update'])->name('future_memos.update');
+Route::delete('/future-memos/{futureMemo}', [FutureMemoController::class, 'destroy'])->name('future_memos.destroy');
+Route::get('/future-memos/organize/ai', [FutureMemoController::class, 'organize'])->name('future_memos.organize');
+Route::post('/future-memos/organize/ai/prompt', [FutureMemoController::class, 'generatePrompt'])->name('future_memos.organize.prompt');
+Route::post('/future-memos/organize/ai/preview', [FutureMemoController::class, 'preview'])->name('future_memos.organize.preview');
+Route::post('/future-memos/goal-candidates/memo', [FutureMemoController::class, 'candidateToMemo'])->name('future_memos.candidate.memo');
+Route::post('/future-memos/goal-candidates/plan', [FutureMemoController::class, 'candidateToPlan'])->name('future_memos.candidate.plan');
 
 // PWA identity bridge. Safari and an iOS Home Screen app may use separate
 // cookie stores, so the manifest/start flow carries a short-lived one-time

@@ -14,6 +14,7 @@ use App\Services\PlanOwnershipService;
 use App\Services\PlanProgressService;
 use App\Services\UserBehaviorService;
 use App\Services\UserStateService;
+use App\Services\FutureMemoService;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -28,6 +29,7 @@ class HomeController extends Controller
         DashboardPresentationService $dashboardService,
         ContinuityService $continuityService,
         CalendarPresentationService $calendarService,
+        FutureMemoService $futureMemoService,
     ) {
         $actorToken = $identity->resolve($request);
         $plans = $ownership->ownedPlans($request, [
@@ -50,6 +52,7 @@ class HomeController extends Controller
                 'member_count' => 1 + $plan->memberships->count(),
             ])
             ->values();
+        $futureMemos = $futureMemoService->all($request);
         $baseline = $behaviorService->baseline($actorToken);
         $state = $stateService->calculate($actorToken, $baseline, $editablePlans);
         $stateService->captureDaily($actorToken, $state);
@@ -79,7 +82,7 @@ class HomeController extends Controller
             );
         }
 
-        return view('dashboard.index', compact('dashboard', 'collaborationPlans'));
+        return view('dashboard.index', compact('dashboard', 'collaborationPlans', 'futureMemos'));
     }
 
     public function legacy(Request $request, PlanProgressService $progressService, PlanOwnershipService $ownership)

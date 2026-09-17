@@ -12,6 +12,7 @@ use App\Services\PlanActivityService;
 use Carbon\Carbon;
 use App\Services\PlanOwnershipService;
 use App\Services\RoadmapService;
+use App\Services\FutureMemoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ use Illuminate\Validation\ValidationException;
 
 class PlanReviewAssistantController extends Controller
 {
-    public function show(Request $request, Plan $plan, PlanProgressService $progressService)
+    public function show(Request $request, Plan $plan, PlanProgressService $progressService, FutureMemoService $futureMemoService)
     {
         $this->authorizePlanOwner($plan);
 
@@ -60,10 +61,11 @@ class PlanReviewAssistantController extends Controller
             'flow' => $flow,
             'workSessionContext' => $workSessionContext,
             'workSessionLog' => $workSessionLog,
+            'futureMemos' => $futureMemoService->all($request, true),
         ]);
     }
 
-    public function generatePrompt(Request $request, Plan $plan, PlanProgressService $progressService)
+    public function generatePrompt(Request $request, Plan $plan, PlanProgressService $progressService, FutureMemoService $futureMemoService)
     {
         $this->authorizePlanOwner($plan);
 
@@ -109,7 +111,12 @@ class PlanReviewAssistantController extends Controller
             ] : null,
         ];
 
-        $draft['prompt'] = $this->buildPrompt($plan, $progressService->calculate($plan), $draft);
+        $draft['prompt'] = $this->buildPrompt(
+            $plan,
+            $progressService->calculate($plan),
+            $draft,
+            $futureMemoService->promptContext($request),
+        );
 
         $request->session()->put($this->draftSessionKey($plan), $draft);
         $request->session()->forget($this->proposalSessionKey($plan));
@@ -676,7 +683,7 @@ class PlanReviewAssistantController extends Controller
             ->with('status', '入力中の見直し内容をリセットしました。');
     }
 
-    private function buildPrompt(Plan $plan, array $progress, array $draft): string
+    private function buildPrompt(Plan $plan, array $progress, array $draft, string $futureMemoContext): string
     {
         $taskLines = $plan->tasks->toBase()->map(function (Task $task) {
             return sprintf(
@@ -855,6 +862,11 @@ JSON;
 3. 最近の作業ログと、そこで確認された実際の成果
 4. Canoviaへ登録されている計画概要・タスク
 5. 登録済みタスクを基準に算出された進捗率・残り時間・状態
+
+【本人がCanoviaに残した未来メモ】
+{$futureMemoContext}
+
+未来メモは本人の希望・価値観・制約を理解するための参考情報です。今回の計画と関係する内容だけを使い、本人の意思を上書きしたり、別の目標へ勝手に誘導したりしないでください。
 
 【今回の最新実績・状況変化：最優先】
 作業日: {$workedOnText}
