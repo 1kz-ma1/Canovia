@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\GuestPlanClaimService;
+use App\Services\FutureMemoService;
 use Illuminate\Http\Request;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,7 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request, GuestPlanClaimService $claimService)
+    public function login(Request $request, GuestPlanClaimService $claimService, FutureMemoService $futureMemos)
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -39,11 +40,16 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
         $claimed = $claimService->claim($request, $request->user());
+        $claimedMemos = $futureMemos->claimGuestMemos($request, $request->user());
+
+        $claimMessages = [];
+        if ($claimed > 0) $claimMessages[] = "{$claimed}件のGuest計画";
+        if ($claimedMemos > 0) $claimMessages[] = "{$claimedMemos}件の未来メモ";
 
         return redirect()->intended(route('home'))->with(
             'status',
-            $claimed > 0
-                ? "ログインしました。{$claimed}件のGuest計画もこのアカウントに引き継ぎました。"
+            $claimMessages !== []
+                ? 'ログインしました。' . implode('と', $claimMessages) . 'もこのアカウントに引き継ぎました。'
                 : 'ログインしました。'
         );
     }
@@ -53,7 +59,7 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
-    public function register(Request $request, GuestPlanClaimService $claimService)
+    public function register(Request $request, GuestPlanClaimService $claimService, FutureMemoService $futureMemos)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:80'],
@@ -68,12 +74,17 @@ class AuthController extends Controller
         Auth::guard('web')->login($user, true);
         $request->session()->regenerate();
         $claimed = $claimService->claim($request, $user);
+        $claimedMemos = $futureMemos->claimGuestMemos($request, $user);
+
+        $claimMessages = [];
+        if ($claimed > 0) $claimMessages[] = "{$claimed}件のGuest計画";
+        if ($claimedMemos > 0) $claimMessages[] = "{$claimedMemos}件の未来メモ";
 
         return redirect()->intended(route('home'))->with(
             'status',
-            $claimed > 0
-                ? "アカウントを作成し、{$claimed}件のGuest計画を保護しました。"
-                : 'アカウントを作成しました。これから作る計画はこのアカウントに保存されます。'
+            $claimMessages !== []
+                ? 'アカウントを作成し、' . implode('と', $claimMessages) . 'を保護しました。'
+                : 'アカウントを作成しました。これから作る計画と未来メモはこのアカウントに保存されます。'
         );
     }
 

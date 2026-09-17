@@ -7,6 +7,7 @@ use App\Models\PlanAdjustment;
 use App\Models\Task;
 use App\Services\PlanProgressService;
 use App\Services\PlanOwnershipService;
+use App\Services\FutureMemoService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class AiTaskAssistantController extends Controller
 {
-    public function show(Plan $plan)
+    public function show(Request $request, Plan $plan, FutureMemoService $futureMemoService)
     {
         $this->authorizePlanOwner($plan);
 
@@ -22,6 +23,8 @@ class AiTaskAssistantController extends Controller
         $title = json_encode($plan->title, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $category = json_encode($plan->category, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $deadline = $plan->deadline?->format('Y-m-d') ?? '未設定';
+        $futureMemos = $futureMemoService->all($request, true);
+        $futureMemoContext = $futureMemoService->promptContext($request);
 
         $prompt = <<<PROMPT
 あなたはCanoviaの計画生成アシスタントです。目標を実行可能なタスクへ分解してください。
@@ -32,6 +35,11 @@ class AiTaskAssistantController extends Controller
 - タイトル: {$plan->title}
 - 概要: {$plan->description}
 - 期間: {$plan->start_date->format('Y-m-d')} ～ {$deadline}
+
+【本人がCanoviaに残した未来メモ】
+{$futureMemoContext}
+
+未来メモは本人の希望・価値観・制約を理解するための参考情報です。目標や優先順位を勝手に決めつけず、今回の計画と関係する内容だけをパーソナライズに使ってください。
 
 最終回答は説明やMarkdownを付けず、次のJSON 2.0だけにしてください。
 {
@@ -70,7 +78,7 @@ class AiTaskAssistantController extends Controller
 activation_costは1～5で、難易度ではなく「そのTaskを始めるまでの心理的・準備的な重さ」を推定してください。1はすぐ始められ、5はかなり準備や集中が必要です。
 PROMPT;
 
-        return view('plans.ai_task_assistant', compact('plan', 'prompt'));
+        return view('plans.ai_task_assistant', compact('plan', 'prompt', 'futureMemos'));
     }
 
     public function import(Request $request, Plan $plan, PlanProgressService $progressService)

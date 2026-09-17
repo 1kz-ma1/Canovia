@@ -815,7 +815,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // -----------------------------------------------------------------------------
 function applyUiPreferences() {
     const root = document.documentElement;
-    const theme = localStorage.getItem('pacekeeper.ui.theme') || 'system';
+    const theme = localStorage.getItem('pacekeeper.ui.theme') || 'dark';
     const accent = localStorage.getItem('pacekeeper.ui.accent') || 'sky';
     const storedDensity = localStorage.getItem('pacekeeper.ui.density');
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
@@ -872,6 +872,26 @@ function setRoadmapView(root, view, persist = true) {
 document.addEventListener('DOMContentLoaded', () => {
     applyUiPreferences();
 
+    const futureMemoHint = document.querySelector('[data-future-memo-home-hint]');
+    if (futureMemoHint) {
+        let snoozeUntil = 0;
+        try {
+            snoozeUntil = Number(localStorage.getItem('canovia.future-memo-hint.snooze-until') || 0);
+        } catch (_) {}
+
+        if (!Number.isFinite(snoozeUntil) || Date.now() >= snoozeUntil) {
+            futureMemoHint.classList.remove('hidden');
+        }
+
+        futureMemoHint.querySelector('[data-future-memo-hint-later]')?.addEventListener('click', () => {
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            try {
+                localStorage.setItem('canovia.future-memo-hint.snooze-until', String(Date.now() + sevenDays));
+            } catch (_) {}
+            futureMemoHint.classList.add('hidden');
+        });
+    }
+
     const settingsDialog = document.querySelector('[data-ui-settings-dialog]');
     document.querySelectorAll('[data-ui-settings-open]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -911,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const colorScheme = window.matchMedia('(prefers-color-scheme: light)');
     colorScheme.addEventListener?.('change', () => {
-        if ((localStorage.getItem('pacekeeper.ui.theme') || 'system') === 'system') applyUiPreferences();
+        if ((localStorage.getItem('pacekeeper.ui.theme') || 'dark') === 'system') applyUiPreferences();
     });
 
     document.querySelectorAll('[data-roadmap-view-root]').forEach((root) => {

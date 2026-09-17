@@ -16,6 +16,27 @@
             </div>
         </header>
 
+
+        @if (($futureMemos ?? collect())->isEmpty())
+            <section class="page-card border-cyan-300/20 p-4" data-future-memo-plan-hint>
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="max-w-2xl">
+                        <p class="text-[10px] font-black tracking-[.14em] text-cyan-300">PERSONALIZE</p>
+                        <h2 class="mt-1 text-sm font-black text-slate-100">先に未来メモを1つ残すと、AIがあなた向けの計画を作りやすくなります</h2>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">必須ではありません。このまま計画を作って、あとから追加しても大丈夫です。</p>
+                    </div>
+                    <a href="{{ route('future_memos.index') }}" class="btn-secondary px-3 py-2 text-xs">未来メモを作る</a>
+                </div>
+            </section>
+        @else
+            <section class="page-card border-cyan-300/15 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div><p class="text-[10px] font-black tracking-[.14em] text-cyan-300">PERSONALIZED</p><p class="mt-1 text-xs leading-5 text-slate-300">AIタスク生成時に、共有ONの未来メモ {{ $futureMemos->count() }}件を参考情報として使います。</p></div>
+                    <a href="{{ route('future_memos.index') }}" class="text-xs font-black text-cyan-300">確認・編集 →</a>
+                </div>
+            </section>
+        @endif
+
         @if ($errors->any())
             <div class="assistant-notice assistant-notice-error">
                 <p class="font-bold">入力内容を確認してください。</p>
@@ -36,7 +57,7 @@
                     id="title"
                     type="text"
                     name="title"
-                    value="{{ old('title') }}"
+                    value="{{ old('title', data_get($prefill ?? [], 'title')) }}"
                     placeholder="例：応用情報技術者試験に合格する"
                     required
                     autofocus
@@ -62,7 +83,7 @@
                 >
             </div>
 
-            <details class="rounded-2xl border border-slate-800 bg-slate-950/30 p-4" @if(old('description') || old('category') || old('start_date') || old('is_public') || old('visual_icon') || old('accent_key') || old('roadmap_world') || old('is_collaborative')) open @endif>
+            <details class="rounded-2xl border border-slate-800 bg-slate-950/30 p-4" @if(old('description') || old('category') || old('start_date') || old('is_public') || old('visual_icon') || old('accent_key') || old('roadmap_world') || old('is_collaborative') || !empty($prefill)) open @endif>
                 <summary class="cursor-pointer list-none font-semibold text-slate-200">
                     <span class="flex items-center justify-between gap-3">
                         <span>詳細設定</span>
@@ -73,7 +94,7 @@
                 <div class="mt-5 space-y-5 border-t border-slate-800/80 pt-5">
                     <div>
                         <label for="description" class="form-label">説明</label>
-                        <textarea id="description" name="description" rows="3" placeholder="目的や完成条件など" class="form-control mt-2">{{ old('description') }}</textarea>
+                        <textarea id="description" name="description" rows="3" placeholder="目的や完成条件など" class="form-control mt-2">{{ old('description', data_get($prefill ?? [], 'description')) }}</textarea>
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
@@ -81,11 +102,11 @@
                             <label for="category" class="form-label">カテゴリ</label>
                             <select id="category" name="category" class="form-control mt-2">
                                 <option value="">未設定</option>
-                                <option value="資格学習" @selected(old('category') === '資格学習')>資格学習</option>
-                                <option value="個人開発" @selected(old('category') === '個人開発')>個人開発</option>
-                                <option value="制作活動" @selected(old('category') === '制作活動')>制作活動</option>
-                                <option value="ゲーム開発" @selected(old('category') === 'ゲーム開発')>ゲーム開発</option>
-                                <option value="その他" @selected(old('category') === 'その他')>その他</option>
+                                <option value="資格学習" @selected(old('category', data_get($prefill ?? [], 'category')) === '資格学習')>資格学習</option>
+                                <option value="個人開発" @selected(old('category', data_get($prefill ?? [], 'category')) === '個人開発')>個人開発</option>
+                                <option value="制作活動" @selected(old('category', data_get($prefill ?? [], 'category')) === '制作活動')>制作活動</option>
+                                <option value="ゲーム開発" @selected(old('category', data_get($prefill ?? [], 'category')) === 'ゲーム開発')>ゲーム開発</option>
+                                <option value="その他" @selected(old('category', data_get($prefill ?? [], 'category')) === 'その他')>その他</option>
                             </select>
                         </div>
 

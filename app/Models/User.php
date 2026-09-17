@@ -45,6 +45,11 @@ class User extends Authenticatable
         return $this->hasMany(PlanResource::class, 'created_by_user_id');
     }
 
+    public function futureMemos()
+    {
+        return $this->hasMany(FutureMemo::class);
+    }
+
     protected function casts(): array
     {
         return [
