@@ -83,6 +83,11 @@ class Plan extends Model
         return $this->hasMany(PlanResource::class);
     }
 
+    public function artifacts()
+    {
+        return $this->hasMany(PlanArtifact::class);
+    }
+
     public function workLogs()
     {
         return $this->hasMany(WorkLog::class);

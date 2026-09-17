@@ -49,6 +49,11 @@ class Task extends Model
         return $this->belongsToMany(PlanResource::class, 'plan_resource_task')->withTimestamps();
     }
 
+    public function artifacts()
+    {
+        return $this->belongsToMany(PlanArtifact::class, 'plan_artifact_task')->withTimestamps();
+    }
+
     public function workLogs()
     {
         return $this->hasMany(WorkLog::class);
