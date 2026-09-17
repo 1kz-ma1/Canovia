@@ -431,77 +431,90 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const releaseNotesDialog = document.querySelector('[data-release-notes-dialog]');
-    const releaseNotesList = releaseNotesDialog?.querySelector('[data-release-notes-list]');
-    const releaseNoteDetails = releaseNotesDialog ? [...releaseNotesDialog.querySelectorAll('[data-release-note-detail]')] : [];
-    const latestReleaseVersion = releaseNotesDialog?.dataset.latestReleaseVersion || '';
+    const releaseNotesCard = releaseNotesDialog?.querySelector('.release-notes-card');
+    const releaseNoteDetailDialog = document.querySelector('[data-release-note-detail-dialog]');
+    const releaseNoteDetailCard = releaseNoteDetailDialog?.querySelector('[data-release-note-detail-card]');
+    const releaseNoteDetails = releaseNoteDetailDialog ? [...releaseNoteDetailDialog.querySelectorAll('[data-release-note-detail]')] : [];
+    const latestReleaseKey = releaseNotesDialog?.dataset.latestReleaseKey || '';
     const releaseSeenKey = 'canovia.release_notes.seen';
 
+    const closeDialog = (dialog) => {
+        if (!dialog) return;
+        if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+        else dialog.removeAttribute('open');
+    };
+
+    const openDialog = (dialog) => {
+        if (!dialog) return;
+        if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+        else dialog.setAttribute('open', '');
+    };
+
     const updateReleaseNewIndicators = () => {
-        let seenVersion = '';
+        let seenKey = '';
         try {
-            seenVersion = localStorage.getItem(releaseSeenKey) || '';
+            seenKey = localStorage.getItem(releaseSeenKey) || '';
         } catch (_) {}
-        const isNew = Boolean(latestReleaseVersion && seenVersion !== latestReleaseVersion);
+        const isNew = Boolean(latestReleaseKey && seenKey !== latestReleaseKey);
         document.querySelectorAll('[data-release-notes-new]').forEach((indicator) => {
             indicator.classList.toggle('is-hidden', !isNew);
         });
     };
 
-    const showReleaseNotesList = () => {
-        if (!releaseNotesList) return;
-        releaseNotesList.classList.remove('hidden');
-        releaseNoteDetails.forEach((detail) => detail.classList.add('hidden'));
-    };
-
     const markReleaseNotesSeen = () => {
-        if (!latestReleaseVersion) return;
+        if (!latestReleaseKey) return;
         try {
-            localStorage.setItem(releaseSeenKey, latestReleaseVersion);
+            localStorage.setItem(releaseSeenKey, latestReleaseKey);
         } catch (_) {}
         updateReleaseNewIndicators();
+    };
+
+    const hideReleaseNoteDetails = () => {
+        releaseNoteDetails.forEach((detail) => detail.classList.add('hidden'));
     };
 
     document.querySelectorAll('[data-release-notes-open]').forEach((button) => {
         button.addEventListener('click', () => {
             if (!releaseNotesDialog) return;
-            showReleaseNotesList();
             markReleaseNotesSeen();
-            if (typeof releaseNotesDialog.showModal === 'function') releaseNotesDialog.showModal();
-            else releaseNotesDialog.setAttribute('open', '');
+            if (releaseNotesCard) releaseNotesCard.scrollTop = 0;
+            openDialog(releaseNotesDialog);
         });
     });
 
     releaseNotesDialog?.querySelectorAll('[data-release-note-open]').forEach((button) => {
         button.addEventListener('click', () => {
-            const version = button.dataset.releaseNoteOpen;
-            const detail = releaseNoteDetails.find((item) => item.dataset.releaseNoteDetail === version);
-            if (!detail || !releaseNotesList) return;
-            releaseNotesList.classList.add('hidden');
-            releaseNoteDetails.forEach((item) => item.classList.add('hidden'));
-            detail.classList.remove('hidden');
-            detail.scrollTop = 0;
-        });
-    });
+            const key = button.dataset.releaseNoteOpen;
+            const detail = releaseNoteDetails.find((item) => item.dataset.releaseNoteDetail === key);
+            if (!detail || !releaseNoteDetailDialog) return;
 
-    releaseNotesDialog?.querySelectorAll('[data-release-note-back]').forEach((button) => {
-        button.addEventListener('click', showReleaseNotesList);
+            hideReleaseNoteDetails();
+            detail.classList.remove('hidden');
+            if (releaseNoteDetailCard) releaseNoteDetailCard.scrollTop = 0;
+            openDialog(releaseNoteDetailDialog);
+        });
     });
 
     document.querySelectorAll('[data-release-notes-close]').forEach((button) => {
-        button.addEventListener('click', () => {
-            if (!releaseNotesDialog) return;
-            if (typeof releaseNotesDialog.close === 'function') releaseNotesDialog.close();
-            else releaseNotesDialog.removeAttribute('open');
-        });
+        button.addEventListener('click', () => closeDialog(releaseNotesDialog));
+    });
+
+    document.querySelectorAll('[data-release-note-detail-close]').forEach((button) => {
+        button.addEventListener('click', () => closeDialog(releaseNoteDetailDialog));
     });
 
     releaseNotesDialog?.addEventListener('click', (event) => {
-        if (event.target !== releaseNotesDialog) return;
-        if (typeof releaseNotesDialog.close === 'function') releaseNotesDialog.close();
-        else releaseNotesDialog.removeAttribute('open');
+        if (event.target === releaseNotesDialog) closeDialog(releaseNotesDialog);
     });
 
-    releaseNotesDialog?.addEventListener('close', showReleaseNotesList);
+    releaseNoteDetailDialog?.addEventListener('click', (event) => {
+        // Native <dialog> gives us a real top layer. Clicking the dimmed area
+        // closes only the detail, leaving the update list available behind it.
+        if (event.target === releaseNoteDetailDialog) closeDialog(releaseNoteDetailDialog);
+    });
+
+    releaseNoteDetailDialog?.addEventListener('close', hideReleaseNoteDetails);
+    releaseNotesDialog?.addEventListener('close', () => closeDialog(releaseNoteDetailDialog));
     updateReleaseNewIndicators();
 
     const feedbackDialog = document.querySelector('[data-feedback-dialog]');
@@ -889,26 +902,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 // -----------------------------------------------------------------------------
 function applyUiPreferences() {
     const root = document.documentElement;
-    const theme = localStorage.getItem('pacekeeper.ui.theme') || 'dark';
     const accent = localStorage.getItem('pacekeeper.ui.accent') || 'sky';
     const storedDensity = localStorage.getItem('pacekeeper.ui.density');
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
     const density = storedDensity || (isMobile ? 'standard' : 'compact');
-    const resolved = theme === 'system'
-        ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
-        : theme;
 
-    root.dataset.uiTheme = theme;
-    root.dataset.themeResolved = resolved;
+    // Canovia v33: dark is the only official theme for now.
+    // Overwrite legacy light/system selections so installed PWAs converge on it.
+    try {
+        localStorage.setItem('pacekeeper.ui.theme', 'dark');
+    } catch (_) {}
+
+    root.dataset.uiTheme = 'dark';
+    root.dataset.themeResolved = 'dark';
     root.dataset.uiAccent = accent;
     root.dataset.uiDensity = density;
     const themeColor = document.querySelector('meta[name="theme-color"]');
-    if (themeColor) themeColor.content = resolved === 'light' ? '#f8fafc' : '#020617';
+    if (themeColor) themeColor.content = '#020617';
 
-    document.querySelectorAll('[data-ui-theme-value]').forEach((button) => {
-        button.classList.toggle('is-active', button.dataset.uiThemeValue === theme);
-        button.setAttribute('aria-pressed', button.dataset.uiThemeValue === theme ? 'true' : 'false');
-    });
     document.querySelectorAll('[data-ui-accent-value]').forEach((button) => {
         button.classList.toggle('is-active', button.dataset.uiAccentValue === accent);
         button.setAttribute('aria-pressed', button.dataset.uiAccentValue === accent ? 'true' : 'false');
@@ -984,12 +995,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target === settingsDialog && settingsDialog.close) settingsDialog.close();
     });
 
-    document.querySelectorAll('[data-ui-theme-value]').forEach((button) => {
-        button.addEventListener('click', () => {
-            localStorage.setItem('pacekeeper.ui.theme', button.dataset.uiThemeValue);
-            applyUiPreferences();
-        });
-    });
     document.querySelectorAll('[data-ui-accent-value]').forEach((button) => {
         button.addEventListener('click', () => {
             localStorage.setItem('pacekeeper.ui.accent', button.dataset.uiAccentValue);
@@ -1001,11 +1006,6 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('pacekeeper.ui.density', button.dataset.uiDensityValue);
             applyUiPreferences();
         });
-    });
-
-    const colorScheme = window.matchMedia('(prefers-color-scheme: light)');
-    colorScheme.addEventListener?.('change', () => {
-        if ((localStorage.getItem('pacekeeper.ui.theme') || 'dark') === 'system') applyUiPreferences();
     });
 
     document.querySelectorAll('[data-roadmap-view-root]').forEach((root) => {

@@ -25,8 +25,8 @@
         : (($feedbackWorkSession instanceof \App\Models\WorkSession) ? $feedbackWorkSession->task_id : null);
     $onboardingVersion = (int) config('canovia.onboarding_version', 1);
     $onboardingAuto = ! $focusMode && (! auth()->check() || (int) auth()->user()->onboarding_version < $onboardingVersion);
-    $releaseNotes = collect(config('release_notes', []));
-    $latestReleaseVersion = (string) data_get($releaseNotes->first(), 'version', '');
+    $releaseNotes = \App\Support\ReleaseNotes::all();
+    $latestReleaseKey = (string) data_get($releaseNotes->first(), 'key', '');
 @endphp
 <!DOCTYPE html>
 <html lang="ja">
@@ -47,16 +47,15 @@
         (() => {
             try {
                 const root = document.documentElement;
-                const storedTheme = localStorage.getItem('pacekeeper.ui.theme') || 'dark';
+                // Canovia v33: Dark is the single official theme for now.
+                // Keep the legacy storage key so previously installed PWAs migrate cleanly.
+                localStorage.setItem('pacekeeper.ui.theme', 'dark');
                 const storedAccent = localStorage.getItem('pacekeeper.ui.accent') || 'sky';
                 const storedDensity = localStorage.getItem('pacekeeper.ui.density');
                 const isMobile = window.matchMedia('(max-width: 767px)').matches;
                 const density = storedDensity || (isMobile ? 'standard' : 'compact');
-                const resolvedTheme = storedTheme === 'system'
-                    ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
-                    : storedTheme;
-                root.dataset.uiTheme = storedTheme;
-                root.dataset.themeResolved = resolvedTheme;
+                root.dataset.uiTheme = 'dark';
+                root.dataset.themeResolved = 'dark';
                 root.dataset.uiAccent = storedAccent;
                 root.dataset.uiDensity = density;
             } catch (_) {}
@@ -207,11 +206,14 @@
 
                 <fieldset class="mt-6">
                     <legend class="text-sm font-bold text-slate-200">テーマ</legend>
-                    <div class="ui-choice-grid mt-3" data-ui-theme-options>
-                        <button type="button" class="ui-choice" data-ui-theme-value="system"><span>◐</span><strong>自動</strong><small>端末に合わせる</small></button>
-                        <button type="button" class="ui-choice" data-ui-theme-value="dark"><span>●</span><strong>ダーク</strong><small>標準・おすすめ</small></button>
-                        <button type="button" class="ui-choice" data-ui-theme-value="light"><span>○</span><strong>ライト</strong><small>明るい表示</small></button>
+                    <div class="canovia-theme-official mt-3" aria-label="Canoviaの正式テーマはダークです">
+                        <span class="canovia-theme-official-mark" aria-hidden="true">●</span>
+                        <div>
+                            <strong>ダーク</strong>
+                            <small>Canoviaの世界観に合わせた標準テーマ</small>
+                        </div>
                     </div>
+                    <p class="mt-2 text-xs leading-5 text-slate-500">ライトテーマはデザインを再設計するまで一時的に提供を停止しています。</p>
                 </fieldset>
 
                 <fieldset class="mt-6">
@@ -252,7 +254,7 @@
             </div>
         </div>
 
-        <dialog class="release-notes-dialog" data-release-notes-dialog data-latest-release-version="{{ $latestReleaseVersion }}" aria-labelledby="release-notes-title">
+        <dialog class="release-notes-dialog" data-release-notes-dialog data-latest-release-key="{{ $latestReleaseKey }}" aria-labelledby="release-notes-title">
             <div class="release-notes-card">
                 <div class="release-notes-header">
                     <div>
@@ -265,10 +267,11 @@
 
                 <div class="release-notes-list" data-release-notes-list>
                     @forelse ($releaseNotes as $note)
-                        <button type="button" class="release-note-item" data-release-note-open="{{ $note['version'] }}">
+                        <button type="button" class="release-note-item" data-release-note-open="{{ $note['key'] }}">
                             <span class="release-note-item-meta">
                                 <time datetime="{{ $note['date'] }}">{{ \Carbon\Carbon::parse($note['date'])->format('Y/m/d') }}</time>
                                 <span>{{ strtoupper($note['version']) }}</span>
+                                @if (! empty($note['feedback_linked']))<span class="release-note-feedback-badge">声から改善</span>@endif
                             </span>
                             <strong>{{ $note['title'] }}</strong>
                             <span class="release-note-item-summary">{{ $note['summary'] }}</span>
@@ -278,19 +281,33 @@
                         <div class="release-notes-empty">まだ更新情報はありません。</div>
                     @endforelse
                 </div>
+            </div>
+        </dialog>
+
+        <dialog class="release-note-detail-dialog" data-release-note-detail-dialog aria-labelledby="release-note-detail-dialog-title">
+            <div class="release-note-detail-card" data-release-note-detail-card>
+                <button type="button" class="release-note-detail-close" data-release-note-detail-close aria-label="更新内容を閉じる">×</button>
+                <p id="release-note-detail-dialog-title" class="sr-only">更新内容の詳細</p>
 
                 @foreach ($releaseNotes as $note)
-                    <section class="release-note-detail hidden" data-release-note-detail="{{ $note['version'] }}" aria-labelledby="release-note-title-{{ $note['version'] }}">
-                        <button type="button" class="release-note-back" data-release-note-back>← 更新一覧へ戻る</button>
+                    <section class="release-note-detail hidden" data-release-note-detail="{{ $note['key'] }}" aria-labelledby="release-note-title-{{ md5($note['key']) }}">
                         <div class="release-note-detail-meta">
                             <time datetime="{{ $note['date'] }}">{{ \Carbon\Carbon::parse($note['date'])->format('Y/m/d') }}</time>
                             <span>{{ strtoupper($note['version']) }}</span>
+                            @if (! empty($note['feedback_linked']))<span class="release-note-feedback-badge">ユーザーの声から改善</span>@endif
                         </div>
-                        <h3 id="release-note-title-{{ $note['version'] }}">{{ $note['title'] }}</h3>
+                        <h3 id="release-note-title-{{ md5($note['key']) }}">{{ $note['title'] }}</h3>
                         <p class="release-note-detail-summary">{{ $note['summary'] }}</p>
 
+                        @if (! empty($note['user_voice']))
+                            <div class="release-note-voice-box">
+                                <p class="release-note-section-title">ユーザーの声</p>
+                                <p>{{ $note['user_voice'] }}</p>
+                            </div>
+                        @endif
+
                         <div class="release-note-highlight-box">
-                            <p class="release-note-section-title">今回できるようになったこと</p>
+                            <p class="release-note-section-title">今回の改善</p>
                             <ul>
                                 @foreach ($note['highlights'] as $highlight)
                                     <li>{{ $highlight }}</li>

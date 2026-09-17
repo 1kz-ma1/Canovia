@@ -48,4 +48,9 @@ class Feedback extends Model
         return $this->belongsTo(Task::class);
     }
 
+    public function releaseNote()
+    {
+        return $this->hasOne(ReleaseNote::class);
+    }
+
 }

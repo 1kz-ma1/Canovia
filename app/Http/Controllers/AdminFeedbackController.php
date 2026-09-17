@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Feedback;
+use App\Models\ReleaseNote;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -53,7 +54,7 @@ class AdminFeedbackController extends Controller
 
         $showArchived = ($validated['archived'] ?? '0') === '1';
 
-        $query = Feedback::query()->with(['user', 'plan', 'task'])
+        $query = Feedback::query()->with(['user', 'plan', 'task', 'releaseNote'])
             ->when($showArchived,
                 fn ($query) => $query->whereNotNull('archived_at'),
                 fn ($query) => $query->whereNull('archived_at')
@@ -126,6 +127,68 @@ class AdminFeedbackController extends Controller
         }
 
         return back()->with('status', 'フィードバックを復元しました。');
+    }
+
+    public function publishReleaseNote(Request $request, Feedback $feedback)
+    {
+        $this->ensureAuthorized($request);
+
+        if ($feedback->releaseNote()->exists()) {
+            return back()->withErrors([
+                'release_note' => 'このフィードバックには既に更新情報が紐づいています。',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'version' => ['required', 'string', 'max:32'],
+            'published_at' => ['required', 'date'],
+            'title' => ['required', 'string', 'max:180'],
+            'summary' => ['required', 'string', 'max:1200'],
+            'user_voice' => ['nullable', 'string', 'max:1600'],
+            'highlights' => ['required', 'string', 'max:6000'],
+            'tip' => ['nullable', 'string', 'max:1600'],
+        ]);
+
+        $highlights = collect(preg_split('/\R/u', $validated['highlights']))
+            ->map(fn ($line) => trim((string) $line))
+            ->filter()
+            ->take(10)
+            ->values()
+            ->all();
+
+        if ($highlights === []) {
+            return back()->withErrors([
+                'highlights' => '改善内容を1件以上入力してください。',
+            ])->withInput();
+        }
+
+        $now = now();
+        $publishedAt = \Carbon\Carbon::parse($validated['published_at'])
+            ->setTime($now->hour, $now->minute, $now->second);
+
+        $feedback->releaseNote()->create([
+            'version' => trim($validated['version']),
+            'title' => trim($validated['title']),
+            'summary' => trim($validated['summary']),
+            'user_voice' => filled($validated['user_voice'] ?? null) ? trim($validated['user_voice']) : null,
+            'highlights' => $highlights,
+            'tip' => filled($validated['tip'] ?? null) ? trim($validated['tip']) : null,
+            'published_at' => $publishedAt,
+        ]);
+
+        $feedback->update(['status' => 'resolved']);
+
+        return back()->with('status', 'フィードバックへの対応を更新情報として公開しました。');
+    }
+
+    public function unpublishReleaseNote(Request $request, Feedback $feedback, ReleaseNote $releaseNote)
+    {
+        $this->ensureAuthorized($request);
+
+        abort_unless((int) $releaseNote->feedback_id === (int) $feedback->id, 404);
+        $releaseNote->delete();
+
+        return back()->with('status', '更新情報の公開を取り消しました。元のフィードバックは残っています。');
     }
 
     private function ensureAuthorized(Request $request): void

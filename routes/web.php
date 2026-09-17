@@ -80,6 +80,8 @@ Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('
 Route::patch('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('admin.feedback.status');
 Route::patch('/admin/feedback/{feedback}/archive', [AdminFeedbackController::class, 'archive'])->name('admin.feedback.archive');
 Route::patch('/admin/feedback/{feedback}/restore', [AdminFeedbackController::class, 'restore'])->name('admin.feedback.restore');
+Route::post('/admin/feedback/{feedback}/release-note', [AdminFeedbackController::class, 'publishReleaseNote'])->name('admin.feedback.release_note.publish');
+Route::delete('/admin/feedback/{feedback}/release-note/{releaseNote}', [AdminFeedbackController::class, 'unpublishReleaseNote'])->name('admin.feedback.release_note.unpublish');
 
 
 // 共同計画。共有URLは未ログインでも招待内容を確認でき、認証後に元の招待へ戻ります。

@@ -4192,3 +4192,142 @@ html[data-theme-resolved="light"] .release-note-detail-meta,
 html[data-theme-resolved="light"] .release-note-section-title {
     color: rgb(var(--canovia-light-muted)) !important;
 }
+
+/* ========================================================================== 
+ * v33 Update detail overlay + official dark theme
+ * ========================================================================== */
+.canovia-theme-official {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    border: 1px solid rgb(56 189 248 / .24);
+    border-radius: 1rem;
+    background: linear-gradient(145deg, rgb(14 25 49 / .94), rgb(9 18 37 / .88));
+    padding: .9rem 1rem;
+}
+.canovia-theme-official-mark {
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    color: rgb(103 232 249);
+    background: rgb(56 189 248 / .1);
+    box-shadow: 0 0 18px rgb(56 189 248 / .16);
+}
+.canovia-theme-official strong {
+    display: block;
+    color: rgb(241 245 249);
+    font-size: .9rem;
+}
+.canovia-theme-official small {
+    display: block;
+    margin-top: .14rem;
+    color: rgb(148 163 184);
+    font-size: .7rem;
+    line-height: 1.45;
+}
+
+.release-note-feedback-badge {
+    border-color: rgb(129 140 248 / .35) !important;
+    background: rgb(99 102 241 / .12) !important;
+    color: rgb(199 210 254) !important;
+}
+
+.release-note-detail-dialog {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 1rem;
+    overflow: hidden;
+    border: 0;
+    background: transparent;
+    color: rgb(226 232 240);
+}
+.release-note-detail-dialog[open] {
+    display: grid;
+    place-items: center;
+}
+.release-note-detail-dialog::backdrop {
+    background: rgb(2 6 23 / .76);
+    backdrop-filter: blur(8px);
+}
+.release-note-detail-card {
+    position: relative;
+    width: min(92vw, 38rem);
+    max-height: min(84dvh, 46rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid rgb(83 111 159 / .62);
+    border-radius: 1.35rem;
+    background:
+        radial-gradient(circle at 86% 8%, rgb(56 189 248 / .09), transparent 30%),
+        radial-gradient(circle at 12% 88%, rgb(99 102 241 / .09), transparent 34%),
+        rgb(7 13 29 / .995);
+    padding: 1.1rem 1.15rem 1.2rem;
+    box-shadow: 0 32px 110px rgb(0 0 0 / .62), 0 0 54px rgb(56 189 248 / .1);
+}
+.release-note-detail-close {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    margin: 0 0 -.6rem auto;
+    border: 1px solid rgb(100 116 139 / .45);
+    border-radius: 999px;
+    background: rgb(15 23 42 / .94);
+    color: rgb(203 213 225);
+    font-size: 1.25rem;
+    line-height: 1;
+    box-shadow: 0 8px 24px rgb(2 6 23 / .35);
+}
+.release-note-detail-close:hover,
+.release-note-detail-close:focus-visible {
+    border-color: rgb(56 189 248 / .55);
+    color: rgb(207 250 254);
+    outline: none;
+}
+.release-note-detail-dialog .release-note-detail {
+    padding: .1rem .05rem .05rem;
+}
+.release-note-detail-dialog .release-note-detail-meta {
+    flex-wrap: wrap;
+    padding-right: 2.8rem;
+}
+.release-note-voice-box {
+    margin-top: 1.05rem;
+    border: 1px solid rgb(129 140 248 / .24);
+    border-radius: 1rem;
+    background: linear-gradient(145deg, rgb(49 46 129 / .16), rgb(30 41 59 / .32));
+    padding: .95rem 1rem;
+}
+.release-note-voice-box .release-note-section-title {
+    color: rgb(199 210 254);
+}
+.release-note-voice-box > p:last-child {
+    margin: 0;
+    color: rgb(203 213 225);
+    font-size: .82rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 767px) {
+    .release-note-detail-dialog { padding: .55rem; }
+    .release-note-detail-card {
+        width: 100%;
+        max-height: calc(100dvh - 1.1rem);
+        border-radius: 1.2rem;
+        padding: .95rem;
+    }
+    .release-note-detail-close {
+        width: 2rem;
+        height: 2rem;
+    }
+}
