@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'onboarding_version', 'onboarding_completed_at', 'onboarding_skipped_at', 'last_resource_provider'])]
+#[Fillable(['name', 'email', 'password', 'onboarding_version', 'onboarding_completed_at', 'onboarding_skipped_at', 'last_resource_provider', 'future_memo_hint_snoozed_until'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -45,6 +45,11 @@ class User extends Authenticatable
         return $this->hasMany(PlanResource::class, 'created_by_user_id');
     }
 
+    public function futureMemos()
+    {
+        return $this->hasMany(FutureMemo::class);
+    }
+
     protected function casts(): array
     {
         return [
@@ -53,6 +58,7 @@ class User extends Authenticatable
             'onboarding_version' => 'integer',
             'onboarding_completed_at' => 'datetime',
             'onboarding_skipped_at' => 'datetime',
+            'future_memo_hint_snoozed_until' => 'datetime',
         ];
     }
 }
