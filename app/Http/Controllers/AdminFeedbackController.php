@@ -15,7 +15,7 @@ class AdminFeedbackController extends Controller
         }
 
         return view('admin.feedback.login', [
-            'passwordConfigured' => filled(config('pacekeeper.feedback_admin_password')),
+            'passwordConfigured' => filled(config('canovia.feedback_admin_password')),
         ]);
     }
 
@@ -25,7 +25,7 @@ class AdminFeedbackController extends Controller
             'password' => ['required', 'string', 'max:255'],
         ]);
 
-        $expected = (string) config('pacekeeper.feedback_admin_password', '');
+        $expected = (string) config('canovia.feedback_admin_password', '');
         if ($expected === '' || ! hash_equals($expected, (string) $validated['password'])) {
             return back()->withErrors([
                 'password' => '管理用パスワードが正しくありません。',
@@ -141,7 +141,7 @@ class AdminFeedbackController extends Controller
             return true;
         }
 
-        $adminEmail = trim((string) config('pacekeeper.admin_email', ''));
+        $adminEmail = trim((string) config('canovia.admin_email', ''));
         $userEmail = trim((string) ($request->user()?->email ?? ''));
 
         return $adminEmail !== ''

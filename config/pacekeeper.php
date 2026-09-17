@@ -1,8 +1,6 @@
 <?php
 
-return [
-    'version' => env('PACEKEEPER_APP_VERSION', 'v16'),
-    'onboarding_version' => 1,
-    'admin_email' => env('PACEKEEPER_ADMIN_EMAIL'),
-    'feedback_admin_password' => env('FEEDBACK_ADMIN_PASSWORD', env('TEMPLATE_ADMIN_PASSWORD')),
-];
+// Legacy config alias kept temporarily so an older cached deployment or private
+// extension that still reads config('pacekeeper.*') does not break during the
+// Canovia domain/brand migration. New application code uses config('canovia.*').
+return require __DIR__.'/canovia.php';

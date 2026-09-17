@@ -24,7 +24,7 @@ class AiTaskAssistantController extends Controller
         $deadline = $plan->deadline?->format('Y-m-d') ?? '未設定';
 
         $prompt = <<<PROMPT
-あなたはPace Keeperの計画生成アシスタントです。目標を実行可能なタスクへ分解してください。
+あなたはCanoviaの計画生成アシスタントです。目標を実行可能なタスクへ分解してください。
 不足情報があればJSONを出す前にユーザーへ質問し、期限、使える時間、現在地、完成条件を確認してください。
 
 対象計画:
@@ -86,7 +86,7 @@ PROMPT;
         }
 
         if ((string) ($decoded['schema_version'] ?? '') !== '2.0' || ($decoded['flow'] ?? null) !== 'plan_generation') {
-            throw ValidationException::withMessages(['tasks_json' => 'PaceKeeper用の計画データではないようです。この画面の相談用文章から作った回答を貼り付けてください。']);
+            throw ValidationException::withMessages(['tasks_json' => 'Canovia用の計画データではないようです。この画面の相談用文章から作った回答を貼り付けてください。']);
         }
 
         $target = $decoded['target_plan'] ?? [];

@@ -10,9 +10,9 @@
 
 @if ($step === 'activity')
     <div class="assistant-message-row assistant-message-left">
-        <div class="assistant-avatar">PK</div>
+        <div class="assistant-avatar">CV</div>
         <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-            <p class="assistant-speaker">Pace Keeper サポーター</p>
+            <p class="assistant-speaker">Canovia サポーター</p>
             <h2 class="mt-2 text-xl font-bold text-slate-100">何を行い、何が分かりましたか？</h2>
             <p class="mt-2 text-sm leading-6 text-slate-400">
                 タスク名や当初の計画を気にせず、実際に行ったことを先に入力してください。
@@ -28,9 +28,9 @@
 
 @if ($step === 'worked_on')
     <div class="assistant-message-row assistant-message-left">
-        <div class="assistant-avatar">PK</div>
+        <div class="assistant-avatar">CV</div>
         <div class="assistant-bubble assistant-bubble-support">
-            <p class="assistant-speaker">Pace Keeper サポーター</p>
+            <p class="assistant-speaker">Canovia サポーター</p>
             <h2 class="mt-2 text-xl font-bold text-slate-100">いつ行いましたか？</h2>
             <div class="mt-4 flex flex-wrap gap-3">
                 <form method="POST" action="{{ route('chat.answer') }}">@csrf<input type="hidden" name="worked_on" value="{{ now()->toDateString() }}"><button class="chat-quick-button" type="submit">今日</button></form>
@@ -47,9 +47,9 @@
 
 @if ($step === 'minutes')
     <div class="assistant-message-row assistant-message-left">
-        <div class="assistant-avatar">PK</div>
+        <div class="assistant-avatar">CV</div>
         <div class="assistant-bubble assistant-bubble-support">
-            <p class="assistant-speaker">Pace Keeper サポーター</p>
+            <p class="assistant-speaker">Canovia サポーター</p>
             <h2 class="mt-2 text-xl font-bold text-slate-100">何分取り組みましたか？</h2>
             <form method="POST" action="{{ route('chat.answer') }}" class="mt-4">
                 @csrf
@@ -68,9 +68,9 @@
 
 @if ($step === 'plan')
     <div class="assistant-message-row assistant-message-left">
-        <div class="assistant-avatar">PK</div>
+        <div class="assistant-avatar">CV</div>
         <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-            <p class="assistant-speaker">Pace Keeper サポーター</p>
+            <p class="assistant-speaker">Canovia サポーター</p>
             <h2 class="mt-2 text-xl font-bold text-slate-100">どの計画に関する報告ですか？</h2>
             @if ($ownedPlans->isEmpty())
                 <p class="mt-3 text-slate-400">所有している計画がありません。先に計画を作成してください。</p>
@@ -89,9 +89,9 @@
 
 @if ($step === 'task' && $selectedPlan)
     <div class="assistant-message-row assistant-message-left">
-        <div class="assistant-avatar">PK</div>
+        <div class="assistant-avatar">CV</div>
         <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-            <p class="assistant-speaker">Pace Keeper サポーター</p>
+            <p class="assistant-speaker">Canovia サポーター</p>
             <h2 class="mt-2 text-xl font-bold text-slate-100">この成果をどこへ関連付けますか？</h2>
             <p class="mt-2 text-sm text-slate-400">既存タスクに合わなければ、計画全体の成果として記録できます。</p>
             <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-3">
@@ -108,9 +108,9 @@
 
 @if ($step === 'result')
     <div class="assistant-message-row assistant-message-left">
-        <div class="assistant-avatar">PK</div>
+        <div class="assistant-avatar">CV</div>
         <div class="assistant-bubble assistant-bubble-support">
-            <p class="assistant-speaker">Pace Keeper サポーター</p>
+            <p class="assistant-speaker">Canovia サポーター</p>
             <h2 class="mt-2 text-xl font-bold text-slate-100">記録への反映方法を選んでください</h2>
             <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-4">
                 @csrf

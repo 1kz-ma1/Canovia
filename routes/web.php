@@ -42,7 +42,9 @@ Route::get('/pwa/handoff/{token}', [PwaController::class, 'handoff'])->name('pwa
 
 Route::get('/health', fn () => response()->noContent()
     ->header('Access-Control-Allow-Origin', '*')
-    ->header('Access-Control-Expose-Headers', 'X-PaceKeeper-Ready')
+    ->header('Access-Control-Expose-Headers', 'X-Canovia-Ready, X-PaceKeeper-Ready')
+    ->header('X-Canovia-Ready', '1')
+    // Legacy readiness header kept so an older cached welcome page still works.
     ->header('X-PaceKeeper-Ready', '1')
     ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0'))
     ->name('health');

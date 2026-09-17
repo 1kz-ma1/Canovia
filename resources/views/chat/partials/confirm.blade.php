@@ -1,7 +1,7 @@
 <div class="assistant-message-row assistant-message-left">
-    <div class="assistant-avatar">PK</div>
+    <div class="assistant-avatar">CV</div>
     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p>
+        <p class="assistant-speaker">Canovia サポーター</p>
         <h2 class="mt-2 text-xl font-bold text-slate-100">この内容で登録しますか？</h2>
         <dl class="chat-confirm-grid mt-4">
             @if ($flow === 'work_log')

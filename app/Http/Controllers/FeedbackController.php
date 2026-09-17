@@ -51,7 +51,7 @@ class FeedbackController extends Controller
             'rating' => isset($validated['rating']) ? (int) $validated['rating'] : null,
             'message' => trim((string) ($validated['message'] ?? '')),
             'page' => $validated['page'] ?? $request->headers->get('referer'),
-            'app_version' => (string) config('pacekeeper.version', 'v14'),
+            'app_version' => (string) config('canovia.version', 'v14'),
             'context' => [
                 'route' => optional($request->route())->getName(),
                 'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),

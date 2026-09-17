@@ -7,7 +7,7 @@
                     <img src="/brand/logo-mark.svg" alt="" class="h-8 w-8" width="32" height="32">
                     <p class="onboarding-kicker">はじめに</p>
                 </div>
-                <h2 id="onboarding-intro-title" class="mt-2 max-w-md text-2xl font-black text-slate-50">PaceKeeperは、次の一歩を決めやすくするアプリです</h2>
+                <h2 id="onboarding-intro-title" class="mt-2 max-w-md text-2xl font-black text-slate-50">Canoviaは、次の一歩を決めやすくするアプリです</h2>
             </div>
             <button type="button" class="feedback-close" data-onboarding-intro-skip aria-label="案内をスキップ">×</button>
         </div>
@@ -71,7 +71,7 @@
     <section class="install-guide-card">
         <div class="flex items-start justify-between gap-4">
             <div>
-                <p class="text-xs font-black uppercase tracking-[0.14em] text-sky-300">PaceKeeperをすぐ開く</p>
+                <p class="text-xs font-black uppercase tracking-[0.14em] text-sky-300">Canoviaをすぐ開く</p>
                 <h2 id="install-guide-title" class="mt-1 text-xl font-black text-slate-50">ホーム画面に追加</h2>
             </div>
             <button type="button" class="feedback-close" data-install-guide-close aria-label="閉じる">×</button>
@@ -80,7 +80,7 @@
         <div class="mt-5 flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-950/45 p-4">
             <img src="/icons/icon-192.png" alt="" class="h-16 w-16 rounded-2xl shadow-lg" width="64" height="64">
             <div class="min-w-0">
-                <p class="font-bold text-slate-100">PaceKeeper</p>
+                <p class="font-bold text-slate-100">Canovia</p>
                 <p class="mt-1 text-sm leading-6 text-slate-400" data-install-guide-copy>ブラウザのデータを引き継いだ状態でホーム画面へ追加できます。</p>
             </div>
         </div>

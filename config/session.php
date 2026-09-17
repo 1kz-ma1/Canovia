@@ -129,8 +129,8 @@ return [
     |
     */
 
-    // Keep the cookie name independent from APP_NAME so a PaceKeeper -> Canovia
-    // brand rename does not silently log every installed PWA out on deploy.
+    // Keep this legacy cookie name during the Canovia domain transition so
+    // existing sessions can be handed from the old host to app.canovia.com.
     'cookie' => env('SESSION_COOKIE', 'pace-keeper-session'),
 
     /*

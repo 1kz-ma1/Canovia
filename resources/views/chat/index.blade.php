@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '計画・実績 | Pace Keeper')
+@section('title', '計画・実績 | Canovia')
 
 @section('content')
     @php
@@ -22,7 +22,7 @@
         <header class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                 <p class="text-sm font-semibold text-sky-400">Plan operations</p>
-                <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-100 font-heading">Pace Keeper サポーター</h1>
+                <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-100 font-heading">Canovia サポーター</h1>
                 <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
                     進捗報告と方針変更を分けて考える必要はありません。実際に起きたことをそのまま報告し、
                     必要な実績記録・進捗更新・計画変更をまとめて反映します。
@@ -57,9 +57,9 @@
                 @include('chat.partials.menu')
             @else
                 <div class="assistant-message-row assistant-message-left">
-                    <div class="assistant-avatar">PK</div>
+                    <div class="assistant-avatar">CV</div>
                     <div class="assistant-bubble assistant-bubble-support">
-                        <p class="assistant-speaker">Pace Keeper サポーター</p>
+                        <p class="assistant-speaker">Canovia サポーター</p>
                         <p class="mt-2 text-sm text-slate-400">現在の手続き</p>
                         <h2 class="mt-1 text-xl font-bold text-slate-100">{{ $flowTitles[$flow] ?? 'チャット操作' }}</h2>
                     </div>

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'ロードマップ | PaceKeeper')
+@section('title', 'ロードマップ | Canovia')
 
 @section('content')
     @php
@@ -14,7 +14,7 @@
     <div class="pk-v19-roadmap-page">
         <header class="pk-v19-roadmap-hero">
             <div class="pk-v19-roadmap-hero-copy">
-                <p class="pk-v18-eyebrow">PACEKEEPER / ROADMAP</p>
+                <p class="pk-v18-eyebrow">CANOVIA / ROADMAP</p>
                 <h1>ロードマップ</h1>
                 <p>小さな一歩が、<br>大きな未来につながる。</p>
             </div>

@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "PaceKeeper",
-  "short_name": "PaceKeeper",
-  "description": "いつものAIと計画をつなぎ、今日の一歩まで整理するPaceKeeper",
+  "name": "Canovia",
+  "short_name": "Canovia",
+  "description": "いつものAIと計画をつなぎ、今日の一歩まで整理するCanovia",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

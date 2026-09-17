@@ -19,5 +19,5 @@ php artisan view:cache
 
 PORT="${PORT:-10000}"
 
-echo "Starting PaceKeeper on 0.0.0.0:${PORT}"
+echo "Starting Canovia on 0.0.0.0:${PORT}"
 exec php artisan serve --host=0.0.0.0 --port="${PORT}"

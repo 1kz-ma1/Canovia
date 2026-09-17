@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'タスク編集 | Pace Keeper')
+@section('title', 'タスク編集 | Canovia')
 
 @section('content')
     @php

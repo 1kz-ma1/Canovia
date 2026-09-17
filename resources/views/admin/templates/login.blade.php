@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>テンプレート管理ログイン | Pace Keeper</title>
+    <title>テンプレート管理ログイン | Canovia</title>
 </head>
 <body>
     <h1>テンプレート管理ログイン</h1>

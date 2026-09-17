@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'ホーム | Pace Keeper')
+@section('title', 'ホーム | Canovia')
 
 @section('content')
     @php
@@ -123,7 +123,7 @@
             <section class="empty-state page-card p-8 text-center">
                 <div class="text-4xl" aria-hidden="true">✦</div>
                 <h2 class="mt-3 text-xl font-black text-slate-100">最初の星を決めよう</h2>
-                <p class="mt-2 text-sm text-slate-400">ざっくりした目標で大丈夫。PaceKeeperが、今日の一歩までつなげます。</p>
+                <p class="mt-2 text-sm text-slate-400">ざっくりした目標で大丈夫。Canoviaが、今日の一歩までつなげます。</p>
                 <a href="{{ route('plans.create') }}" class="btn-primary mt-5">計画を作る</a>
             </section>
         @else

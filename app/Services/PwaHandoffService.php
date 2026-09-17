@@ -13,7 +13,7 @@ class PwaHandoffService
 {
     /**
      * Create a short-lived one-time capability that can move the current
-     * PaceKeeper identity from a browser tab into an installed PWA context.
+     * Canovia identity from a browser tab into an installed PWA context.
      *
      * iOS can isolate Safari and Home Screen storage. A normal session cookie
      * therefore is not enough: the manifest/start URL needs an explicit bridge.

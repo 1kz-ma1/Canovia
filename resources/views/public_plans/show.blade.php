@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $plan->title . ' | Pace Keeper')
+@section('title', $plan->title . ' | Canovia')
 
 @section('content')
     @php
@@ -203,7 +203,7 @@
 
     <div class="mt-8">
         <a href="{{ route('home') }}" class="text-sm font-medium text-slate-700 hover:underline">
-            PaceKeeperへ
+            Canoviaへ
         </a>
     </div>
 @endsection

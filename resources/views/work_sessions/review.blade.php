@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '作業結果 | Pace Keeper')
+@section('title', '作業結果 | Canovia')
 
 @section('content')
     <div class="mx-auto max-w-2xl space-y-6">

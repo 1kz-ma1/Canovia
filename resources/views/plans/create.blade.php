@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '計画作成 | Pace Keeper')
+@section('title', '計画作成 | Canovia')
 
 @section('content')
     <div class="mx-auto max-w-3xl space-y-5">
@@ -8,7 +8,7 @@
             <div class="relative z-10 min-w-0">
                 <p class="pk-v18-eyebrow">QUICK CREATE</p>
                 <h1>まず、やりたいことだけ。</h1>
-                <p>細かい設定はあとで大丈夫。30秒で計画を作って、PaceKeeperを始めよう。</p>
+                <p>細かい設定はあとで大丈夫。30秒で計画を作って、Canoviaを始めよう。</p>
             </div>
             <div class="pk-v18-page-guide" aria-hidden="true">
                 <span>最初は<br>ざっくりでOK ✦</span>

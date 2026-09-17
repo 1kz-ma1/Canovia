@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'pacekeeper-shell-v22';
+const CACHE_VERSION = 'canovia-shell-v29';
 const STATIC_ASSETS = [
     '/offline.html',
     '/icons/icon-180.png',
@@ -23,7 +23,7 @@ self.addEventListener('message', (event) => {
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) => Promise.all(
-            keys.filter((key) => key.startsWith('pacekeeper-shell-') && key !== CACHE_VERSION)
+            keys.filter((key) => (key.startsWith('canovia-shell-') || key.startsWith('pacekeeper-shell-')) && key !== CACHE_VERSION)
                 .map((key) => caches.delete(key))
         ))
     );

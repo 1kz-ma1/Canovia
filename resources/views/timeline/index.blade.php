@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'タイムライン | Pace Keeper')
+@section('title', 'タイムライン | Canovia')
 
 @section('content')
     <div class="space-y-6">
@@ -58,7 +58,7 @@
                                 <span class="badge badge-slate">{{ $similarPlan->category ?: '計画' }}</span>
                             </div>
                             <h3 class="mt-3 line-clamp-2 font-black text-slate-100">{{ $similarPlan->title }}</h3>
-                            <p class="mt-2 text-xs text-slate-400">{{ $similarPlan->user?->name ?: 'PaceKeeperユーザー' }}</p>
+                            <p class="mt-2 text-xs text-slate-400">{{ $similarPlan->user?->name ?: 'Canoviaユーザー' }}</p>
                         </a>
                     @endforeach
                 </div>

@@ -14,9 +14,9 @@ class PwaController extends Controller
 
         return response()->json([
             'id' => '/',
-            'name' => 'PaceKeeper',
-            'short_name' => 'PaceKeeper',
-            'description' => 'いつものAIと計画をつなぎ、今日の一歩まで整理するPaceKeeper',
+            'name' => 'Canovia',
+            'short_name' => 'Canovia',
+            'description' => 'いつものAIと計画をつなぎ、今日の一歩まで整理するCanovia',
             'start_url' => $startUrl,
             'scope' => '/',
             'display' => 'standalone',
@@ -70,19 +70,39 @@ class PwaController extends Controller
     public function handoff(Request $request, string $token, PwaHandoffService $handoffService)
     {
         $result = $handoffService->consume($request, $token);
+        $nextPath = $this->safeNextPath((string) $request->query('next', ''));
+        $redirect = $nextPath !== null ? redirect($nextPath) : redirect()->route('home');
 
         if ($result['type'] === 'account') {
-            return redirect()->route('home')->with('status', 'ログイン状態をこのPaceKeeperアプリへ引き継ぎました。');
+            return $redirect->with('status', $request->boolean('brand_migration')
+                ? 'Canoviaの新しいURLへログイン状態を引き継ぎました。'
+                : 'ログイン状態をこのCanoviaアプリへ引き継ぎました。');
         }
 
         if ($result['type'] === 'guest' && $result['count'] > 0) {
-            return redirect()->route('home')->with('status', "ブラウザで使っていた{$result['count']}件の計画をこのアプリへ引き継ぎました。");
+            return $redirect->with('status', $request->boolean('brand_migration')
+                ? "Canoviaの新しいURLへ{$result['count']}件の計画を引き継ぎました。"
+                : "ブラウザで使っていた{$result['count']}件の計画をこのアプリへ引き継ぎました。");
         }
 
         if ($result['type'] === 'invalid') {
-            return redirect()->route('home')->with('status', '引き継ぎリンクの期限が切れました。必要ならブラウザからもう一度ホーム画面へ追加してください。');
+            return redirect()->route('home')->with('status', '引き継ぎリンクの期限が切れました。必要なら旧URLからもう一度アクセスしてください。');
         }
 
-        return redirect()->route('home');
+        return $redirect;
+    }
+
+    private function safeNextPath(string $candidate): ?string
+    {
+        if ($candidate === '' || ! str_starts_with($candidate, '/') || str_starts_with($candidate, '//')) {
+            return null;
+        }
+
+        $parts = parse_url($candidate);
+        if ($parts === false || isset($parts['host']) || isset($parts['scheme'])) {
+            return null;
+        }
+
+        return $candidate;
     }
 }

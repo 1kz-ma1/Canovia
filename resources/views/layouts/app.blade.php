@@ -22,7 +22,7 @@
     $feedbackTaskId = $feedbackTask instanceof \App\Models\Task
         ? $feedbackTask->id
         : (($feedbackWorkSession instanceof \App\Models\WorkSession) ? $feedbackWorkSession->task_id : null);
-    $onboardingVersion = (int) config('pacekeeper.onboarding_version', 1);
+    $onboardingVersion = (int) config('canovia.onboarding_version', 1);
     $onboardingAuto = ! $focusMode && (! auth()->check() || (int) auth()->user()->onboarding_version < $onboardingVersion);
 @endphp
 <!DOCTYPE html>
@@ -34,11 +34,11 @@
     <meta name="theme-color" content="#0A0F1E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="PaceKeeper">
+    <meta name="apple-mobile-web-app-title" content="Canovia">
     <link rel="manifest" href="{{ route('pwa.manifest') }}" crossorigin="use-credentials">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
-    <title>@yield('title', 'Pace Keeper')</title>
+    <title>@yield('title', 'Canovia')</title>
 
     <script>
         (() => {
@@ -162,7 +162,7 @@
     @unless ($focusMode)
         <footer class="mt-12 hidden border-t border-slate-800 bg-slate-950/70 md:block">
             <div class="mx-auto flex max-w-7xl flex-col gap-2 px-6 py-8 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
-                <p>Pace Keeper — 自分のペースで、前へ。</p>
+                <p>Canovia — 自分のペースで、前へ。</p>
             </div>
         </footer>
 
@@ -228,7 +228,7 @@
 
         <div class="app-update-banner hidden" data-app-update role="status" aria-live="polite">
             <div class="min-w-0">
-                <p class="font-bold text-slate-50">PaceKeeperを更新できます</p>
+                <p class="font-bold text-slate-50">Canoviaを更新できます</p>
                 <p class="mt-1 text-xs text-slate-300">作業中に勝手に再読み込みはしません。</p>
             </div>
             <div class="flex shrink-0 gap-2">
@@ -251,7 +251,7 @@
                     <button type="button" class="feedback-close" data-feedback-close aria-label="閉じる">×</button>
                 </div>
                 <fieldset class="mt-5">
-                    <legend class="text-sm font-semibold text-slate-300">PaceKeeperの総合評価</legend>
+                    <legend class="text-sm font-semibold text-slate-300">Canoviaの総合評価</legend>
                     <input type="hidden" name="rating" value="" data-feedback-rating-input>
                     <div class="feedback-star-row mt-2" role="group" aria-label="5段階評価">
                         @for ($rating = 1; $rating <= 5; $rating++)

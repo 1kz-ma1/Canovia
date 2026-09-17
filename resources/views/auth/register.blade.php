@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'データを保護 | PaceKeeper')
+@section('title', 'データを保護 | Canovia')
 
 @section('content')
 <div class="mx-auto max-w-md">
     <section class="page-card p-6 sm:p-8">
         <p class="text-sm font-semibold text-emerald-400">任意のアカウント</p>
-        <h1 class="mt-2 text-2xl font-bold text-slate-50">今のPaceKeeperをアカウントに保存</h1>
+        <h1 class="mt-2 text-2xl font-bold text-slate-50">今のCanoviaをアカウントに保存</h1>
         <p class="mt-3 text-sm leading-7 text-slate-400">登録は任意です。現在このブラウザで作った計画もそのまま引き継ぎ、登録完了後はログインした状態から続けられます。</p>
-        <div class="mt-4 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-3 text-xs leading-6 text-amber-100">PaceKeeperは現在β版です。重要な個人情報や機密情報は計画本文に入力しないでください。</div>
+        <div class="mt-4 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-3 text-xs leading-6 text-amber-100">Canoviaは現在β版です。重要な個人情報や機密情報は計画本文に入力しないでください。</div>
 
         <form method="POST" action="{{ route('auth.register') }}" class="mt-6 space-y-4">
             @csrf

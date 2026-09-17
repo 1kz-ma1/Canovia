@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'ログイン | PaceKeeper')
+@section('title', 'ログイン | Canovia')
 
 @section('content')
 <div class="mx-auto max-w-md">
     <section class="page-card p-6 sm:p-8">
         <p class="text-sm font-semibold text-sky-400">Protect your context</p>
-        <h1 class="mt-2 text-2xl font-bold text-slate-50">PaceKeeperにログイン</h1>
+        <h1 class="mt-2 text-2xl font-bold text-slate-50">Canoviaにログイン</h1>
         <p class="mt-3 text-sm leading-7 text-slate-400">別端末やCookie削除後でも、計画・実績・昨日からの続きへ戻れるようにします。</p>
 
         <form method="POST" action="{{ route('auth.login') }}" class="mt-6 space-y-4">

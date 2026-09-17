@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'アクセスできません | PaceKeeper')
+@section('title', 'アクセスできません | Canovia')
 @section('content')
 <div class="mx-auto max-w-lg">
     <section class="page-card p-6 sm:p-8">

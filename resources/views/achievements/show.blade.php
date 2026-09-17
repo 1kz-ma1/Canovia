@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $plan->title . ' の振り返り | Pace Keeper')
+@section('title', $plan->title . ' の振り返り | Canovia')
 
 @section('content')
     <div class="mx-auto max-w-5xl space-y-6">
@@ -15,9 +15,9 @@
 
         <main class="assistant-chat-shell">
             <div class="assistant-message-row assistant-message-left">
-                <div class="assistant-avatar">PK</div>
+                <div class="assistant-avatar">CV</div>
                 <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-                    <p class="assistant-speaker">Pace Keeper サポーター</p>
+                    <p class="assistant-speaker">Canovia サポーター</p>
                     <h2 class="mt-2 text-2xl font-bold text-slate-900">この計画は達成済みです</h2>
                     <p class="mt-3 leading-7 text-slate-700">
                         {{ $praise }}
@@ -46,7 +46,7 @@
 
             @if ($plan->description)
                 <div class="assistant-message-row assistant-message-left">
-                    <div class="assistant-avatar">PK</div>
+                    <div class="assistant-avatar">CV</div>
                     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
                         <p class="assistant-speaker">計画の最終形</p>
                         <p class="mt-2 whitespace-pre-line text-sm leading-7 text-slate-700">{{ $plan->description }}</p>
@@ -55,7 +55,7 @@
             @endif
 
             <div class="assistant-message-row assistant-message-left">
-                <div class="assistant-avatar">PK</div>
+                <div class="assistant-avatar">CV</div>
                 <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
                     <p class="assistant-speaker">ここまでの流れ</p>
                     <div class="mt-4 space-y-3">

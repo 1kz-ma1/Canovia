@@ -1,5 +1,5 @@
 (() => {
-    const config = window.PACEKEEPER_WELCOME_CONFIG || {};
+    const config = window.CANOVIA_WELCOME_CONFIG || window.PACEKEEPER_WELCOME_CONFIG || {};
     const appUrl = String(config.appUrl || '').replace(/\/$/, '');
     const status = document.querySelector('[data-status]');
     const openButton = document.querySelector('[data-open]');
@@ -8,8 +8,9 @@
     const slowNotice = document.querySelector('[data-slow-notice]');
     const hints = [...document.querySelectorAll('[data-hint]')];
     const dots = [...document.querySelectorAll('[data-hint-dot]')];
-    const seenKey = 'pacekeeper.welcome.seen.v1';
-    const returning = localStorage.getItem(seenKey) === '1';
+    const seenKey = 'canovia.welcome.seen.v1';
+    const legacySeenKey = 'pacekeeper.welcome.seen.v1';
+    const returning = localStorage.getItem(seenKey) === '1' || localStorage.getItem(legacySeenKey) === '1';
     const startedAt = Date.now();
     const slowAfterMs = 22000;
     let ready = false;
@@ -55,7 +56,7 @@
         status.textContent = '準備できました';
         status.classList.add('is-ready');
         openButton.disabled = false;
-        openButton.textContent = 'PaceKeeperを開く';
+        openButton.textContent = 'Canoviaを開く';
         slowNotice?.classList.add('hidden');
         if (returning) window.setTimeout(openApp, 450);
     };
@@ -94,12 +95,12 @@
                 credentials: 'omit',
                 signal: controller.signal,
             });
-            if ((response.ok || response.status === 204) && response.headers.get('X-PaceKeeper-Ready') === '1') {
+            if ((response.ok || response.status === 204) && response.headers.get('X-Canovia-Ready') === '1') {
                 markReady();
                 return;
             }
         } catch (_) {
-            // Renderなどの起動中レスポンスは、PaceKeeperのReadyヘッダーを返しません。
+            // Renderなどの起動中レスポンスは、CanoviaのReadyヘッダーを返しません。
             // Welcome画面を維持したまま次の確認を待ちます。
         } finally {
             window.clearTimeout(timeout);

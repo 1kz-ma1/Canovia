@@ -1,7 +1,7 @@
 <div class="assistant-message-row assistant-message-left">
-    <div class="assistant-avatar">PK</div>
+    <div class="assistant-avatar">CV</div>
     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p>
+        <p class="assistant-speaker">Canovia サポーター</p>
         <h2 class="mt-2 text-xl font-bold text-slate-100">どの計画を更新しますか？</h2>
         <p class="mt-2 text-sm leading-7 text-slate-300">
             実績・分かったこと・予定との違い・方針変更を一度に報告できます。更新の種類を先に選ぶ必要はありません。
