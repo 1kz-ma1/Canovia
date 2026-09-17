@@ -50,6 +50,20 @@ class HomeController extends Controller
                 'member_count' => 1 + $plan->memberships->count(),
             ])
             ->values();
+
+        $futureMemos = collect();
+        $showFutureMemoHint = false;
+        if ($request->user()) {
+            $futureMemos = $request->user()
+                ->futureMemos()
+                ->orderBy('sort_order')
+                ->orderByDesc('id')
+                ->get();
+            $snoozedUntil = $request->user()->future_memo_hint_snoozed_until;
+            $showFutureMemoHint = $futureMemos->isEmpty()
+                && (! $snoozedUntil || $snoozedUntil->isPast());
+        }
+
         $baseline = $behaviorService->baseline($actorToken);
         $state = $stateService->calculate($actorToken, $baseline, $editablePlans);
         $stateService->captureDaily($actorToken, $state);
@@ -79,7 +93,7 @@ class HomeController extends Controller
             );
         }
 
-        return view('dashboard.index', compact('dashboard', 'collaborationPlans'));
+        return view('dashboard.index', compact('dashboard', 'collaborationPlans', 'futureMemos', 'showFutureMemoHint'));
     }
 
     public function legacy(Request $request, PlanProgressService $progressService, PlanOwnershipService $ownership)
