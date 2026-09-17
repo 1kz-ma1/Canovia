@@ -10,6 +10,17 @@
             <p class="mt-2 text-sm text-slate-400">総合評価と、改善に使える具体的なフィードバックを同じ場所で確認します。</p>
         </header>
 
+        @if ($errors->any())
+            <div class="assistant-notice assistant-notice-error">
+                <p class="font-bold">入力内容を確認してください。</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5 text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <section class="grid gap-4 md:grid-cols-[0.8fr_1.2fr]">
             <article class="page-card p-5">
                 <p class="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Overall Rating</p>
@@ -138,6 +149,73 @@
                         @if ($feedback->task)<span>Task: {{ $feedback->task->title }}</span>@endif
                         @if ($feedback->user)<span>User: {{ $feedback->user->email }}</span>@else<span>Guest</span>@endif
                     </div>
+
+                    @if ($feedback->releaseNote)
+                        <div class="mt-5 rounded-2xl border border-cyan-400/25 bg-cyan-400/5 p-4">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-[0.14em] text-cyan-300">Published update</p>
+                                    <p class="mt-1 font-bold text-slate-100">{{ $feedback->releaseNote->version }} ・ {{ $feedback->releaseNote->title }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">このフィードバックへの対応として更新情報に公開中です。</p>
+                                </div>
+                                <form method="POST" action="{{ route('admin.feedback.release_note.unpublish', [$feedback, $feedback->releaseNote]) }}" onsubmit="return confirm('この更新情報の公開を取り消しますか？フィードバック自体は残ります。')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-secondary px-3 py-2 text-xs">公開を取り消す</button>
+                                </form>
+                            </div>
+                        </div>
+                    @else
+                        <details class="mt-5 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-4">
+                            <summary class="cursor-pointer text-sm font-black text-sky-300">この声への対応を更新情報として公開</summary>
+                            <p class="mt-2 text-xs leading-5 text-slate-400">元の投稿本文やユーザー情報は公開しません。「ユーザーの声」は個人情報を除いて、ユーザー目線の言葉に要約してください。</p>
+
+                            <form method="POST" action="{{ route('admin.feedback.release_note.publish', $feedback) }}" class="mt-4 grid gap-4">
+                                @csrf
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <label>
+                                        <span class="text-xs font-bold text-slate-300">バージョン</span>
+                                        <input type="text" name="version" value="{{ old('version', config('release_notes.0.version', config('canovia.version', 'v33'))) }}" class="form-control mt-1" maxlength="32" required>
+                                    </label>
+                                    <label>
+                                        <span class="text-xs font-bold text-slate-300">公開日</span>
+                                        <input type="date" name="published_at" value="{{ old('published_at', now()->toDateString()) }}" class="form-control mt-1" required>
+                                    </label>
+                                </div>
+
+                                <label>
+                                    <span class="text-xs font-bold text-slate-300">タイトル</span>
+                                    <input type="text" name="title" value="{{ old('title') }}" class="form-control mt-1" maxlength="180" placeholder="例：ロードマップの詳細を見やすくしました" required>
+                                </label>
+
+                                <label>
+                                    <span class="text-xs font-bold text-slate-300">一覧に表示する説明</span>
+                                    <textarea name="summary" rows="2" class="form-control mt-1" maxlength="1200" placeholder="何が良くなったかを短く説明" required>{{ old('summary') }}</textarea>
+                                </label>
+
+                                <label>
+                                    <span class="text-xs font-bold text-slate-300">ユーザーの声（匿名化・要約）</span>
+                                    <textarea name="user_voice" rows="3" class="form-control mt-1" maxlength="1600" placeholder="例：「詳細がどこに出たのか分かりにくい」という声をいただきました。">{{ old('user_voice') }}</textarea>
+                                </label>
+
+                                <label>
+                                    <span class="text-xs font-bold text-slate-300">今回の改善内容</span>
+                                    <textarea name="highlights" rows="5" class="form-control mt-1" maxlength="6000" placeholder="1行に1件ずつ入力
+詳細を画面中央のカードで表示
+×・カード外クリック・Escで閉じられる" required>{{ old('highlights') }}</textarea>
+                                </label>
+
+                                <label>
+                                    <span class="text-xs font-bold text-slate-300">使い方のヒント（任意）</span>
+                                    <textarea name="tip" rows="2" class="form-control mt-1" maxlength="1600" placeholder="ユーザーが試しやすくなる一言">{{ old('tip') }}</textarea>
+                                </label>
+
+                                <div class="flex justify-end">
+                                    <button type="submit" class="btn-primary px-4 py-2 text-sm">更新情報として公開</button>
+                                </div>
+                            </form>
+                        </details>
+                    @endif
                 </article>
             @empty
                 <section class="empty-state page-card p-8 text-center">
