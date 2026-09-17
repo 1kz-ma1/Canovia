@@ -430,6 +430,80 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const releaseNotesDialog = document.querySelector('[data-release-notes-dialog]');
+    const releaseNotesList = releaseNotesDialog?.querySelector('[data-release-notes-list]');
+    const releaseNoteDetails = releaseNotesDialog ? [...releaseNotesDialog.querySelectorAll('[data-release-note-detail]')] : [];
+    const latestReleaseVersion = releaseNotesDialog?.dataset.latestReleaseVersion || '';
+    const releaseSeenKey = 'canovia.release_notes.seen';
+
+    const updateReleaseNewIndicators = () => {
+        let seenVersion = '';
+        try {
+            seenVersion = localStorage.getItem(releaseSeenKey) || '';
+        } catch (_) {}
+        const isNew = Boolean(latestReleaseVersion && seenVersion !== latestReleaseVersion);
+        document.querySelectorAll('[data-release-notes-new]').forEach((indicator) => {
+            indicator.classList.toggle('is-hidden', !isNew);
+        });
+    };
+
+    const showReleaseNotesList = () => {
+        if (!releaseNotesList) return;
+        releaseNotesList.classList.remove('hidden');
+        releaseNoteDetails.forEach((detail) => detail.classList.add('hidden'));
+    };
+
+    const markReleaseNotesSeen = () => {
+        if (!latestReleaseVersion) return;
+        try {
+            localStorage.setItem(releaseSeenKey, latestReleaseVersion);
+        } catch (_) {}
+        updateReleaseNewIndicators();
+    };
+
+    document.querySelectorAll('[data-release-notes-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (!releaseNotesDialog) return;
+            showReleaseNotesList();
+            markReleaseNotesSeen();
+            if (typeof releaseNotesDialog.showModal === 'function') releaseNotesDialog.showModal();
+            else releaseNotesDialog.setAttribute('open', '');
+        });
+    });
+
+    releaseNotesDialog?.querySelectorAll('[data-release-note-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const version = button.dataset.releaseNoteOpen;
+            const detail = releaseNoteDetails.find((item) => item.dataset.releaseNoteDetail === version);
+            if (!detail || !releaseNotesList) return;
+            releaseNotesList.classList.add('hidden');
+            releaseNoteDetails.forEach((item) => item.classList.add('hidden'));
+            detail.classList.remove('hidden');
+            detail.scrollTop = 0;
+        });
+    });
+
+    releaseNotesDialog?.querySelectorAll('[data-release-note-back]').forEach((button) => {
+        button.addEventListener('click', showReleaseNotesList);
+    });
+
+    document.querySelectorAll('[data-release-notes-close]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (!releaseNotesDialog) return;
+            if (typeof releaseNotesDialog.close === 'function') releaseNotesDialog.close();
+            else releaseNotesDialog.removeAttribute('open');
+        });
+    });
+
+    releaseNotesDialog?.addEventListener('click', (event) => {
+        if (event.target !== releaseNotesDialog) return;
+        if (typeof releaseNotesDialog.close === 'function') releaseNotesDialog.close();
+        else releaseNotesDialog.removeAttribute('open');
+    });
+
+    releaseNotesDialog?.addEventListener('close', showReleaseNotesList);
+    updateReleaseNewIndicators();
+
     const feedbackDialog = document.querySelector('[data-feedback-dialog]');
     document.querySelectorAll('[data-feedback-open]').forEach((button) => {
         button.addEventListener('click', () => {

@@ -25,6 +25,8 @@
         : (($feedbackWorkSession instanceof \App\Models\WorkSession) ? $feedbackWorkSession->task_id : null);
     $onboardingVersion = (int) config('canovia.onboarding_version', 1);
     $onboardingAuto = ! $focusMode && (! auth()->check() || (int) auth()->user()->onboarding_version < $onboardingVersion);
+    $releaseNotes = collect(config('release_notes', []));
+    $latestReleaseVersion = (string) data_get($releaseNotes->first(), 'version', '');
 @endphp
 <!DOCTYPE html>
 <html lang="ja">
@@ -89,6 +91,7 @@
 
                 <div class="hidden items-center gap-2 lg:flex">
                     <a href="{{ route('calendar.index') }}" class="header-secondary-link">カレンダー</a>
+                    <button type="button" class="header-secondary-link release-notes-desktop-trigger" data-release-notes-open aria-label="Canoviaの更新情報を見る">更新情報<span class="release-notes-new-dot" data-release-notes-new aria-hidden="true"></span></button>
                     <button type="button" class="ui-settings-trigger" data-ui-settings-open aria-label="表示設定を開く">表示</button>
                     @auth
                         <span class="max-w-36 truncate text-xs font-semibold text-slate-400">{{ auth()->user()->name }}</span>
@@ -117,6 +120,17 @@
                     <p class="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300">CANOVIA</p>
                     <p class="truncate text-sm font-bold text-slate-50">{{ $mobileSection }}</p>
                 </div>
+                <button type="button" class="mobile-release-action" data-release-notes-open aria-label="Canoviaの更新情報を見る" title="更新情報">
+                    <span class="mobile-release-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 3.5a8.5 8.5 0 1 0 8.1 5.9"/>
+                            <path d="M20.5 3.5v5.2h-5.2"/>
+                            <path d="M12 7.5v5l3.2 1.9"/>
+                        </svg>
+                        <i class="release-notes-new-dot" data-release-notes-new></i>
+                    </span>
+                    <span>更新情報</span>
+                </button>
                 <button type="button" class="mobile-feedback-action" data-feedback-open aria-label="Canoviaへフィードバックを送る" title="フィードバック">
                     <span class="mobile-feedback-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
@@ -237,6 +251,63 @@
                 <button type="button" class="btn-primary px-3 py-2 text-xs" data-app-update-apply>更新する</button>
             </div>
         </div>
+
+        <dialog class="release-notes-dialog" data-release-notes-dialog data-latest-release-version="{{ $latestReleaseVersion }}" aria-labelledby="release-notes-title">
+            <div class="release-notes-card">
+                <div class="release-notes-header">
+                    <div>
+                        <p class="release-notes-kicker">WHAT'S NEW</p>
+                        <h2 id="release-notes-title">Canoviaの更新情報</h2>
+                        <p>最近追加された機能や改善点を、使う人の目線でまとめています。</p>
+                    </div>
+                    <button type="button" class="feedback-close" data-release-notes-close aria-label="更新情報を閉じる">×</button>
+                </div>
+
+                <div class="release-notes-list" data-release-notes-list>
+                    @forelse ($releaseNotes as $note)
+                        <button type="button" class="release-note-item" data-release-note-open="{{ $note['version'] }}">
+                            <span class="release-note-item-meta">
+                                <time datetime="{{ $note['date'] }}">{{ \Carbon\Carbon::parse($note['date'])->format('Y/m/d') }}</time>
+                                <span>{{ strtoupper($note['version']) }}</span>
+                            </span>
+                            <strong>{{ $note['title'] }}</strong>
+                            <span class="release-note-item-summary">{{ $note['summary'] }}</span>
+                            <span class="release-note-item-more">詳しく見る <span aria-hidden="true">→</span></span>
+                        </button>
+                    @empty
+                        <div class="release-notes-empty">まだ更新情報はありません。</div>
+                    @endforelse
+                </div>
+
+                @foreach ($releaseNotes as $note)
+                    <section class="release-note-detail hidden" data-release-note-detail="{{ $note['version'] }}" aria-labelledby="release-note-title-{{ $note['version'] }}">
+                        <button type="button" class="release-note-back" data-release-note-back>← 更新一覧へ戻る</button>
+                        <div class="release-note-detail-meta">
+                            <time datetime="{{ $note['date'] }}">{{ \Carbon\Carbon::parse($note['date'])->format('Y/m/d') }}</time>
+                            <span>{{ strtoupper($note['version']) }}</span>
+                        </div>
+                        <h3 id="release-note-title-{{ $note['version'] }}">{{ $note['title'] }}</h3>
+                        <p class="release-note-detail-summary">{{ $note['summary'] }}</p>
+
+                        <div class="release-note-highlight-box">
+                            <p class="release-note-section-title">今回できるようになったこと</p>
+                            <ul>
+                                @foreach ($note['highlights'] as $highlight)
+                                    <li>{{ $highlight }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        @if (! empty($note['tip']))
+                            <div class="release-note-tip">
+                                <span aria-hidden="true">✦</span>
+                                <p><strong>使い方のヒント</strong>{{ $note['tip'] }}</p>
+                            </div>
+                        @endif
+                    </section>
+                @endforeach
+            </div>
+        </dialog>
 
         <button type="button" class="feedback-fab hidden md:inline-flex" data-feedback-open aria-label="Canoviaへフィードバックを送る">意見</button>
         <dialog class="feedback-dialog" data-feedback-dialog aria-labelledby="feedback-title">
