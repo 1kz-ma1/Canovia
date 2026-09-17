@@ -8,16 +8,17 @@ storage/framework/cache/data \
 storage/framework/sessions \
 storage/framework/views \
 storage/logs \
-bootstrap/cache
+bootstrap/cache \
+/run/nginx \
+/var/log/supervisor
 
 echo "Running Laravel migrations..."
 php artisan migrate --force
 
+echo "Building Laravel production caches..."
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-PORT="${PORT:-10000}"
-
-echo "Starting Canovia on 0.0.0.0:${PORT}"
-exec php artisan serve --host=0.0.0.0 --port="${PORT}"
+echo "Starting Canovia with Nginx + PHP-FPM on port 10000"
+exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
