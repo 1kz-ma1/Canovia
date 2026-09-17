@@ -423,13 +423,33 @@
         'next_action_note' => $recommendation->task->next_action_note,
         'is_current' => true,
     ] : null;
+    $offlinePlanTab = $recommendation
+        ? collect($dashboard['plan_tabs'])->first(fn ($item) => $item['plan']->id === $recommendation->plan->id)
+        : null;
     $offlineSnapshot = [
         'type' => 'dashboard',
         'captured_at' => now()->toIso8601String(),
         'csrf_token' => csrf_token(),
         'plan' => $recommendation ? ['id' => $recommendation->plan->id, 'title' => $recommendation->plan->title] : null,
         'current' => $offlineCurrent,
-        'roadmap' => $offlineCurrent ? [$offlineCurrent] : [],
+        'roadmap' => collect(data_get($offlinePlanTab, 'roadmap.nodes', []))
+            ->map(fn ($node) => collect($node)->only(['task_id', 'title', 'status', 'status_label', 'progress_percent', 'remaining_minutes', 'next_action_note', 'is_current'])->all())
+            ->values()
+            ->all(),
+        'plans' => collect($dashboard['plan_tabs'])->map(fn ($item) => [
+            'id' => $item['plan']->id,
+            'title' => $item['plan']->title,
+            'status' => $item['progress']['status'],
+            'progress_percent' => $item['progress']['weighted_progress_percent'],
+            'today_minutes' => $item['today_minutes'],
+            'deadline' => $item['plan']->deadline?->format('Y-m-d'),
+        ])->values()->all(),
+        'home' => [
+            'today_minutes' => $dashboard['today_minutes'],
+            'daily_required_minutes' => $dashboard['total_daily_required_minutes'],
+            'remaining_minutes' => $dashboard['remaining_minutes'],
+            'streak_days' => $dashboard['streak_days'],
+        ],
         'continuity' => $dashboard['continuity'] ?? null,
     ];
 @endphp

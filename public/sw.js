@@ -1,4 +1,8 @@
-const CACHE_VERSION = 'canovia-shell-v29';
+const CACHE_VERSION = 'canovia-shell-v30';
+const META_CACHE = 'canovia-shell-meta-v1';
+const LAST_NETWORK_KEY = '/__canovia_last_network_success__';
+const LIKELY_SLEEP_AFTER_MS = 12 * 60 * 1000;
+const RECENT_NETWORK_TIMEOUT_MS = 900;
 const STATIC_ASSETS = [
     '/offline.html',
     '/icons/icon-180.png',
@@ -10,9 +14,14 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-    event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(STATIC_ASSETS)));
+    event.waitUntil((async () => {
+        const cache = await caches.open(CACHE_VERSION);
+        await cache.addAll(STATIC_ASSETS);
+        // Installation itself proves the origin just responded successfully,
+        // so the very next navigation should not flash the fallback shell.
+        await rememberNetworkSuccess();
+    })());
 });
-
 
 self.addEventListener('message', (event) => {
     if (event.data?.type === 'SKIP_WAITING') {
@@ -21,24 +30,64 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((keys) => Promise.all(
-            keys.filter((key) => (key.startsWith('canovia-shell-') || key.startsWith('pacekeeper-shell-')) && key !== CACHE_VERSION)
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        await Promise.all(
+            keys
+                .filter((key) => (key.startsWith('canovia-shell-') || key.startsWith('pacekeeper-shell-'))
+                    && key !== CACHE_VERSION
+                    && key !== META_CACHE)
                 .map((key) => caches.delete(key))
-        ))
-    );
-    self.clients.claim();
+        );
+
+        if (self.registration.navigationPreload) {
+            await self.registration.navigationPreload.enable().catch(() => {});
+        }
+
+        await self.clients.claim();
+    })());
 });
 
-let serverWarmUntil = 0;
+async function rememberNetworkSuccess() {
+    try {
+        const cache = await caches.open(META_CACHE);
+        await cache.put(LAST_NETWORK_KEY, new Response(String(Date.now()), {
+            headers: { 'Content-Type': 'text/plain' },
+        }));
+    } catch (_) {}
+}
+
+async function lastNetworkSuccessAt() {
+    try {
+        const cache = await caches.open(META_CACHE);
+        const response = await cache.match(LAST_NETWORK_KEY);
+        if (!response) return 0;
+        const value = Number(await response.text());
+        return Number.isFinite(value) ? value : 0;
+    } catch (_) {
+        return 0;
+    }
+}
 
 function markServerWarm(response) {
-    if (response?.ok) serverWarmUntil = Date.now() + 120000;
+    if (response?.ok) {
+        void rememberNetworkSuccess();
+    }
     return response;
 }
 
 function timeoutAfter(ms) {
     return new Promise((_, reject) => setTimeout(() => reject(new Error('network-timeout')), ms));
+}
+
+async function offlineShell() {
+    return (await caches.match('/offline.html')) || fetch('/offline.html', { cache: 'no-store' });
+}
+
+async function navigationNetworkResponse(event, request) {
+    const preload = event.preloadResponse ? await event.preloadResponse.catch(() => null) : null;
+    if (preload) return markServerWarm(preload);
+    return fetch(request, { cache: 'no-store' }).then(markServerWarm);
 }
 
 self.addEventListener('fetch', (event) => {
@@ -48,26 +97,37 @@ self.addEventListener('fetch', (event) => {
     if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
     if (request.mode === 'navigate') {
-        // The offline shell probes /health while Render wakes up. Once the
-        // server is confirmed ready it retries the original navigation with
-        // _pk_network=1. That retry must be network-only; otherwise the normal
-        // 1.2s Instant Start timeout can serve offline.html again and create a
-        // reload/fallback loop even though the server is already awake.
-        if (url.searchParams.get('_pk_network') === '1') {
+        // Once the shell confirms the server is ready, retry the original URL
+        // without the Instant Start timeout. Keep the old parameter during the
+        // PaceKeeper -> Canovia compatibility window.
+        if (url.searchParams.get('_canovia_network') === '1' || url.searchParams.get('_pk_network') === '1') {
             event.respondWith(
-                fetch(request, { cache: 'no-store' })
-                    .then(markServerWarm)
-                    .catch(() => caches.match('/offline.html'))
+                navigationNetworkResponse(event, request)
+                    .catch(() => offlineShell())
             );
             return;
         }
 
-        const networkRequest = fetch(request, { cache: 'no-store' }).then(markServerWarm);
-        event.waitUntil(networkRequest.then(() => undefined).catch(() => undefined));
-        event.respondWith(
-            Promise.race([networkRequest, timeoutAfter(Date.now() < serverWarmUntil ? 8000 : 1200)])
-                .catch(() => caches.match('/offline.html'))
-        );
+        const networkPromise = navigationNetworkResponse(event, request);
+        event.waitUntil(networkPromise.then(() => undefined).catch(() => undefined));
+
+        event.respondWith((async () => {
+            const lastSuccess = await lastNetworkSuccessAt();
+            const likelySleeping = !lastSuccess || (Date.now() - lastSuccess) >= LIKELY_SLEEP_AFTER_MS;
+
+            // Render Free normally sleeps after 15 minutes. If we have not seen
+            // a successful response for ~12 minutes, show the local shell
+            // immediately while the original navigation wakes the server in the
+            // background. This avoids a blank/loading screen on PWA launch.
+            if (likelySleeping) {
+                return offlineShell();
+            }
+
+            return Promise.race([
+                networkPromise,
+                timeoutAfter(RECENT_NETWORK_TIMEOUT_MS),
+            ]).catch(() => offlineShell());
+        })());
         return;
     }
 
