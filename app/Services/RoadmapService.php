@@ -285,7 +285,7 @@ class RoadmapService
 
         return [
             'status' => $statusRank,
-            // priority 1 is the strongest priority in PaceKeeper.
+            // priority 1 is the strongest priority in Canovia.
             'priority' => max(1, min(5, (int) ($node['priority'] ?? 3))),
             'activation' => max(1, min(5, (int) ($node['activation_cost'] ?? 3))),
             'sort' => (int) ($node['sort_order'] ?? PHP_INT_MAX),

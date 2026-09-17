@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'AIと初期計画をつくる | PaceKeeper')
+@section('title', 'AIと初期計画をつくる | Canovia')
 
 @section('content')
     <div class="mx-auto max-w-5xl space-y-8">
@@ -10,7 +10,7 @@
                     AIと初期計画をつくる
                 </h1>
                 <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                    PaceKeeperが相談用の文章を用意します。普段使っているAIで相談し、最後の回答をここへ戻すと、タスクと進む順番をまとめて登録できます。
+                    Canoviaが相談用の文章を用意します。普段使っているAIで相談し、最後の回答をここへ戻すと、タスクと進む順番をまとめて登録できます。
                 </p>
             </div>
 
@@ -54,10 +54,10 @@
         <section class="info-card space-y-4" data-onboarding-target="ai-import">
             <div>
                 <h2 class="text-xl font-bold text-slate-900 font-heading">
-                    2. AIの回答をPaceKeeperへ戻す
+                    2. AIの回答をCanoviaへ戻す
                 </h2>
                 <p class="mt-2 text-sm leading-7 text-slate-600">
-                    AIの最後の回答をそのまま貼り付けてください。説明文やコードブロックが一緒に入っていても、PaceKeeperがJSON部分を探して読み込みます。
+                    AIの最後の回答をそのまま貼り付けてください。説明文やコードブロックが一緒に入っていても、CanoviaがJSON部分を探して読み込みます。
                 </p>
             </div>
 
@@ -98,7 +98,7 @@
                 </div>
 
                 <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-800">
-                    <p class="font-semibold">反映前にPaceKeeperが確認します</p>
+                    <p class="font-semibold">反映前にCanoviaが確認します</p>
                     <p>
                         対象の計画やタスク内容を確認してから登録します。形式が違っていても、入力した内容は消えません。
                     </p>
@@ -190,7 +190,7 @@
 
                 if (String(parsed?.schema_version || '') !== '2.0' || parsed?.flow !== 'plan_generation') {
                     event.preventDefault();
-                    showError('PaceKeeper用の計画データではないようです。上の相談用文章をもう一度AIへ貼り付けてください。');
+                    showError('Canovia用の計画データではないようです。上の相談用文章をもう一度AIへ貼り付けてください。');
                     return;
                 }
 

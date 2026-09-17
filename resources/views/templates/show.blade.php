@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $planTemplate->title . ' | Pace Keeper')
+@section('title', $planTemplate->title . ' | Canovia')
 
 @section('content')
     <section class="mb-8">

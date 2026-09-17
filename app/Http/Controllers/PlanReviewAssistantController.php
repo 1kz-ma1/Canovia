@@ -97,7 +97,7 @@ class PlanReviewAssistantController extends Controller
             'difficulty' => $workLog?->difficulty,
             'activity_summary' => $activitySummary,
             'discoveries' => '',
-            'desired_outcome' => '現在の会話とPace Keeperの記録を使い、必要な計画更新を判断してほしい',
+            'desired_outcome' => '現在の会話とCanoviaの記録を使い、必要な計画更新を判断してほしい',
             'work_session_facts' => $workSession ? [
                 'started_at' => $workSession->started_at?->toIso8601String(),
                 'ended_at' => $workSession->ended_at?->toIso8601String(),
@@ -113,6 +113,14 @@ class PlanReviewAssistantController extends Controller
 
         $request->session()->put($this->draftSessionKey($plan), $draft);
         $request->session()->forget($this->proposalSessionKey($plan));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'redirect' => route('plans.review_assistant.show', $plan),
+                'message' => '外部AIに送るプロンプトを生成しました。',
+            ]);
+        }
 
         return redirect()
             ->route('plans.review_assistant.show', $plan)
@@ -651,11 +659,20 @@ class PlanReviewAssistantController extends Controller
             $this->proposalSessionKey($plan),
         ]);
 
-        return redirect()
-            ->route('plans.review_assistant.show', array_filter([
-                'plan' => $plan,
-                'work_session_id' => $workSessionId,
-            ]))
+        $redirect = route('plans.review_assistant.show', array_filter([
+            'plan' => $plan,
+            'work_session_id' => $workSessionId,
+        ]));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'redirect' => $redirect,
+                'message' => '入力中の見直し内容をリセットしました。',
+            ]);
+        }
+
+        return redirect($redirect)
             ->with('status', '入力中の見直し内容をリセットしました。');
     }
 
@@ -720,7 +737,7 @@ class PlanReviewAssistantController extends Controller
             : null;
         $isWorkSessionContext = ($draft['source_context'] ?? null) === 'work_session';
         $selectedTaskText = $selectedTask
-            ? "ID:{$selectedTask->id} {$selectedTask->title}（Pace Keeperが今回のWorkSessionから特定した対象Task）"
+            ? "ID:{$selectedTask->id} {$selectedTask->title}（Canoviaが今回のWorkSessionから特定した対象Task）"
             : '特定タスクなし。既存タスクへ無理に紐付けず、計画全体の更新として判断する';
 
         $difficultyLabels = [
@@ -735,16 +752,16 @@ class PlanReviewAssistantController extends Controller
         $actualMinutesValue = isset($draft['actual_minutes']) && $draft['actual_minutes'] !== null
             ? (int) $draft['actual_minutes']
             : null;
-        $actualMinutesText = $actualMinutesValue !== null ? $actualMinutesValue . '分' : 'Pace Keeper側では未記録';
+        $actualMinutesText = $actualMinutesValue !== null ? $actualMinutesValue . '分' : 'Canovia側では未記録';
         $workedOnText = ! empty($draft['worked_on']) ? $draft['worked_on'] : '未指定（AIが現在の会話・ユーザーの説明から必要に応じて判断）';
         $activitySummary = trim((string) ($draft['activity_summary'] ?? ''));
         $activitySummaryText = $activitySummary !== ''
             ? $activitySummary
             : ($isWorkSessionContext
-                ? '追加説明はまだありません。今回のWorkSessionの事実はPace Keeperが記録済みです。現在の会話に作業内容があれば再利用し、なければ今回どこまで進んだか・何が分かったかを自由形式で一度だけ尋ねてください。'
+                ? '追加説明はまだありません。今回のWorkSessionの事実はCanoviaが記録済みです。現在の会話に作業内容があれば再利用し、なければ今回どこまで進んだか・何が分かったかを自由形式で一度だけ尋ねてください。'
                 : '今回の報告はまだ入力されていません。現在の会話にこの計画の最新実績・発見・予定変更があればそれを再利用し、なければ最初に「今回この計画について何がありましたか？」と自由形式で尋ねてください。');
         $discoveries = trim((string) ($draft['discoveries'] ?? '')) ?: '追加情報なし';
-        $desiredOutcome = trim((string) ($draft['desired_outcome'] ?? '')) ?: '現在の会話とPace Keeperの記録を使い、必要な計画更新を判断してほしい';
+        $desiredOutcome = trim((string) ($draft['desired_outcome'] ?? '')) ?: '現在の会話とCanoviaの記録を使い、必要な計画更新を判断してほしい';
         $description = $plan->description ?: '未設定';
         $category = $plan->category ?: '未設定';
         $deadlineText = $plan->deadline?->format('Y-m-d') ?? '未設定';
@@ -829,14 +846,14 @@ JSON;
 このプロンプトが既存の会話の途中で提示された場合は、その会話ですでにユーザー本人から共有され、確定している情報も判断材料として使用してください。プロンプト本文に同じ事実が再掲されていないことだけを理由に、既知の情報を聞き直してはいけません。
 
 【情報の位置づけと優先順位】
-このプロンプトには、Pace Keeperへ登録されている情報と、今回ユーザーが申告した最新実績の両方が含まれます。
+このプロンプトには、Canoviaへ登録されている情報と、今回ユーザーが申告した最新実績の両方が含まれます。
 登録済みの概要・タスク・進捗計算は、現実の最新方針に追従していない可能性があります。
 矛盾がある場合は、次の順に信頼してください。
 
 1. 今回の実績・状況変化と、追加質問に対するユーザーの回答
 2. 日時が新しい、適用済みの方針変更履歴
 3. 最近の作業ログと、そこで確認された実際の成果
-4. Pace Keeperへ登録されている計画概要・タスク
+4. Canoviaへ登録されている計画概要・タスク
 5. 登録済みタスクを基準に算出された進捗率・残り時間・状態
 
 【今回の最新実績・状況変化：最優先】
@@ -848,7 +865,7 @@ JSON;
 ユーザーから先に渡された補足:
 {$activitySummaryText}
 
-【Pace Keeperが自動取得した今回のWorkSession事実】
+【Canoviaが自動取得した今回のWorkSession事実】
 {$sessionFactsText}
 
 分かったこと・予定との違い:
@@ -857,7 +874,7 @@ JSON;
 今回AIに判断してほしいこと:
 {$desiredOutcome}
 
-【Pace Keeper登録上の計画：古いスナップショットの可能性あり】
+【Canovia登録上の計画：古いスナップショットの可能性あり】
 計画ID: {$plan->id}
 タイトル: {$plan->title}
 カテゴリ: {$category}
@@ -874,7 +891,7 @@ JSON;
 
 ※上記の評価は登録済みタスク構成を前提とした暫定値です。最新報告により方針・完成条件・タスク構成が変わる場合、そのまま事実として扱わず再評価してください。
 
-【作業可能時間（Pace Keeper登録値）】
+【作業可能時間（Canovia登録値）】
 {$availabilityText}
 
 ※曜日・休暇・授業日などの現実の制約が今回の会話で変わった場合は、必要に応じてupdate_availabilityを提案してください。毎日作業できる前提にしないでください。
@@ -910,7 +927,7 @@ JSON;
 - 進捗率は、実際に完了した成果と最新の完成条件を根拠に設定する
 - 作業時間が未指定または0分の場合、原則としてactual_minutesを推測しない。ただしユーザーが明示的に推定を依頼し、現在の会話や既存ログから合理的な根拠がある場合は推定してよい。その場合はreasonへ推定根拠を含める
 - 最近の作業ログに今回と同一の実績がすでに記録されている場合、record_resultを重複作成しない。既存ログを成果根拠としてタスクや計画だけ再評価する
-- 「Pace Keeperが自動取得した今回のWorkSession事実」でWorkLog保存済みが「はい」の場合、そのWorkSessionの作業時間はすでにPace Keeperへ保存済みである。同じ作業をrecord_resultで再登録してはいけない。今回の作業がTask進捗・残り時間・後続Task・計画方針へ与える意味だけを更新する
+- 「Canoviaが自動取得した今回のWorkSession事実」でWorkLog保存済みが「はい」の場合、そのWorkSessionの作業時間はすでにCanoviaへ保存済みである。同じ作業をrecord_resultで再登録してはいけない。今回の作業がTask進捗・残り時間・後続Task・計画方針へ与える意味だけを更新する
 - WorkSession事実だけでは何を達成したか判断できず、現在の会話にも説明がない場合は、「今回どこまで進みましたか？分かったことや次に残ったこともあれば教えてください」のような自由形式の質問を原則1回だけ行う。完了/継続/区切り/詰まりの4択をユーザーに要求しない
 - record_result を複数に分ける場合、actual_minutes の合計を今回報告された作業時間と一致させる
 - 結果記録は相対加算を使わず、record_resultのprogress_after_percentとremaining_minutes_afterで作業後の現在地を絶対値として返す
@@ -923,7 +940,7 @@ JSON;
 - タスク分割時は、元タスクと新規タスクのestimated_minutes / remaining_minutesを二重計上しない。分割後の合計残り時間が現実の残作業量と一致するよう再評価する
 - 進捗率は投入時間ではなく、最新の達成条件に対して確認済みの成果が占める割合で判断する
 - 進捗率を根拠付きで判断できないタスクは、更新を省略できるなら質問しない。計画再編上その値の確定が不可欠な場合だけ追加質問する
-- 計画全体の進捗率は直接出力せず、タスク更新後にPace Keeper側で再計算させる
+- 計画全体の進捗率は直接出力せず、タスク更新後にCanovia側で再計算させる
 
 【進捗再評価の必須条件】
 方針変更やタスク再編を伴う提案では、概要更新・タスク追加・タスク中止だけを返して終了しないでください。
@@ -969,7 +986,7 @@ JSON;
 - status は todo、doing、done
 - revise_task は変更する項目だけを含める。ただし影響を受けるタスクでは、progress_percent・remaining_minutes・status・estimated_minutes・priority・progress_reasonを同時に再評価する
 - add_task でprogress_percentを0より大きくする場合は、進捗の由来をprogress_originで示す
-- progress_origin は existing_work（Pace Keeper登録前から存在する成果）、inherited_task（登録済み旧タスクから引継ぎ）、new_work（今回の作業実績）のいずれか
+- progress_origin は existing_work（Canovia登録前から存在する成果）、inherited_task（登録済み旧タスクから引継ぎ）、new_work（今回の作業実績）のいずれか
 - progress_originがinherited_taskの場合だけsource_task_idsを必須とし、引継ぎ元の登録済みタスクIDを配列で含める
 - add_task / revise_task では、次回再開地点が具体化できる場合 next_action_note を含める
 - 0%より大きい進捗には、どの成果を根拠に判断したかをprogress_reasonへ具体的に含める
@@ -1015,7 +1032,7 @@ PROMPT;
     }
 
     /**
-     * 外部AIが返しやすい入れ子形式を、Pace Keeper内部のフラット形式へ統一する。
+     * 外部AIが返しやすい入れ子形式を、Canovia内部のフラット形式へ統一する。
      *
      * 対応例:
      * - operation -> type
@@ -1063,7 +1080,7 @@ PROMPT;
 
             $outer = Arr::except($operation, ['type', 'operation', 'plan', 'task', '_normalization_notes']);
             $operation = array_merge($operation[$payloadKey], $outer);
-            $notes[] = "{$payloadKey}内の項目をPace Keeper形式へ自動変換しました。";
+            $notes[] = "{$payloadKey}内の項目をCanovia形式へ自動変換しました。";
         } else {
             $operation = Arr::except($operation, ['operation']);
         }
@@ -1493,7 +1510,7 @@ PROMPT;
             $progressOrigin = $sourceTaskIds !== [] ? 'inherited_task' : 'existing_work';
             $normalizationNotes[] = $sourceTaskIds !== []
                 ? "「{$title}」の進捗元を、source_task_idsに基づいて既存タスクからの引継ぎとして補完しました。"
-                : "「{$title}」の進捗元を、Pace Keeper登録前から存在する成果として補完しました。";
+                : "「{$title}」の進捗元を、Canovia登録前から存在する成果として補完しました。";
         }
 
         if ($progressPercent === 0) {
@@ -1511,7 +1528,7 @@ PROMPT;
         }
 
         if ($progressPercent > 0 && $progressReason === '' && $progressOrigin === 'existing_work') {
-            $progressReason = 'Pace Keeper登録前から存在する成果として外部AIが進捗を提案したため。反映前に成果内容を確認してください。';
+            $progressReason = 'Canovia登録前から存在する成果として外部AIが進捗を提案したため。反映前に成果内容を確認してください。';
             $normalizationNotes[] = "「{$title}」の進捗根拠が省略されていたため、登録前の既存成果として確認用の根拠文を補完しました。";
         }
 

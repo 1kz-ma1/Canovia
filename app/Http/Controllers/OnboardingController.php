@@ -8,7 +8,7 @@ class OnboardingController extends Controller
 {
     public function complete(Request $request)
     {
-        $version = (int) config('pacekeeper.onboarding_version', 1);
+        $version = (int) config('canovia.onboarding_version', 1);
         $user = $request->user();
 
         if ($user && (int) $user->onboarding_version < $version) {
@@ -24,7 +24,7 @@ class OnboardingController extends Controller
 
     public function skip(Request $request)
     {
-        $version = (int) config('pacekeeper.onboarding_version', 1);
+        $version = (int) config('canovia.onboarding_version', 1);
         $user = $request->user();
 
         if ($user && (int) $user->onboarding_version < $version) {

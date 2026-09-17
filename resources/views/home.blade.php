@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'ダッシュボード | Pace Keeper')
+@section('title', 'ダッシュボード | Canovia')
 
 @section('content')
     <section class="mb-10 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">

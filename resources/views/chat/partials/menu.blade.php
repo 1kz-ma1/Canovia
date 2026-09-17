@@ -1,7 +1,7 @@
 <div class="assistant-message-row assistant-message-left">
-    <div class="assistant-avatar">PK</div>
+    <div class="assistant-avatar">CV</div>
     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p>
+        <p class="assistant-speaker">Canovia サポーター</p>
         <h2 class="mt-2 text-2xl font-bold text-slate-100">今日は何をしますか？</h2>
         <p class="mt-2 leading-7 text-slate-300">
             計画を作る・現実に合わせて更新する・達成した計画を振り返る。必要な操作だけを選べます。
@@ -50,7 +50,7 @@
                 <span class="chat-action-icon">★</span>
                 <span>
                     <span class="block font-bold text-slate-100">達成した計画を見る</span>
-                    <span class="mt-1 block text-sm leading-6 text-slate-400">完了したPlanの成果と、そこまでの進み方をPace Keeperと振り返ります。</span>
+                    <span class="mt-1 block text-sm leading-6 text-slate-400">完了したPlanの成果と、そこまでの進み方をCanoviaと振り返ります。</span>
                 </span>
             </a>
 

@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#0A0F1E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="PaceKeeper">
+    <meta name="apple-mobile-web-app-title" content="Canovia">
     <meta name="referrer" content="no-referrer">
     <link rel="manifest" href="{{ route('pwa.manifest') }}" crossorigin="use-credentials">
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
-    <title>ホーム画面に追加 | PaceKeeper</title>
+    <title>ホーム画面に追加 | Canovia</title>
     <style>
         :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         * { box-sizing: border-box; }
@@ -40,25 +40,25 @@
 <body>
 <main>
     <div class="browser-guide" data-browser-guide>
-        <div class="brand"><img src="/brand/logo-mark.svg" alt=""><strong>PaceKeeper</strong></div>
+        <div class="brand"><img src="/brand/logo-mark.svg" alt=""><strong>Canovia</strong></div>
         <section class="card">
             <img class="mascot" src="/brand/mascot-guide.webp" alt="">
             <h1>データをそのまま、ホーム画面へ。</h1>
-            <p class="lead">この画面から追加すると、Safariで使っているログイン状態やGuest計画を、ホーム画面版PaceKeeperへ安全に引き継げます。</p>
+            <p class="lead">この画面から追加すると、Safariで使っているログイン状態やGuest計画を、ホーム画面版Canoviaへ安全に引き継げます。</p>
             <div class="protect"><strong>重要：</strong>この画面を閉じずに追加してください。引き継ぎリンクは一度だけ使え、30分で期限切れになります。</div>
             <ol class="steps">
                 <li><span>Safari下部の<strong>共有</strong>ボタンを押す</span></li>
                 <li><span><strong>「ホーム画面に追加」</strong>を選ぶ</span></li>
-                <li><span>右上の<strong>「追加」</strong>を押して、ホーム画面からPaceKeeperを開く</span></li>
+                <li><span>右上の<strong>「追加」</strong>を押して、ホーム画面からCanoviaを開く</span></li>
             </ol>
             <p class="note">ホーム画面から初めて開いたときだけ、自動で引き継ぎ処理を行います。</p>
         </section>
-        <a class="back" href="{{ route('home') }}">← PaceKeeperへ戻る</a>
+        <a class="back" href="{{ route('home') }}">← Canoviaへ戻る</a>
     </div>
 
     <section class="card launching" data-launching>
         <div class="orbit" aria-hidden="true"></div>
-        <h1>PaceKeeperを準備しています</h1>
+        <h1>Canoviaを準備しています</h1>
         <p class="lead">ログイン状態と計画を引き継いでいます。少しだけお待ちください。</p>
     </section>
 </main>

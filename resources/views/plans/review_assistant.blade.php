@@ -29,12 +29,13 @@
                 <a href="{{ route('plans.show', $plan) }}" class="btn-secondary">計画詳細へ戻る</a>
 
                 @if ($draft || $proposal)
-                    <form method="POST" action="{{ route('plans.review_assistant.reset', $plan) }}" data-async-plan-review data-reveal-target="#review-input-section">
+                    <form method="POST" action="{{ route('plans.review_assistant.reset', $plan) }}" data-async-plan-review data-loading-skip data-reveal-target="#review-input-section">
                         @csrf
                         @if ($workSessionContext)
                             <input type="hidden" name="work_session_id" value="{{ $workSessionContext->id }}">
                         @endif
-                        <button type="submit" class="btn-secondary">最初からやり直す</button>
+                        <button type="submit" class="btn-secondary" data-async-plan-review-submit>最初からやり直す</button>
+                        <div class="hidden rounded-xl border px-3 py-2 text-sm leading-6" data-async-plan-review-status aria-live="polite"></div>
                     </form>
                 @endif
             </div>
@@ -85,12 +86,12 @@
 
         <main class="assistant-chat-shell">
             <div class="assistant-message-row assistant-message-left">
-                <div class="assistant-avatar">PK</div>
+                <div class="assistant-avatar">CV</div>
                 <div class="assistant-bubble assistant-bubble-support">
-                    <p class="assistant-speaker">Pace Keeper サポーター</p>
+                    <p class="assistant-speaker">Canovia サポーター</p>
                     @if ($workSessionContext)
                         <p class="mt-2 leading-7">
-                            今回の作業時間など、Pace Keeperで確定できる事実はすでに記録しました。ここから先は、普段使っているAIとの会話で「何が進んだか」を整理して計画へ反映できます。
+                            今回の作業時間など、Canoviaで確定できる事実はすでに記録しました。ここから先は、普段使っているAIとの会話で「何が進んだか」を整理して計画へ反映できます。
                         </p>
                         <div class="assistant-notice assistant-notice-info mt-4">
                             <p class="font-semibold">今回記録済みの事実</p>
@@ -105,7 +106,7 @@
                         </div>
                     @else
                         <p class="mt-2 leading-7">
-                            Pace Keeperが現在の計画・タスク・最近の実績をまとめます。今回の状況は、普段使っているAIとの会話から確認してもらえます。
+                            Canoviaが現在の計画・タスク・最近の実績をまとめます。今回の状況は、普段使っているAIとの会話から確認してもらえます。
                         </p>
                         <div class="assistant-notice assistant-notice-info mt-4">
                             入力は必須ではありません。空欄なら、AIが現在の会話を使い、必要な場合だけ「今回何がありましたか？」と聞くよう指示します。
@@ -118,7 +119,7 @@
                 <div class="assistant-bubble assistant-bubble-user assistant-form-bubble">
                     <p class="assistant-speaker">あなた</p>
 
-                    <form method="POST" action="{{ route('plans.review_assistant.prompt', $plan) }}" class="mt-4 space-y-4" data-async-plan-review data-reveal-target="#review-prompt-section">
+                    <form method="POST" action="{{ route('plans.review_assistant.prompt', $plan) }}" class="mt-4 space-y-4" data-async-plan-review data-loading-skip data-reveal-target="#review-prompt-section">
                         @csrf
                         <input type="hidden" name="flow" value="result_recording">
                         @if ($workSessionContext)
@@ -140,9 +141,10 @@
                         </div>
 
                         <div class="flex flex-wrap gap-3">
-                            <button type="submit" class="btn-primary">
+                            <button type="submit" class="btn-primary" data-async-plan-review-submit>
                                 AI用プロンプトを生成
                             </button>
+                            <div class="hidden w-full rounded-xl border px-3 py-2 text-sm leading-6" data-async-plan-review-status aria-live="polite"></div>
                             @if ($workSessionContext)
                                 <a href="{{ route('home') }}" class="btn-secondary">今は戻る（作業記録は保存済み）</a>
                             @endif
@@ -154,9 +156,9 @@
 
             @if ($draft && ! empty($draft['prompt']))
                 <div id="review-prompt-section" class="assistant-message-row assistant-message-left">
-                    <div class="assistant-avatar">PK</div>
+                    <div class="assistant-avatar">CV</div>
                     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-                        <p class="assistant-speaker">Pace Keeper サポーター</p>
+                        <p class="assistant-speaker">Canovia サポーター</p>
                         <p class="mt-2 leading-7">
                             現在の計画、タスク、最近の実績@if ($workSessionContext) と今回の作業記録@endif をまとめました。次の内容を普段使っているAIへ送ってください。
                         </p>
@@ -203,9 +205,9 @@
                     $proposalAtomic = $proposalAnalysis['atomic_apply'] ?? false;
                 @endphp
                 <div id="review-proposal-section" class="assistant-message-row assistant-message-left">
-                    <div class="assistant-avatar">PK</div>
+                    <div class="assistant-avatar">CV</div>
                     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-                        <p class="assistant-speaker">Pace Keeper サポーター</p>
+                        <p class="assistant-speaker">Canovia サポーター</p>
                         <div class="mt-2 flex flex-wrap items-center gap-2">
                             <h2 class="text-xl font-bold text-slate-900">反映前の変更プレビュー</h2>
                             <span class="badge badge-slate">{{ $proposal['action_label'] ?? 'AI JSON操作' }}</span>

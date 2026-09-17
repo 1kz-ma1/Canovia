@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Feedback Dashboard | Pace Keeper')
+@section('title', 'Feedback Dashboard | Canovia')
 
 @section('content')
     <div class="space-y-6">

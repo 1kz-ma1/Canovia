@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '作業中 | Pace Keeper')
+@section('title', '作業中 | Canovia')
 
 @section('content')
     <div class="flex min-h-[100dvh] w-full items-center justify-center px-4 py-6 md:px-6">

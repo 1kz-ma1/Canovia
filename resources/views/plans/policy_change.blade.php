@@ -1,6 +1,6 @@
 @if ($step === 'plan')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どの計画の方針が変わりましたか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どの計画の方針が変わりましたか？</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-3">@csrf
             @foreach ($ownedPlans as $plan)
                 <label class="chat-choice-card"><input type="radio" name="plan_id" value="{{ $plan->id }}" required><span><span class="block font-bold text-slate-100">{{ $plan->title }}</span><span class="mt-1 block text-sm text-slate-400">{{ $plan->description ? \Illuminate\Support\Str::limit($plan->description, 90) : '概要未設定' }}</span></span></label>
@@ -11,8 +11,8 @@
 @endif
 
 @if ($step === 'change_type')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どのような変更ですか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どのような変更ですか？</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-3">@csrf
             @foreach ($changeTypeLabels as $value => $label)
                 <label class="chat-choice-card"><input type="radio" name="change_type" value="{{ $value }}" required><span class="font-bold text-slate-100">{{ $label }}</span></label>
@@ -23,8 +23,8 @@
 @endif
 
 @if ($step === 'change_summary')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">変更前と変更後を教えてください</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">変更前と変更後を教えてください</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-4">@csrf
             <label><span class="form-label">変更前の方針（分かる範囲で）</span><textarea name="before_state" rows="4" class="form-control" placeholder="例：敵がWaveごとに出現する形式で作る予定だった">{{ old('before_state') }}</textarea></label>
             <label><span class="form-label">これから採用したい方針</span><textarea name="after_state" rows="5" class="form-control" required placeholder="例：自由探索形式に変更し、状態変化と現象の相互作用を中心にする">{{ old('after_state') }}</textarea></label>
@@ -34,8 +34,8 @@
 @endif
 
 @if ($step === 'reason')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">なぜ変更すると判断しましたか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">なぜ変更すると判断しましたか？</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-4">@csrf
             <label><span class="form-label">変更理由</span><textarea name="reason" rows="5" class="form-control" required placeholder="実際に試して感じた問題や、目的とのずれを入力してください。">{{ old('reason') }}</textarea></label>
             <label><span class="form-label">判断材料・検証結果（任意）</span><textarea name="evidence" rows="4" class="form-control" placeholder="例：試作品では自由探索の方が現象の組合せを試しやすかった">{{ old('evidence') }}</textarea></label>
@@ -45,8 +45,8 @@
 @endif
 
 @if ($step === 'impact')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どこまで影響しそうですか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どこまで影響しそうですか？</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-4">@csrf
             <label><span class="form-label">影響を受けそうなタスク・機能・範囲（任意）</span><textarea name="affected_scope" rows="4" class="form-control" placeholder="不明な場合は空欄でも構いません。">{{ old('affected_scope') }}</textarea></label>
             <fieldset><legend class="form-label">期限への影響</legend><div class="chat-option-row mt-2"><label class="chat-option-pill"><input type="radio" name="deadline_effect" value="none" required><span>影響なし</span></label><label class="chat-option-pill"><input type="radio" name="deadline_effect" value="review" required><span>AIに判断してほしい</span></label><label class="chat-option-pill"><input type="radio" name="deadline_effect" value="change" required><span>変更が必要</span></label></div></fieldset>
@@ -57,8 +57,8 @@
 @endif
 
 @if ($step === 'constraints')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">最後に、変更したくない条件はありますか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">最後に、変更したくない条件はありますか？</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-4">@csrf
             <label><span class="form-label">維持したい条件（任意）</span><textarea name="must_keep" rows="4" class="form-control" placeholder="例：Steamで無料版を公開するゴールと11月末の目標は維持する">{{ old('must_keep') }}</textarea></label>
             <label><span class="form-label">AIに特に判断してほしいこと（任意）</span><textarea name="ai_request" rows="4" class="form-control" placeholder="例：不要タスクを中止し、新しい構成に合わせてタスクを作り直してほしい">{{ old('ai_request') }}</textarea></label>
@@ -69,12 +69,12 @@
 
 @if ($step === 'prompt' && $selectedPlan)
     <div class="assistant-message-row assistant-message-left">
-        <div class="assistant-avatar">PK</div>
+        <div class="assistant-avatar">CV</div>
         <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-            <p class="assistant-speaker">Pace Keeper サポーター</p>
+            <p class="assistant-speaker">Canovia サポーター</p>
             <h2 class="mt-2 text-xl font-bold text-slate-100">方針変更用プロンプトを生成しました</h2>
             <p class="mt-2 leading-7 text-slate-300">
-                外部AIは必要に応じて追加質問を行い、最後にPace Keeperへ反映できるJSONを返します。
+                外部AIは必要に応じて追加質問を行い、最後にCanoviaへ反映できるJSONを返します。
             </p>
 
             <textarea

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '新しいパスワード | PaceKeeper')
+@section('title', '新しいパスワード | Canovia')
 
 @section('content')
 <div class="mx-auto max-w-md">

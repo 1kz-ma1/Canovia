@@ -1,6 +1,6 @@
 @if ($step === 'plan')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どの計画をAIへ共有しますか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どの計画をAIへ共有しますか？</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-3">@csrf
             @foreach ($ownedPlans as $plan)
                 <label class="chat-choice-card"><input type="radio" name="plan_id" value="{{ $plan->id }}" required><span><span class="block font-bold text-slate-100">{{ $plan->title }}</span><span class="mt-1 block text-sm text-slate-400">最終共有：{{ $plan->last_ai_context_exported_at?->format('Y-m-d H:i') ?? '未共有' }}</span></span></label>
@@ -11,8 +11,8 @@
 @endif
 
 @if ($step === 'context_mode' && $selectedPlan)
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どの範囲を共有しますか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">どの範囲を共有しますか？</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-3">@csrf
             <label class="chat-choice-card"><input type="radio" name="context_mode" value="full" required><span><span class="block font-bold text-slate-100">計画全体を共有</span><span class="mt-1 block text-sm text-slate-400">新しいAIチャットを始める場合や、認識をリセットしたい場合。</span></span></label>
             <label class="chat-choice-card"><input type="radio" name="context_mode" value="diff" required><span><span class="block font-bold text-slate-100">前回共有後の差分だけ共有</span><span class="mt-1 block text-sm text-slate-400">既に相談中のAIチャットへ、変更点だけ追加します。未共有の場合は全体版になります。</span></span></label>
@@ -22,8 +22,8 @@
 @endif
 
 @if ($step === 'purpose')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">何について相談しますか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">何について相談しますか？</h2>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-3">@csrf
             @foreach ($contextPurposeLabels as $value => $label)
                 <label class="chat-choice-card"><input type="radio" name="purpose" value="{{ $value }}" required><span class="font-bold text-slate-100">{{ $label }}</span></label>
@@ -34,16 +34,16 @@
 @endif
 
 @if ($step === 'question')
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">AIへ聞きたいことを追加しますか？</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">AIへ聞きたいことを追加しますか？</h2>
         <p class="mt-2 text-sm text-slate-400">空欄の場合は、現状整理と次に考えるべきことを依頼します。</p>
         <form method="POST" action="{{ route('chat.answer') }}" class="mt-4 space-y-4">@csrf<textarea name="question" rows="5" class="form-control" placeholder="例：今のスコープで11月末までに無料版を公開できそう？優先して削るべき機能も教えて。">{{ old('question') }}</textarea><button type="submit" class="btn-primary">共有用プロンプトを生成</button></form>
     </div></div>
 @endif
 
 @if ($step === 'prompt' && $selectedPlan)
-    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">PK</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
-        <p class="assistant-speaker">Pace Keeper サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">AIへ共有するコンテキストを生成しました</h2>
+    <div class="assistant-message-row assistant-message-left"><div class="assistant-avatar">CV</div><div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+        <p class="assistant-speaker">Canovia サポーター</p><h2 class="mt-2 text-xl font-bold text-slate-100">AIへ共有するコンテキストを生成しました</h2>
         @if (($answers['context_mode'] ?? null) === 'diff' && ($answers['effective_context_mode'] ?? null) === 'full')
             <div class="assistant-notice assistant-notice-info mt-4">この計画はまだ共有履歴がないため、今回は計画全体のプロンプトを生成しました。</div>
         @endif

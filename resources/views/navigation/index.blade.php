@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '今日 | Pace Keeper')
+@section('title', '今日 | Canovia')
 
 @section('content')
     <div class="mx-auto max-w-3xl space-y-5 md:space-y-6">
@@ -8,7 +8,7 @@
             <div class="relative z-10 min-w-0">
                 <p class="pk-v18-eyebrow">TODAY / TAKE ACTION</p>
                 <h1>今日の一歩を決めよう。</h1>
-                <p>迷ったら、PaceKeeperと一緒に今できる一歩だけ。</p>
+                <p>迷ったら、Canoviaと一緒に今できる一歩だけ。</p>
             </div>
             <div class="pk-v18-page-guide" aria-hidden="true">
                 <span>いっしょに
