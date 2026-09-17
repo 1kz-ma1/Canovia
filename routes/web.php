@@ -28,6 +28,7 @@ use App\Http\Controllers\PwaController;
 use App\Http\Controllers\PlanCollaborationController;
 use App\Http\Controllers\PlanResourceController;
 use App\Http\Controllers\PlanResourceAssistantController;
+use App\Http\Controllers\PlanArtifactController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -142,6 +143,10 @@ Route::post('/plans/{plan}/resources/assistant/apply', [PlanResourceAssistantCon
 Route::post('/plans/{plan}/resources/assistant/reset', [PlanResourceAssistantController::class, 'reset'])->name('plans.resources.assistant.reset');
 Route::put('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'update'])->name('plans.resources.update');
 Route::delete('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'destroy'])->name('plans.resources.destroy');
+Route::get('/plans/{plan}/artifacts', [PlanArtifactController::class, 'index'])->name('plans.artifacts.index');
+Route::post('/plans/{plan}/artifacts', [PlanArtifactController::class, 'store'])->name('plans.artifacts.store');
+Route::put('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'update'])->name('plans.artifacts.update');
+Route::delete('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'destroy'])->name('plans.artifacts.destroy');
 Route::get('/plans/{plan}/ai-task-assistant', [AiTaskAssistantController::class, 'show'])
     ->name('plans.ai_task_assistant.show');
 

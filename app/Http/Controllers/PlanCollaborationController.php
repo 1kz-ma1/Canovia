@@ -17,10 +17,12 @@ class PlanCollaborationController extends Controller
         $ownership->authorizeView($request, $plan);
         $plan->load(['user', 'memberships.user', 'activityLogs.user']);
         $recentActivities = $plan->activityLogs()->with('user')->limit(20)->get();
+        $recentArtifacts = $plan->artifacts()->with('assignedUser:id,name')->latest('updated_at')->limit(5)->get();
         $canManage = $ownership->owns($request, $plan);
+        $canEdit = $ownership->canEdit($request, $plan);
         $collaborationRole = $ownership->role($request, $plan);
 
-        return view('plans.collaboration', compact('plan', 'recentActivities', 'canManage', 'collaborationRole'));
+        return view('plans.collaboration', compact('plan', 'recentActivities', 'recentArtifacts', 'canManage', 'canEdit', 'collaborationRole'));
     }
 
     public function enable(

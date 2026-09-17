@@ -112,12 +112,13 @@ class PlanController extends Controller
         }
 
         $plan->load([
-            'tasks' => fn ($query) => $query->with(['prerequisite', 'resources'])->orderBy('sort_order')->orderBy('id'),
+            'tasks' => fn ($query) => $query->with(['prerequisite', 'resources', 'artifacts.assignedUser:id,name'])->orderBy('sort_order')->orderBy('id'),
             'workLogs' => fn ($query) => $query->with('task')->latest('worked_on')->latest('id'),
             'adjustments' => fn ($query) => $query->latest('applied_at')->limit(10),
             'availabilityRules',
             'availabilityOverrides',
             'resources' => fn ($query) => $query->with('tasks:id,title')->latest('id'),
+            'artifacts' => fn ($query) => $query->with(['assignedUser:id,name', 'tasks:id,title'])->latest('updated_at')->latest('id'),
         ]);
 
         $progress = $progressService->calculate($plan);

@@ -22,7 +22,10 @@
                 @if ($plan->is_collaborative)<span class="block text-amber-200/80">共同計画では、登録した資料名とURLを参加メンバーも閲覧できます。</span>@endif
             </p>
         </div>
-        <a href="{{ route('plans.show', $plan) }}" class="btn-secondary">計画へ戻る</a>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('plans.artifacts.index', $plan) }}" class="btn-secondary">制作ファイル</a>
+            <a href="{{ route('plans.show', $plan) }}" class="btn-secondary">計画へ戻る</a>
+        </div>
     </section>
 
     @if (session('success'))
