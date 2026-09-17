@@ -14,9 +14,9 @@ COPY . .
 RUN npm run build
 
 # -----------------------------
-# 2) Laravel runtime
+# 2) Laravel runtime (Nginx + PHP-FPM)
 # -----------------------------
-FROM php:8.4-cli-bookworm AS app
+FROM php:8.4-fpm-bookworm AS app
 
 ENV APP_ENV=production \
     APP_DEBUG=false \
@@ -25,6 +25,8 @@ ENV APP_ENV=production \
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         git \
+        nginx \
+        supervisor \
         unzip \
         libicu-dev \
         libonig-dev \
@@ -44,6 +46,10 @@ WORKDIR /var/www/html
 COPY . .
 COPY --from=frontend /app/public/build ./public/build
 
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/canovia.conf
+COPY docker/php-production.ini /usr/local/etc/php/conf.d/99-canovia-production.ini
+
 RUN composer install \
         --no-dev \
         --prefer-dist \
@@ -56,7 +62,11 @@ RUN composer install \
         storage/framework/views \
         storage/logs \
         bootstrap/cache \
-    && chmod +x docker/render-start.sh
+        /run/nginx \
+        /var/log/supervisor \
+    && chmod +x docker/render-start.sh \
+    && php-fpm -tt \
+    && nginx -t
 
 EXPOSE 10000
 
