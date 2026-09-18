@@ -1,0 +1,80 @@
+{
+  "base": "5bb5120fd65fb2e29c50000422fc96a57edd6fb1",
+  "files": [
+    {
+      "path": "app/Http/Controllers/HomeController.php",
+      "before_sha256": "9ac159a68f12becc59b724da381f6853f464532980be77fe94936a6cd082ef75",
+      "after_sha256": "b86c7a6165c2d9517cf8133b0d2f72abe19c88309ff361803b275938f4b22dd5"
+    },
+    {
+      "path": "app/Http/Controllers/NavigationController.php",
+      "before_sha256": "d3923e94fdec4f8ad49cc7035d5044d513dc68012ec467aeca932ac27e7a28d2",
+      "after_sha256": "8b15cf5c1966cdaa350aa60431b6f4b1ba084b69c90231242ae7bf213034dbbd"
+    },
+    {
+      "path": "app/Http/Controllers/RoadmapController.php",
+      "before_sha256": "f3b8a7ce25cfebd3811306de543b7b8a7a6c72b9fffde185057fdb3a63d7d15c",
+      "after_sha256": "a7e322fca01c302b03ebd49859c50013d218ce4e6e472a2fb5f083ed3dd0a50c"
+    },
+    {
+      "path": "app/Providers/AppServiceProvider.php",
+      "before_sha256": "2c9b57e039269f561342b2f8e0b90f530aca616cb76355d0c9e5cbf111646168",
+      "after_sha256": "30b066e6afe8080dbf054a06a31c76e2fbd2f2ea0bfdd7814b6cd72c3c39d9d3"
+    },
+    {
+      "path": "app/Services/DashboardPresentationService.php",
+      "before_sha256": "211cd6bf24f801760745860553fde7d59f39e20bc6e4c1400a0525c2eb64fe51",
+      "after_sha256": "16e683402edae779e68f119ad3d77892f8082fb48163e31756028ab5160e3efa"
+    },
+    {
+      "path": "app/Services/RecommendationService.php",
+      "before_sha256": "93435862a7689fe5751d9009da9af811c12cf43486176969ae0d04b179ca7c19",
+      "after_sha256": "cf5e8fd45d202252b3536fbae89b9e4761c2f9cf2e403fa2d2ead90c7ecfcfc8"
+    },
+    {
+      "path": "bootstrap/app.php",
+      "before_sha256": "034e2046b7ab2b6a4ef626617d88f869dfd22f76bbdb52dd25bc0c776ad19f7d",
+      "after_sha256": "f84f61eb6a4e44185e72666f8c0dbdfe5c5caafa41744b9e80ee9022be413616"
+    },
+    {
+      "path": "docker/nginx.conf",
+      "before_sha256": "3d388b611708e25ce94990da6e20c62abc78c224bd7fc569d457270a310d4257",
+      "after_sha256": "0940bbab913e73372cd0dab904f499537b0647c062980c31bf2861d81c61a0bd"
+    },
+    {
+      "path": "public/sw.js",
+      "before_sha256": "8e1be9da4e4fc20849da8014683250d53ccca914d0a4bf0e0434a854cdf82373",
+      "after_sha256": "48daf2ee4d980b6abc671f2234c671ea12ff6a610cf178adc2416c208ab1c4a9"
+    },
+    {
+      "path": "resources/views/roadmap/index.blade.php",
+      "before_sha256": "573b0f4de214e98d4d2eb611c49c27f913c3555998fc10766905f49a4a5f1037",
+      "after_sha256": "86fac7efe1f5e74edb24c8ffb927df3326d9026a322fa642a1b6d51cf103a89c"
+    },
+    {
+      "path": "config/performance.php",
+      "before_sha256": null,
+      "after_sha256": "d5878b93586f696d8b6e67cbd1fafd560e4efbc269c830560a49e8186c8e6a27"
+    },
+    {
+      "path": "app/Support/RequestPerformance.php",
+      "before_sha256": null,
+      "after_sha256": "492fac87496b9ce109186792cacb4801c431cf1849e9ed8f64c6faf802b91c7c"
+    },
+    {
+      "path": "app/Http/Middleware/MeasurePagePerformance.php",
+      "before_sha256": null,
+      "after_sha256": "a1060caced76e04b250ff45b270d0296b6d1c5a95f44554d39db6c6a750c4159"
+    },
+    {
+      "path": "tests/Feature/PerformanceQueryTest.php",
+      "before_sha256": null,
+      "after_sha256": "e3987c48b96a55c1227c60a3ae3d86a1690dedf6020c8b83ff37758a3a109226"
+    },
+    {
+      "path": "tests/sw-performance.cjs",
+      "before_sha256": null,
+      "after_sha256": "66166200f85afb28bd52db3eb6a33403fc969656449d38fc4cc346541807875e"
+    }
+  ]
+}
