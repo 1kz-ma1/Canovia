@@ -1,0 +1,81 @@
+{
+  "repository": "1kz-ma1/Canovia",
+  "base_commit": "f93d8fbda64a8d5446830adfdd2fa7580df7463c",
+  "files": [
+    {
+      "path": ".dockerignore",
+      "base_sha256": "e5679dad3a3ae1b0a5e4970f8188b8a942ed3d719c179ffb5fb616616b85f3fa",
+      "new_sha256": "b440e2ba3c79ac9cd25290a7b482b265eed0be8a07a560c6eabd79b4296d345c"
+    },
+    {
+      "path": "Dockerfile",
+      "base_sha256": "316bcca9c5541761aff2d1cf6e1a471f3d21ba254bdcd75b4a99e9ba31a1df49",
+      "new_sha256": "9360d51ef957df85bae1fcc0512dec9326a0df7dee0212d512c44c0ed076b985"
+    },
+    {
+      "path": "app/Http/Controllers/OfflineWorkSessionController.php",
+      "base_sha256": "e65ee702639c84d563cf0c8001fcb9b0d3d8f4c033e929c5138b52c13aa666e1",
+      "new_sha256": "cc5addc650c9bf5d7b7fa6d882bca3ff530e481dc823abec033c7f6d54af517e"
+    },
+    {
+      "path": "app/Services/PlanOwnershipService.php",
+      "base_sha256": "ea2ec31873167af6f4cf59f2602087b4c729d847b5e9d16b02910bcc4b63ad4e",
+      "new_sha256": "92374762b243332261187ede3a016dd10b19481bf894a1c8d5af202bf0b5e1d4"
+    },
+    {
+      "path": "bootstrap/app.php",
+      "base_sha256": "034e2046b7ab2b6a4ef626617d88f869dfd22f76bbdb52dd25bc0c776ad19f7d",
+      "new_sha256": "056322fea2ac4c2dd5c7137d95881d91330370db0e4c5f1d3fe33fd2bf55abc8"
+    },
+    {
+      "path": "docker/nginx.conf",
+      "base_sha256": "3d388b611708e25ce94990da6e20c62abc78c224bd7fc569d457270a310d4257",
+      "new_sha256": "b49f25c5b3613bb7e4bc01db4102161b3522d18025cafebdd85ea374b16d233c"
+    },
+    {
+      "path": "docker/php-fpm.conf",
+      "base_sha256": null,
+      "new_sha256": "04182a15f43c15d62517010d34eee3edb425c7e40002f3559b9a1a07626f2439"
+    },
+    {
+      "path": "docker/render-start.sh",
+      "base_sha256": "8a76c6c43fcc5008fbaa3f9dacaab66f8b57833a9996e04c53f57abb430235ad",
+      "new_sha256": "14cbfc3f28c0fc6668e3966f8d2f46b2774e722d77ac410c1ba6def163cd902f"
+    },
+    {
+      "path": "docker/supervisord.conf",
+      "base_sha256": "1729a225df649f04d9145cf027b8eede5481da4effe606203e4aef3b82d44798",
+      "new_sha256": "26c9898257cc6a81cbcb277ad45d6c1f07fc5a98247f20e0a9cfd8c319b1eb71"
+    },
+    {
+      "path": "public/offline.html",
+      "base_sha256": "a08ea28f3024956c91f8dc691a12b38875d58b5681be26e28c84803ab941dcb2",
+      "new_sha256": "dfd14cb2d66e927b32bc070a704dbecf7c491937da703303829321eb75a3e93d"
+    },
+    {
+      "path": "public/sw.js",
+      "base_sha256": "8e1be9da4e4fc20849da8014683250d53ccca914d0a4bf0e0434a854cdf82373",
+      "new_sha256": "10b8baf500cef46e4b91364ed85b6b78bcd7b7d4014cbaa44891ea08db4f4551"
+    },
+    {
+      "path": "resources/js/app.js",
+      "base_sha256": "c16922a6f6d499770dd88ed44a7a2534263372648e51e7033fc287a7cb1e9b7f",
+      "new_sha256": "a143416b4f427a49c0e7d0965727a747e2d9ebdfabd09848fee34411e9f3b9c7"
+    },
+    {
+      "path": "tests/Feature/ProductionReliabilityV35Test.php",
+      "base_sha256": null,
+      "new_sha256": "5450d67465be050b12d0c280715a30f83d2177b0f8b3f7ba002fb53087ae1f35"
+    },
+    {
+      "path": "tests/deployment/nginx-smoke.py",
+      "base_sha256": null,
+      "new_sha256": "bf3f8fcb73fb29682430e6a5f7483551f0c4c61fb6f09edc46131ccff6861d60"
+    },
+    {
+      "path": "tests/js/offline-reliability.test.mjs",
+      "base_sha256": null,
+      "new_sha256": "cb2c423860d463211117e3ca1d61d636faeccd3c6216669b1961f60bba6fb16c"
+    }
+  ]
+}
