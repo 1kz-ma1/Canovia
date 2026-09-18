@@ -1,8 +1,10 @@
-const CACHE_VERSION = 'canovia-shell-v35';
+const CACHE_VERSION = 'canovia-shell-v36';
 const META_CACHE = 'canovia-shell-meta-v1';
 const LAST_NETWORK_KEY = '/__canovia_last_network_success__';
 const LIKELY_SLEEP_AFTER_MS = 12 * 60 * 1000;
-const RECENT_NETWORK_TIMEOUT_MS = 900;
+// Warm Laravel pages can take several seconds. A short timeout abandons
+// their response and makes the shell start the same expensive request again.
+const RECENT_NETWORK_TIMEOUT_MS = 8000;
 const STATIC_ASSETS = [
     '/offline.html',
     '/icons/icon-180.png',

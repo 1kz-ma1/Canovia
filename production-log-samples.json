@@ -1,0 +1,119 @@
+[
+  {
+    "at": "2026-09-18T03:46:59.136374462Z",
+    "method": "GET",
+    "path": "/",
+    "retry": false,
+    "status": 200,
+    "seconds": 1.866,
+    "agent": "platform"
+  },
+  {
+    "at": "2026-09-18T04:11:52.293256905Z",
+    "method": "HEAD",
+    "path": "/roadmap",
+    "retry": true,
+    "status": 200,
+    "seconds": 3.691,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:11:54.533267198Z",
+    "method": "GET",
+    "path": "/roadmap",
+    "retry": true,
+    "status": 200,
+    "seconds": 2.096,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:11:54.714818999Z",
+    "method": "GET",
+    "path": "/brand/canovia-wordmark.png",
+    "retry": false,
+    "status": 200,
+    "seconds": 0,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:11:56.869612063Z",
+    "method": "GET",
+    "path": "/roadmap",
+    "retry": false,
+    "status": 200,
+    "seconds": 2.124,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:12:01.686590939Z",
+    "method": "GET",
+    "path": "/roadmap",
+    "retry": true,
+    "status": 200,
+    "seconds": 2.098,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:12:03.959012948Z",
+    "method": "GET",
+    "path": "/roadmap",
+    "retry": false,
+    "status": 200,
+    "seconds": 2.057,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:12:06.497842639Z",
+    "method": "GET",
+    "path": "/navigate",
+    "retry": false,
+    "status": 200,
+    "seconds": 2.196,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:12:07.898818319Z",
+    "method": "GET",
+    "path": "/navigate",
+    "retry": true,
+    "status": 200,
+    "seconds": 2.198,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:12:10.264480883Z",
+    "method": "GET",
+    "path": "/timeline",
+    "retry": false,
+    "status": 200,
+    "seconds": 1.126,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:12:11.587564994Z",
+    "method": "GET",
+    "path": "/timeline",
+    "retry": true,
+    "status": 200,
+    "seconds": 1.136,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:12:17.031202928Z",
+    "method": "GET",
+    "path": "/",
+    "retry": false,
+    "status": 200,
+    "seconds": 3.912,
+    "agent": "browser"
+  },
+  {
+    "at": "2026-09-18T04:12:18.087364766Z",
+    "method": "GET",
+    "path": "/",
+    "retry": true,
+    "status": 200,
+    "seconds": 3.623,
+    "agent": "browser"
+  }
+]

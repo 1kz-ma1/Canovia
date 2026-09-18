@@ -13,12 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(\App\Http\Middleware\MeasurePagePerformance::class);
         $middleware->redirectGuestsTo(fn (Request $request) => route('auth.login.form'));
         $middleware->redirectUsersTo(fn (Request $request) => route('home'));
         $middleware->appendToGroup('web', RedirectLegacyCanoviaHost::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => $request->is('api/*'),
         );
     })->create();
