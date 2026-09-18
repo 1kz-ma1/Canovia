@@ -1,0 +1,60 @@
+{
+  "baseline_v34": {
+    "tests": 60,
+    "passed": 47,
+    "assertions": 212,
+    "failures": [
+      "Tests\\Feature\\BehaviorTrackingTest::test_dashboard_renders_without_behavior_events_or_work_sessions",
+      "Tests\\Feature\\BehaviorTrackingTest::test_multiple_behavior_events_and_work_log_dates_use_base_collections_for_state_aggregation",
+      "Tests\\Feature\\BehaviorTrackingTest::test_navigation_opens_with_an_immediate_recommendation_and_start_action",
+      "Tests\\Feature\\OnboardingWelcomeV15Test::test_home_marks_only_empty_dashboard_as_new_user_for_automatic_tutorial",
+      "Tests\\Feature\\ProductPolishV14Test::test_rating_only_feedback_can_be_saved",
+      "Tests\\Feature\\PublicBetaPolishV16Test::test_plan_create_uses_correct_exam_name_and_japanese_accent_labels",
+      "Tests\\Feature\\PublicBetaPolishV16Test::test_first_run_ui_contains_a_short_product_intro_before_the_spotlight_tutorial",
+      "Tests\\Feature\\PublicBetaPolishV16Test::test_static_welcome_has_a_recovery_path_when_startup_takes_too_long",
+      "Tests\\Feature\\RoadmapFeedbackV13Test::test_feedback_can_store_five_star_rating_and_app_version",
+      "Tests\\Feature\\RoadmapFeedbackV13Test::test_feedback_admin_url_redirects_to_login_until_authorized"
+    ],
+    "errors": [
+      "Tests\\Unit\\PlanProgressServiceTest::test_daily_requirement_uses_explicit_remaining_minutes",
+      "Tests\\Feature\\AvailabilityPlanningTest::test_daily_target_uses_available_capacity_when_schedule_is_configured",
+      "Tests\\Feature\\AvailabilityPlanningTest::test_date_override_replaces_weekly_capacity"
+    ]
+  },
+  "changed_v35": {
+    "tests": 73,
+    "passed": 60,
+    "assertions": 267,
+    "failures": [
+      "Tests\\Feature\\BehaviorTrackingTest::test_dashboard_renders_without_behavior_events_or_work_sessions",
+      "Tests\\Feature\\BehaviorTrackingTest::test_multiple_behavior_events_and_work_log_dates_use_base_collections_for_state_aggregation",
+      "Tests\\Feature\\BehaviorTrackingTest::test_navigation_opens_with_an_immediate_recommendation_and_start_action",
+      "Tests\\Feature\\OnboardingWelcomeV15Test::test_home_marks_only_empty_dashboard_as_new_user_for_automatic_tutorial",
+      "Tests\\Feature\\ProductPolishV14Test::test_rating_only_feedback_can_be_saved",
+      "Tests\\Feature\\PublicBetaPolishV16Test::test_plan_create_uses_correct_exam_name_and_japanese_accent_labels",
+      "Tests\\Feature\\PublicBetaPolishV16Test::test_first_run_ui_contains_a_short_product_intro_before_the_spotlight_tutorial",
+      "Tests\\Feature\\PublicBetaPolishV16Test::test_static_welcome_has_a_recovery_path_when_startup_takes_too_long",
+      "Tests\\Feature\\RoadmapFeedbackV13Test::test_feedback_can_store_five_star_rating_and_app_version",
+      "Tests\\Feature\\RoadmapFeedbackV13Test::test_feedback_admin_url_redirects_to_login_until_authorized"
+    ],
+    "errors": [
+      "Tests\\Unit\\PlanProgressServiceTest::test_daily_requirement_uses_explicit_remaining_minutes",
+      "Tests\\Feature\\AvailabilityPlanningTest::test_daily_target_uses_available_capacity_when_schedule_is_configured",
+      "Tests\\Feature\\AvailabilityPlanningTest::test_date_override_replaces_weekly_capacity"
+    ]
+  },
+  "new_failures": [],
+  "added_php_tests_passed": 13,
+  "javascript_tests_passed": 4,
+  "vite_build": "passed",
+  "laravel_config_route_view_cache": "passed",
+  "nginx": "1.28.3 Linux syntax and HTTP routing smoke tests passed; mocked FastCGI backend",
+  "shell_syntax": "passed",
+  "docker_full_build": "not run: Docker Desktop did not respond",
+  "not_tested": [
+    "PHP-FPM runtime / Supervisor shutdown integration",
+    "iOS device installation",
+    "Aiven MySQL concurrent requests",
+    "40-user load"
+  ]
+}

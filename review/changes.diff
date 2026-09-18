@@ -1,0 +1,942 @@
+diff --git a/.dockerignore b/.dockerignore
+index 8d8dcd6..2acaa43 100644
+--- a/.dockerignore
++++ b/.dockerignore
+@@ -7,6 +7,8 @@
+ 
+ vendor
+ node_modules
++public/hot
++bootstrap/cache/*.php
+ 
+ storage/logs/*
+ storage/framework/cache/*
+diff --git a/Dockerfile b/Dockerfile
+index a102950..1b2b53d 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -49,6 +49,7 @@ COPY --from=frontend /app/public/build ./public/build
+ COPY docker/nginx.conf /etc/nginx/nginx.conf
+ COPY docker/supervisord.conf /etc/supervisor/conf.d/canovia.conf
+ COPY docker/php-production.ini /usr/local/etc/php/conf.d/99-canovia-production.ini
++COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-canovia.conf
+ 
+ RUN composer install \
+         --no-dev \
+diff --git a/app/Http/Controllers/OfflineWorkSessionController.php b/app/Http/Controllers/OfflineWorkSessionController.php
+index 651d804..cea8067 100644
+--- a/app/Http/Controllers/OfflineWorkSessionController.php
++++ b/app/Http/Controllers/OfflineWorkSessionController.php
+@@ -30,11 +30,6 @@ public function sync(
+             'intended_minutes' => ['nullable', 'integer', 'min:5', 'max:480'],
+         ]);
+ 
+-        $existing = WorkSession::where('client_session_id', $validated['client_session_id'])->first();
+-        if ($existing) {
+-            return response()->json(['ok' => true, 'work_session_id' => $existing->id, 'already_synced' => true]);
+-        }
+-
+         $task = Task::with('plan')->findOrFail($validated['task_id']);
+         $ownership->authorizeTask($request, $task);
+ 
+@@ -44,11 +39,13 @@ public function sync(
+         $actualSeconds = min((int) $validated['actual_seconds'], max(1, $startedAt->diffInSeconds($endedAt)));
+         $actualMinutes = max(1, (int) round($actualSeconds / 60));
+ 
+-        $session = DB::transaction(function () use ($request, $task, $actorToken, $validated, $startedAt, $endedAt, $actualSeconds, $actualMinutes) {
+-            $session = WorkSession::create([
++        $session = DB::transaction(function () use ($request, $task, $actorToken, $validated, $startedAt, $endedAt, $actualSeconds, $actualMinutes, $logger) {
++            // The unique client ID also protects concurrent retries from multiple tabs.
++            $session = WorkSession::query()->createOrFirst([
++                'client_session_id' => $validated['client_session_id'],
++            ], [
+                 'actor_token' => $actorToken,
+                 'browser_session_id' => $request->session()->getId(),
+-                'client_session_id' => $validated['client_session_id'],
+                 'plan_id' => $task->plan_id,
+                 'task_id' => $task->id,
+                 'status' => 'completed',
+@@ -62,6 +59,17 @@ public function sync(
+                 'metadata' => ['synced_from_offline' => true],
+             ]);
+ 
++            if (! $session->wasRecentlyCreated) {
++                abort_unless(
++                    (int) $session->task_id === (int) $task->id
++                        && hash_equals($session->actor_token, $actorToken),
++                    409,
++                    'この同期IDは別の作業で使用されています。',
++                );
++
++                return $session;
++            }
++
+             WorkLog::create([
+                 'plan_id' => $task->plan_id,
+                 'task_id' => $task->id,
+@@ -78,18 +86,17 @@ public function sync(
+                 'outcome' => 'オフライン作業セッションを同期',
+             ]);
+ 
++            $logger->record($actorToken, BehaviorEventType::WorkCompleted, $request, $task->plan, $task, [
++                'work_session_id' => $session->id,
++                'duration_seconds' => $actualSeconds,
++                'actual_minutes' => $actualMinutes,
++                'source' => 'offline_sync',
++                'client_session_id' => $validated['client_session_id'],
++            ]);
++
+             return $session;
+         });
+ 
+-
+-        $logger->record($actorToken, BehaviorEventType::WorkCompleted, $request, $task->plan, $task, [
+-            'work_session_id' => $session->id,
+-            'duration_seconds' => $actualSeconds,
+-            'actual_minutes' => $actualMinutes,
+-            'source' => 'offline_sync',
+-            'client_session_id' => $validated['client_session_id'],
+-        ]);
+-
+-        return response()->json(['ok' => true, 'work_session_id' => $session->id, 'already_synced' => false]);
++        return response()->json(['ok' => true, 'work_session_id' => $session->id, 'already_synced' => ! $session->wasRecentlyCreated]);
+     }
+ }
+diff --git a/app/Services/PlanOwnershipService.php b/app/Services/PlanOwnershipService.php
+index 2dfa282..f347a0d 100644
+--- a/app/Services/PlanOwnershipService.php
++++ b/app/Services/PlanOwnershipService.php
+@@ -23,7 +23,7 @@ public function ownedPlans(Request $request, array $with = []): Collection
+             return collect();
+         }
+ 
+-        $query = Plan::with($with)->latest();
++        $query = Plan::with($with)->with('memberships')->latest();
+ 
+         $query->where(function ($query) use ($userId, $guestPlanIds) {
+             if ($userId) {
+@@ -70,6 +70,10 @@ public function role(Request $request, Plan $plan): ?string
+             return null;
+         }
+ 
++        if ($plan->relationLoaded('memberships')) {
++            return $plan->memberships->firstWhere('user_id', $user->id)?->role;
++        }
++
+         return PlanMember::query()
+             ->where('plan_id', $plan->id)
+             ->where('user_id', $user->id)
+diff --git a/bootstrap/app.php b/bootstrap/app.php
+index e9db399..e925e87 100644
+--- a/bootstrap/app.php
++++ b/bootstrap/app.php
+@@ -19,6 +19,6 @@
+     })
+     ->withExceptions(function (Exceptions $exceptions): void {
+         $exceptions->shouldRenderJsonWhen(
+-            fn (Request $request) => $request->is('api/*'),
++            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+         );
+     })->create();
+diff --git a/docker/nginx.conf b/docker/nginx.conf
+index 7a42a97..b713588 100644
+--- a/docker/nginx.conf
++++ b/docker/nginx.conf
+@@ -66,7 +66,7 @@ http {
+             try_files $uri =404;
+             access_log off;
+             expires 1y;
+-            add_header Cache-Control "public, max-age=31536000, immutable" always;
++            add_header Cache-Control "public, max-age=31536000, immutable";
+         }
+ 
+         # Keep PWA control files fresh so deployments are picked up quickly.
+@@ -77,9 +77,10 @@ http {
+         }
+ 
+         location = /app.webmanifest {
+-            try_files $uri =404;
++            # The manifest contains a per-user, one-time PWA identity handoff.
++            # It is generated by Laravel; there is no static manifest file.
++            rewrite ^ /index.php last;
+             access_log off;
+-            add_header Cache-Control "no-cache" always;
+         }
+ 
+         location = /favicon.ico {
+diff --git a/docker/render-start.sh b/docker/render-start.sh
+index c6c1344..5499a87 100644
+--- a/docker/render-start.sh
++++ b/docker/render-start.sh
+@@ -3,6 +3,19 @@ set -eu
+ 
+ cd /var/www/html
+ 
++PORT="${PORT:-10000}"
++case "$PORT" in
++    ''|*[!0-9]*) echo "PORT must be an integer" >&2; exit 1 ;;
++esac
++if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
++    echo "PORT must be between 1 and 65535" >&2
++    exit 1
++fi
++sed "s/listen 10000 /listen ${PORT} /; s/listen \[::\]:10000 /listen [::]:${PORT} /" \
++    docker/nginx.conf > /etc/nginx/nginx.conf
++nginx -t
++php-fpm -t
++
+ mkdir -p \
+ storage/framework/cache/data \
+ storage/framework/sessions \
+@@ -20,5 +33,8 @@ php artisan config:cache
+ php artisan route:cache
+ php artisan view:cache
+ 
+-echo "Starting Canovia with Nginx + PHP-FPM on port 10000"
++# CLI cache generation runs as root; FPM workers run as www-data.
++chown -R www-data:www-data storage bootstrap/cache
++
++echo "Starting Canovia with Nginx + PHP-FPM on port ${PORT}"
+ exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+diff --git a/docker/supervisord.conf b/docker/supervisord.conf
+index 00c50a9..bcbe00f 100644
+--- a/docker/supervisord.conf
++++ b/docker/supervisord.conf
+@@ -1,4 +1,6 @@
+ [program:php-fpm]
++stopsignal=QUIT
++stopwaitsecs=65
+ command=/usr/local/sbin/php-fpm -F
+ priority=10
+ autostart=true
+@@ -13,6 +15,8 @@ stderr_logfile=/dev/stderr
+ stderr_logfile_maxbytes=0
+ 
+ [program:nginx]
++stopsignal=QUIT
++stopwaitsecs=65
+ command=/usr/sbin/nginx -g "daemon off;"
+ priority=20
+ autostart=true
+diff --git a/public/offline.html b/public/offline.html
+index 8271b0c..42c1471 100644
+--- a/public/offline.html
++++ b/public/offline.html
+@@ -63,11 +63,11 @@ <h2 id="roadmapTitle" class="title">前回のロードマップ</h2>
+ </main>
+ <script>
+ const DB='pacekeeper-offline-v1', STORE='state';
+-let snapshot=null, offlineSession=null, timerId=null, serverReady=false, handoffInProgress=false, probeTimer=null, desiredPath=null;
+-function openDb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+-async function get(k){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const r=tx.objectStore(STORE).get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})}
+-async function put(k,v){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
+-async function del(k){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
++let snapshot=null, offlineSession=null, timerId=null, serverReady=false, handoffInProgress=false, probeTimer=null, desiredPath=null, probeInFlight=false;
++function openDb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>{r.result.onversionchange=()=>r.result.close();res(r.result)};r.onerror=()=>rej(r.error)})}
++async function get(k){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const r=tx.objectStore(STORE).get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)}).finally(()=>db.close())}
++async function put(k,v){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)}).finally(()=>db.close())}
++async function del(k){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)}).finally(()=>db.close())}
+ function uuid(){return crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16)})}
+ function elapsed(s){const now=Date.now(),end=s.ended_at?Date.parse(s.ended_at):now,start=Date.parse(s.started_at),pause=s.paused_seconds||0,livePause=s.paused_at?Math.max(0,(now-Date.parse(s.paused_at))/1000):0;return Math.max(0,Math.floor((end-start)/1000-pause-livePause))}
+ function fmt(sec){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=sec%60;return h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`}
+@@ -85,9 +85,31 @@ <h2 id="roadmapTitle" class="title">前回のロードマップ</h2>
+ function targetUrl(){if(desiredPath)return new URL(desiredPath,window.location.origin);if(window.location.pathname==='/offline.html'&&snapshot?.last_path)return new URL(snapshot.last_path,window.location.origin);return new URL(window.location.href)}
+ function goToToday(){if(handoffInProgress)return;desiredPath='/navigate?resume_offline_timer=1';resumeOriginal()}
+ function resumeOriginal(){if(handoffInProgress)return;handoffInProgress=true;if(probeTimer)clearInterval(probeTimer);document.getElementById('netLabel').textContent='最新状態へ切り替えています…';const target=targetUrl();target.searchParams.delete('_pk_network');target.searchParams.set('_canovia_network','1');window.location.replace(target.href)}
+-async function trySyncFinished(){if(!offlineSession?.ended_at||!snapshot?.csrf_token)return false;try{const r=await fetch('/offline/work-sessions/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':snapshot.csrf_token},body:JSON.stringify({client_session_id:offlineSession.client_session_id,task_id:offlineSession.task_id,started_at:offlineSession.started_at,ended_at:offlineSession.ended_at,actual_seconds:offlineSession.actual_seconds,intended_minutes:null})});if(!r.ok)return false;await del('offline_session');offlineSession=null;return true}catch{return false}}
+-async function probe(){if(handoffInProgress)return;try{const r=await fetch('/health?ts='+Date.now(),{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw 0;serverReady=true;document.getElementById('netDot').classList.add('ok');document.getElementById('netLabel').textContent='接続できました';if(offlineSession?.ended_at)await trySyncFinished();controls();window.setTimeout(resumeOriginal,220)}catch{serverReady=false;document.getElementById('netDot').classList.remove('ok');document.getElementById('netLabel').textContent=navigator.onLine?'サーバーを準備中…':'オフライン';controls()}}
+-document.querySelectorAll('[data-shell-view]').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.shellView)));document.getElementById('startBtn').addEventListener('click',start);document.getElementById('pauseBtn').addEventListener('click',pauseResume);document.getElementById('returnBtn').addEventListener('click',goToToday);window.addEventListener('online',probe);window.addEventListener('offline',()=>{document.getElementById('netDot').classList.remove('ok');document.getElementById('netLabel').textContent='オフライン'});
++async function probe(){
++    if(handoffInProgress||probeInFlight||!navigator.onLine)return;
++    probeInFlight=true;
++    const controller=new AbortController();
++    const timeout=setTimeout(()=>controller.abort(),10000);
++    try{
++        const r=await fetch('/health?ts='+Date.now(),{cache:'no-store',credentials:'same-origin',signal:controller.signal});
++        if(!r.ok)throw new Error('health-check-failed');
++        serverReady=true;
++        document.getElementById('netDot').classList.add('ok');
++        document.getElementById('netLabel').textContent='接続できました';
++        // Let the online page sync with its fresh CSRF token. Keep local work intact.
++        controls();
++        window.setTimeout(resumeOriginal,220);
++    }catch{
++        serverReady=false;
++        document.getElementById('netDot').classList.remove('ok');
++        document.getElementById('netLabel').textContent=navigator.onLine?'サーバーを準備中…':'オフライン';
++        controls();
++    }finally{
++        clearTimeout(timeout);
++        probeInFlight=false;
++    }
++}
++document.querySelectorAll('[data-shell-view]').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.shellView)));document.getElementById('startBtn').addEventListener('click',start);document.getElementById('pauseBtn').addEventListener('click',pauseResume);document.getElementById('returnBtn').addEventListener('click',goToToday);window.addEventListener('online',probe);window.addEventListener('offline',()=>{serverReady=false;controls();document.getElementById('netDot').classList.remove('ok');document.getElementById('netLabel').textContent='オフライン'});
+ (async()=>{snapshot=await get('latest_snapshot');offlineSession=await get('offline_session');render();if(offlineSession&&!offlineSession.ended_at&&!timerId)timerId=setInterval(renderTimer,1000);await probe();if(!handoffInProgress)probeTimer=setInterval(probe,3000)})().catch(()=>{render();if(!handoffInProgress)probeTimer=setInterval(probe,3000);probe()});
+ </script>
+ </body>
+diff --git a/public/sw.js b/public/sw.js
+index 3d69974..7b585ae 100644
+--- a/public/sw.js
++++ b/public/sw.js
+@@ -1,4 +1,4 @@
+-const CACHE_VERSION = 'canovia-shell-v33';
++const CACHE_VERSION = 'canovia-shell-v35';
+ const META_CACHE = 'canovia-shell-meta-v1';
+ const LAST_NETWORK_KEY = '/__canovia_last_network_success__';
+ const LIKELY_SLEEP_AFTER_MS = 12 * 60 * 1000;
+diff --git a/resources/js/app.js b/resources/js/app.js
+index 8215836..5c1fbb8 100644
+--- a/resources/js/app.js
++++ b/resources/js/app.js
+@@ -595,7 +595,10 @@ function openOfflineDb() {
+                 request.result.createObjectStore(offlineStoreName);
+             }
+         };
+-        request.onsuccess = () => resolve(request.result);
++        request.onsuccess = () => {
++            request.result.onversionchange = () => request.result.close();
++            resolve(request.result);
++        };
+         request.onerror = () => reject(request.error);
+     });
+ }
+@@ -607,7 +610,8 @@ async function writeOfflineState(key, value) {
+         tx.objectStore(offlineStoreName).put(value, key);
+         tx.oncomplete = resolve;
+         tx.onerror = () => reject(tx.error);
+-    });
++        tx.onabort = () => reject(tx.error || new Error('offline-storage-aborted'));
++    }).finally(() => db.close());
+ }
+ 
+ 
+@@ -618,7 +622,7 @@ async function readOfflineState(key) {
+         const request = tx.objectStore(offlineStoreName).get(key);
+         request.onsuccess = () => resolve(request.result || null);
+         request.onerror = () => reject(request.error);
+-    });
++    }).finally(() => db.close());
+ }
+ 
+ async function deleteOfflineState(key) {
+@@ -628,7 +632,8 @@ async function deleteOfflineState(key) {
+         tx.objectStore(offlineStoreName).delete(key);
+         tx.oncomplete = resolve;
+         tx.onerror = () => reject(tx.error);
+-    });
++        tx.onabort = () => reject(tx.error || new Error('offline-storage-aborted'));
++    }).finally(() => db.close());
+ }
+ 
+ function offlineSessionElapsedSeconds(session) {
+@@ -649,31 +654,38 @@ function offlineSessionElapsedSeconds(session) {
+ async function syncOfflineWorkSession(session) {
+     if (!session?.ended_at || !csrfToken) return null;
+ 
+-    const response = await fetch('/offline/work-sessions/sync', {
+-        method: 'POST',
+-        credentials: 'same-origin',
+-        headers: {
+-            'Content-Type': 'application/json',
+-            'Accept': 'application/json',
+-            'X-CSRF-TOKEN': csrfToken,
+-        },
+-        body: JSON.stringify({
+-            client_session_id: session.client_session_id,
+-            task_id: session.task_id,
+-            started_at: session.started_at,
+-            ended_at: session.ended_at,
+-            actual_seconds: session.actual_seconds,
+-            intended_minutes: session.intended_minutes ?? null,
+-        }),
+-    });
++    const controller = new AbortController();
++    const timeout = window.setTimeout(() => controller.abort(), 15000);
++    try {
++        const response = await fetch('/offline/work-sessions/sync', {
++            signal: controller.signal,
++            method: 'POST',
++            credentials: 'same-origin',
++            headers: {
++                'Content-Type': 'application/json',
++                'Accept': 'application/json',
++                'X-CSRF-TOKEN': csrfToken,
++            },
++            body: JSON.stringify({
++                client_session_id: session.client_session_id,
++                task_id: session.task_id,
++                started_at: session.started_at,
++                ended_at: session.ended_at,
++                actual_seconds: session.actual_seconds,
++                intended_minutes: session.intended_minutes ?? null,
++            }),
++        });
+ 
+-    if (!response.ok) return null;
+-    return await response.json().catch(() => ({}));
++        if (!response.ok) return null;
++        return await response.json().catch(() => ({}));
++    } finally {
++        window.clearTimeout(timeout);
++    }
+ }
+ 
+ async function mountOfflineTimerCard(session) {
+     const card = document.querySelector('[data-offline-timer-card]');
+-    if (!card || !session || session.ended_at) return false;
++    if (!card || !session) return false;
+ 
+     const task = card.querySelector('[data-offline-timer-task]');
+     const status = card.querySelector('[data-offline-timer-status]');
+@@ -683,21 +695,31 @@ async function mountOfflineTimerCard(session) {
+     const note = card.querySelector('[data-offline-timer-note]');
+     let current = session;
+     let busy = false;
++    let storageError = false;
+ 
+     card.classList.remove('hidden');
+     if (task) task.textContent = current.task_title || 'オフライン作業';
+ 
+     const render = () => {
+         if (value) value.textContent = formatTimer(offlineSessionElapsedSeconds(current));
+-        if (toggle) toggle.textContent = current.paused_at ? '再開' : '一時停止';
++        if (toggle) {
++            toggle.textContent = current.paused_at ? '再開' : '一時停止';
++            toggle.disabled = busy || !!current.ended_at;
++        }
+         const online = navigator.onLine;
+         if (complete) {
+             complete.disabled = !online || busy;
+             complete.classList.toggle('opacity-50', !online || busy);
++            complete.textContent = current.ended_at ? '同期を再試行' : '記録して終了';
+         }
+-        if (status) status.textContent = current.paused_at ? '一時停止中' : '計測中';
++        if (status) status.textContent = busy ? '作業記録を同期中…'
++            : current.ended_at ? '未同期の作業記録' : current.paused_at ? '一時停止中' : '計測中';
+         if (note) {
+-            note.textContent = online
++            note.textContent = storageError
++                ? '端末に記録を保存できません。ページを閉じずに、空き容量やブラウザ設定を確認して再試行してください。'
++                : current.ended_at
++                ? '計測は終了しています。接続を確認して「同期を再試行」を押してください。'
++                : online
+                 ? '接続できています。終了すると作業記録へ同期します。'
+                 : 'オフライン中は再生・一時停止だけ利用できます。記録して終了は接続復帰後に使えます。';
+         }
+@@ -717,18 +739,28 @@ async function mountOfflineTimerCard(session) {
+     });
+ 
+     complete?.addEventListener('click', async () => {
+-        if (busy || !navigator.onLine || current.ended_at) return;
++        if (busy || !navigator.onLine) return;
+         busy = true;
++        storageError = false;
+         render();
+ 
+-        if (current.paused_at) {
+-            current.paused_seconds = Number(current.paused_seconds || 0)
+-                + Math.max(0, (Date.now() - Date.parse(current.paused_at)) / 1000);
+-            current.paused_at = null;
++        if (!current.ended_at) {
++            if (current.paused_at) {
++                current.paused_seconds = Number(current.paused_seconds || 0)
++                    + Math.max(0, (Date.now() - Date.parse(current.paused_at)) / 1000);
++                current.paused_at = null;
++            }
++            current.ended_at = new Date().toISOString();
++            current.actual_seconds = Math.max(1, offlineSessionElapsedSeconds(current));
++        }
++        try {
++            await writeOfflineState('offline_session', current);
++        } catch (_) {
++            busy = false;
++            storageError = true;
++            render();
++            return;
+         }
+-        current.ended_at = new Date().toISOString();
+-        current.actual_seconds = Math.max(1, offlineSessionElapsedSeconds(current));
+-        await writeOfflineState('offline_session', current).catch(() => {});
+ 
+         if (status) status.textContent = '作業記録を同期中…';
+         const result = await syncOfflineWorkSession(current).catch(() => null);
+@@ -740,8 +772,6 @@ async function mountOfflineTimerCard(session) {
+         }
+ 
+         busy = false;
+-        if (status) status.textContent = 'まだ同期できていません';
+-        if (note) note.textContent = '記録は端末に残っています。接続を確認して、もう一度「記録して終了」を押してください。';
+         render();
+     });
+ 
+@@ -810,6 +840,14 @@ document.addEventListener('DOMContentLoaded', async () => {
+                     setSyncStatus('online', 'オフライン作業を同期済み', 2200);
+                 } else {
+                     setSyncStatus('pending', '未同期の作業があります');
++                    const mounted = await mountOfflineTimerCard(pendingOfflineSession);
++                    if (!mounted) {
++                        const banner = document.createElement('a');
++                        banner.href = '/navigate?resume_offline_timer=1';
++                        banner.className = 'offline-session-banner';
++                        banner.textContent = '未同期の作業記録 · 同期を再試行する';
++                        document.body.appendChild(banner);
++                    }
+                 }
+             } else if (pendingOfflineSession && !pendingOfflineSession.ended_at) {
+                 const mounted = await mountOfflineTimerCard(pendingOfflineSession);
+diff --git a/docker/php-fpm.conf b/docker/php-fpm.conf
+new file mode 100644
+index 0000000..f93b961
+--- /dev/null
++++ b/docker/php-fpm.conf
+@@ -0,0 +1,11 @@
++[www]
++; Bound worker count for small instances; measure RSS before increasing this.
++listen = 127.0.0.1:9000
++pm = ondemand
++pm.max_children = 4
++pm.process_idle_timeout = 10s
++pm.max_requests = 500
++clear_env = no
++catch_workers_output = yes
++decorate_workers_output = no
++security.limit_extensions = .php
+diff --git a/tests/Feature/ProductionReliabilityV35Test.php b/tests/Feature/ProductionReliabilityV35Test.php
+new file mode 100644
+index 0000000..d075358
+--- /dev/null
++++ b/tests/Feature/ProductionReliabilityV35Test.php
+@@ -0,0 +1,206 @@
++<?php
++
++namespace Tests\Feature;
++
++use App\Models\Feedback;
++use App\Models\FutureMemo;
++use App\Models\Plan;
++use App\Models\PlanMember;
++use App\Models\ReleaseNote;
++use App\Models\Task;
++use App\Models\User;
++use App\Services\BehaviorEventLogger;
++use App\Services\FutureMemoService;
++use App\Services\PlanOwnershipService;
++use App\Support\ReleaseNotes;
++use Illuminate\Foundation\Testing\RefreshDatabase;
++use Illuminate\Http\Request;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Tests\TestCase;
++
++class ProductionReliabilityV35Test extends TestCase
++{
++    use RefreshDatabase;
++
++    private function taskFor(User $user): Task
++    {
++        $plan = Plan::create([
++            'user_id' => $user->id, 'owner_token' => Str::random(64),
++            'public_slug' => (string) Str::uuid(), 'title' => '互換性テスト',
++            'start_date' => today(), 'deadline' => today()->addMonth(),
++            'is_public' => false, 'is_collaborative' => true,
++        ]);
++
++        return Task::create([
++            'plan_id' => $plan->id, 'title' => '作業', 'estimated_minutes' => 30,
++            'remaining_minutes' => 30, 'progress_percent' => 0,
++            'status' => 'todo', 'priority' => 1, 'activation_cost' => 1, 'sort_order' => 1,
++        ]);
++    }
++
++    private function payload(Task $task): array
++    {
++        return [
++            'client_session_id' => (string) Str::uuid(), 'task_id' => $task->id,
++            'started_at' => now()->subMinutes(5)->toIso8601String(),
++            'ended_at' => now()->toIso8601String(), 'actual_seconds' => 240,
++        ];
++    }
++
++    public function test_sync_retries_create_one_session_log_and_event(): void
++    {
++        $user = User::factory()->create();
++        $payload = $this->payload($this->taskFor($user));
++        $this->actingAs($user)->withSession(['pace_keeper.actor_token' => str_repeat('a', 64)]);
++        $first = $this->postJson('/offline/work-sessions/sync', $payload)
++            ->assertOk()->assertJsonPath('already_synced', false)->json('work_session_id');
++        $this->postJson('/offline/work-sessions/sync', $payload)
++            ->assertOk()->assertJsonPath('already_synced', true)->assertJsonPath('work_session_id', $first);
++        $this->assertDatabaseCount('work_sessions', 1);
++        $this->assertDatabaseCount('work_logs', 1);
++        $this->assertDatabaseCount('behavior_events', 1);
++    }
++
++    public function test_sync_authorizes_before_returning_an_existing_record(): void
++    {
++        $owner = User::factory()->create();
++        $payload = $this->payload($this->taskFor($owner));
++        $this->actingAs($owner)->postJson('/offline/work-sessions/sync', $payload)->assertOk();
++        $this->actingAs(User::factory()->create())
++            ->postJson('/offline/work-sessions/sync', $payload)->assertForbidden();
++    }
++
++    public function test_client_id_cannot_be_reused_for_another_task_or_actor(): void
++    {
++        $owner = User::factory()->create();
++        $payload = $this->payload($this->taskFor($owner));
++        $this->actingAs($owner)->withSession(['pace_keeper.actor_token' => str_repeat('a', 64)])
++            ->postJson('/offline/work-sessions/sync', $payload)->assertOk();
++        $this->postJson('/offline/work-sessions/sync', array_replace($payload, ['task_id' => $this->taskFor($owner)->id]))
++            ->assertStatus(409);
++        $this->withSession(['pace_keeper.actor_token' => str_repeat('b', 64)])
++            ->postJson('/offline/work-sessions/sync', $payload)->assertStatus(409);
++        $this->assertDatabaseCount('work_logs', 1);
++    }
++
++    public function test_viewer_cannot_sync_but_editor_can(): void
++    {
++        $task = $this->taskFor(User::factory()->create());
++        $member = User::factory()->create();
++        $membership = PlanMember::create(['plan_id' => $task->plan_id, 'user_id' => $member->id, 'role' => 'viewer']);
++        $payload = $this->payload($task);
++        $this->actingAs($member)->postJson('/offline/work-sessions/sync', $payload)->assertForbidden();
++        $membership->update(['role' => 'editor']);
++        $this->postJson('/offline/work-sessions/sync', $payload)->assertOk();
++    }
++
++    public function test_invalid_sync_is_json_and_does_not_redirect_to_html(): void
++    {
++        $this->postJson('/offline/work-sessions/sync', [])->assertUnprocessable()
++            ->assertJsonValidationErrors(['client_session_id', 'task_id']);
++    }
++
++    public function test_event_failure_rolls_back_session_and_log(): void
++    {
++        $user = User::factory()->create();
++        $payload = $this->payload($this->taskFor($user));
++        $this->mock(BehaviorEventLogger::class, function ($mock) {
++            $mock->shouldReceive('record')->once()->andThrow(new \RuntimeException('test failure'));
++        });
++        $this->actingAs($user)->postJson('/offline/work-sessions/sync', $payload)->assertStatus(500);
++        $this->assertDatabaseCount('work_sessions', 0);
++        $this->assertDatabaseCount('work_logs', 0);
++    }
++
++    public function test_loaded_memberships_avoid_repeated_role_queries(): void
++    {
++        $task = $this->taskFor(User::factory()->create());
++        $member = User::factory()->create();
++        PlanMember::create(['plan_id' => $task->plan_id, 'user_id' => $member->id, 'role' => 'viewer']);
++        $request = Request::create('/');
++        $request->setUserResolver(fn () => $member);
++        $service = app(PlanOwnershipService::class);
++        $plans = $service->ownedPlans($request);
++        $this->assertCount(1, $plans);
++        DB::enableQueryLog();
++        DB::flushQueryLog();
++        $this->assertTrue($service->canView($request, $plans->first()));
++        $this->assertFalse($service->canEdit($request, $plans->first()));
++        $this->assertSame('viewer', $service->role($request, $plans->first()));
++        $this->assertCount(0, DB::getQueryLog());
++        DB::disableQueryLog();
++    }
++
++    public function test_manifest_remains_dynamic_private_and_canovia_branded(): void
++    {
++        $this->actingAs(User::factory()->create());
++        $first = $this->get('/app.webmanifest')->assertOk()->assertJsonPath('name', 'Canovia');
++        $this->assertStringContainsString('no-store', $first->headers->get('Cache-Control'));
++        $this->assertStringStartsWith('/pwa/handoff/', $first->json('start_url'));
++        $second = $this->get('/app.webmanifest')->assertOk();
++        $this->assertNotSame($first->json('start_url'), $second->json('start_url'));
++        $this->assertDatabaseCount('pwa_handoffs', 2);
++    }
++
++    public function test_guest_memo_claim_and_ai_opt_out_remain_intact(): void
++    {
++        $token = str_repeat('m', 64);
++        $user = User::factory()->create();
++        foreach ([true, false] as $enabled) {
++            FutureMemo::create(['guest_token_hash' => hash('sha256', $token), 'kind' => 'want_to_do',
++                'category' => 'study', 'content' => $enabled ? '共有する希望' : '非公開の希望', 'use_for_ai' => $enabled]);
++        }
++        $request = Request::create('/', 'GET', [], [FutureMemoService::GUEST_COOKIE => $token]);
++        $service = app(FutureMemoService::class);
++        $this->assertSame(2, $service->claimGuestMemos($request, $user));
++        $request->setUserResolver(fn () => $user);
++        $this->assertStringContainsString('共有する希望', $service->promptContext($request));
++        $this->assertStringNotContainsString('非公開の希望', $service->promptContext($request));
++    }
++
++    public function test_feedback_and_published_release_notes_remain_available(): void
++    {
++        $this->post('/feedback', ['type' => 'request', 'rating' => 5, 'message' => '改善希望'])
++            ->assertRedirect();
++        $feedback = Feedback::firstOrFail();
++        $note = ReleaseNote::create(['feedback_id' => $feedback->id, 'version' => 'test',
++            'title' => '改善しました', 'summary' => '公開済み', 'highlights' => [], 'published_at' => now()->subMinute()]);
++        ReleaseNote::create(['version' => 'draft', 'title' => '下書き', 'summary' => '未公開', 'highlights' => []]);
++        $notes = ReleaseNotes::all();
++        $this->assertTrue($notes->contains('title', '改善しました'));
++        $this->assertFalse($notes->contains('title', '下書き'));
++        $note->delete();
++        $this->assertFalse(ReleaseNotes::all()->contains('title', '改善しました'));
++    }
++
++    public function test_legacy_readiness_headers_remain_available(): void
++    {
++        $this->get('/health')->assertNoContent()
++            ->assertHeader('X-Canovia-Ready', '1')->assertHeader('X-PaceKeeper-Ready', '1');
++    }
++
++    public function test_legacy_guest_ownership_cookie_still_allows_offline_sync(): void
++    {
++        $task = $this->taskFor(User::factory()->create());
++        $plan = $task->plan;
++        $plan->update(['user_id' => null]);
++        $this->withCookie('pace_keeper_owner_token_'.$plan->id, $plan->owner_token)
++            ->withCredentials()
++            ->postJson('/offline/work-sessions/sync', $this->payload($task))->assertOk();
++    }
++
++    public function test_legacy_host_navigation_still_uses_one_time_brand_handoff(): void
++    {
++        $this->app['env'] = 'production';
++        config(['canovia.redirect_legacy_hosts' => true, 'canovia.canonical_url' => 'https://app.canovia.example',
++            'canovia.legacy_hosts' => ['legacy.example']]);
++        $response = $this->withHeaders(['Accept' => 'text/html', 'Sec-Fetch-Dest' => 'document'])
++            ->get('http://legacy.example/?test=1')->assertStatus(302);
++        $location = $response->headers->get('Location');
++        $this->assertStringStartsWith('https://app.canovia.example/pwa/handoff/', $location);
++        $this->assertStringContainsString('brand_migration=1', $location);
++        $this->assertStringContainsString('next=%2F%3Ftest%3D1', $location);
++        $this->assertDatabaseCount('pwa_handoffs', 1);
++    }
++}
+diff --git a/tests/deployment/nginx-smoke.py b/tests/deployment/nginx-smoke.py
+new file mode 100644
+index 0000000..3f30015
+--- /dev/null
++++ b/tests/deployment/nginx-smoke.py
+@@ -0,0 +1,125 @@
++"""Linux routing smoke test with real Nginx and a mock FastCGI responder.
++
++NGINX_BIN and NGINX_CONFIG_DIR may point to an unpacked distribution package.
++No root, production database, or system configuration changes are needed.
++"""
++import http.client
++import json
++import os
++from pathlib import Path
++import socket
++import socketserver
++import struct
++import subprocess
++import tempfile
++import threading
++import time
++
++
++def record(kind, request_id, content):
++    return struct.pack('!BBHHBB', 1, kind, request_id, len(content), 0, 0) + content
++
++
++def read_exact(stream, length):
++    result = stream.read(length)
++    if len(result) != length:
++        raise EOFError()
++    return result
++
++
++class FastCGI(socketserver.StreamRequestHandler):
++    def handle(self):
++        params = b''
++        while True:
++            _, kind, request_id, size, padding, _ = struct.unpack('!BBHHBB', read_exact(self.rfile, 8))
++            content = read_exact(self.rfile, size)
++            read_exact(self.rfile, padding)
++            if kind == 4:
++                params += content
++            if kind == 5 and not content:
++                break
++        values = {}
++        offset = 0
++
++        def length():
++            nonlocal offset
++            value = params[offset]
++            if value & 128:
++                value = struct.unpack('!I', params[offset:offset + 4])[0] & 0x7fffffff
++                offset += 4
++            else:
++                offset += 1
++            return value
++
++        while offset < len(params):
++            key_size, value_size = length(), length()
++            key = params[offset:offset + key_size].decode()
++            offset += key_size
++            values[key] = params[offset:offset + value_size].decode()
++            offset += value_size
++        response = b'Content-Type: application/json\r\nCache-Control: private, no-store\r\n\r\n' + json.dumps(values).encode()
++        self.wfile.write(record(6, request_id, response) + record(6, request_id, b'') + record(3, request_id, b'\0' * 8))
++
++
++root = Path(__file__).resolve().parents[2]
++binary = os.environ.get('NGINX_BIN', 'nginx')
++include = Path(os.environ.get('NGINX_CONFIG_DIR', '/etc/nginx')).resolve()
++with tempfile.TemporaryDirectory(prefix='canovia-nginx-') as directory, socketserver.TCPServer(('127.0.0.1', 0), FastCGI) as backend:
++    tmp = Path(directory)
++    public = tmp / 'public'
++    (public / 'build').mkdir(parents=True)
++    (public / 'build' / 'app-123.js').write_text('console.log("fixture");')
++    (public / 'sw.js').write_text('// fixture')
++    with socket.socket() as sock:
++        sock.bind(('127.0.0.1', 0))
++        port = sock.getsockname()[1]
++    config = (root / 'docker/nginx.conf').read_text()
++    config = config.replace('user www-data;', '')
++    config = config.replace('/tmp/nginx.pid', str(tmp / 'nginx.pid'))
++    config = config.replace('/dev/stderr', str(tmp / 'error.log')).replace('/dev/stdout', str(tmp / 'access.log'))
++    config = config.replace('/etc/nginx/', str(include) + '/')
++    config = config.replace('/var/www/html/public', str(public))
++    config = config.replace('listen 10000 ', f'listen 127.0.0.1:{port} ')
++    config = config.replace('listen [::]:10000 default_server;', '')
++    config = config.replace('127.0.0.1:9000', f'127.0.0.1:{backend.server_address[1]}')
++    config = config.replace('http {', 'http {\n' + '\n'.join(
++        f'{name}_temp_path "{tmp / name}";' for name in ['client_body', 'proxy', 'fastcgi', 'uwsgi', 'scgi']))
++    config_file = tmp / 'nginx.conf'
++    config_file.write_text(config)
++    subprocess.run([binary, '-t', '-p', str(tmp), '-c', str(config_file)], check=True)
++    threading.Thread(target=backend.serve_forever, daemon=True).start()
++    process = subprocess.Popen([binary, '-p', str(tmp), '-c', str(config_file), '-g', 'daemon off;'], stdout=subprocess.DEVNULL)
++    try:
++        for _ in range(100):
++            try:
++                with socket.create_connection(('127.0.0.1', port), timeout=.1):
++                    break
++            except OSError:
++                time.sleep(.05)
++        def get(path):
++            conn = http.client.HTTPConnection('127.0.0.1', port, timeout=5)
++            conn.request('GET', path)
++            response = conn.getresponse()
++            result = response.status, dict(response.getheaders()), response.read()
++            conn.close()
++            return result
++
++        status, headers, _ = get('/health')
++        assert status == 204 and headers['X-Canovia-Ready'] == headers['X-PaceKeeper-Ready'] == '1'
++        status, headers, body = get('/app.webmanifest?installation=1')
++        params = json.loads(body)
++        assert status == 200 and 'no-store' in headers['Cache-Control']
++        assert params['REQUEST_URI'] == '/app.webmanifest?installation=1'
++        assert params['SCRIPT_FILENAME'] == str(public / 'index.php')
++        assert get('/build/app-123.js')[0] == 200
++        assert 'immutable' in get('/build/app-123.js')[1]['Cache-Control']
++        status, headers, _ = get('/build/missing.js')
++        assert status == 404 and 'immutable' not in headers.get('Cache-Control', '')
++        assert 'no-store' in get('/sw.js')[1]['Cache-Control']
++        assert get('/unexpected.php')[0] == 404
++        assert get('/.env')[0] == 403
++        print('PASS: readiness, dynamic manifest FastCGI routing, asset caching, missing assets, SW freshness, PHP and dotfile protection')
++    finally:
++        process.terminate()
++        process.wait(timeout=10)
++        backend.shutdown()
+diff --git a/tests/js/offline-reliability.test.mjs b/tests/js/offline-reliability.test.mjs
+new file mode 100644
+index 0000000..74fb751
+--- /dev/null
++++ b/tests/js/offline-reliability.test.mjs
+@@ -0,0 +1,90 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++import vm from 'node:vm';
++
++const source = readFileSync(new URL('../../resources/js/app.js', import.meta.url), 'utf8');
++const timerSource = source.slice(source.indexOf('async function mountOfflineTimerCard('), source.indexOf('async function clearOfflineState('));
++
++function fixture(session, results) {
++    const elements = new Map();
++    const listeners = new Map();
++    const writes = [], submissions = [], removed = [], destinations = [];
++    const element = (selector) => {
++        if (!elements.has(selector)) elements.set(selector, {
++            textContent: '', disabled: false,
++            classList: { remove() {}, toggle() {} },
++            addEventListener(type, callback) { listeners.set(selector + ':' + type, callback); },
++        });
++        return elements.get(selector);
++    };
++    const card = { classList: { remove() {} }, querySelector: element };
++    const context = vm.createContext({
++        document: { querySelector: () => card }, navigator: { onLine: true },
++        window: { addEventListener() {}, setInterval() {}, location: { assign: (url) => destinations.push(url) } },
++        formatTimer: String, offlineSessionElapsedSeconds: () => 300,
++        writeOfflineState: async (_, value) => writes.push(structuredClone(value)),
++        deleteOfflineState: async (key) => removed.push(key), setSyncStatus() {},
++        syncOfflineWorkSession: async (value) => { submissions.push(structuredClone(value)); return results.shift(); },
++    });
++    vm.runInContext(timerSource, context);
++    return { context, session, elements, listeners, writes, submissions, removed, destinations };
++}
++
++test('a failed completion can retry the same finished record without extending time', async () => {
++    const f = fixture({ client_session_id: 'same-id', started_at: new Date(Date.now() - 300000).toISOString() }, [null, { work_session_id: 7 }]);
++    await f.context.mountOfflineTimerCard(f.session);
++    const complete = f.listeners.get('[data-offline-timer-complete]:click');
++    await complete();
++    assert.equal(f.elements.get('[data-offline-timer-complete]').textContent, '同期を再試行');
++    assert.equal(f.elements.get('[data-offline-timer-toggle]').disabled, true);
++    assert.equal(f.removed.length, 0);
++    await complete();
++    assert.deepEqual(f.submissions[0], f.submissions[1]);
++    assert.equal(f.submissions[1].actual_seconds, 300);
++    assert.deepEqual(f.destinations, ['/work-sessions/7/review']);
++    assert.deepEqual(f.removed, ['offline_session']);
++});
++
++test('a finished unsynced session can be mounted after a page reload', async () => {
++    const f = fixture({ ended_at: new Date().toISOString(), actual_seconds: 42 }, [null]);
++    assert.equal(await f.context.mountOfflineTimerCard(f.session), true);
++    assert.equal(f.elements.get('[data-offline-timer-complete]').textContent, '同期を再試行');
++    await f.listeners.get('[data-offline-timer-complete]:click')();
++    assert.equal(f.submissions[0].actual_seconds, 42);
++    assert.equal(f.removed.length, 0);
++});
++
++test('a local persistence failure retains the record and prevents a network submission', async () => {
++    const f = fixture({ started_at: new Date().toISOString() }, []);
++    f.context.writeOfflineState = async () => { throw new Error('quota'); };
++    await f.context.mountOfflineTimerCard(f.session);
++    await f.listeners.get('[data-offline-timer-complete]:click')();
++    assert.equal(f.submissions.length, 0);
++    assert.equal(f.removed.length, 0);
++    assert.match(f.elements.get('[data-offline-timer-note]').textContent, /保存できません/);
++});
++
++test('repeated readiness probes cannot overlap or fetch when offline', async () => {
++    const html = readFileSync(new URL('../../public/offline.html', import.meta.url), 'utf8');
++    const probeSource = html.slice(html.indexOf('async function probe(){'), html.indexOf("\ndocument.querySelectorAll('[data-shell-view]')"));
++    let resolveFetch, calls = 0;
++    const context = vm.createContext({
++        handoffInProgress: false, probeInFlight: false, serverReady: false,
++        navigator: { onLine: true }, AbortController,
++        setTimeout: () => 1, clearTimeout() {}, controls() {}, resumeOriginal() {},
++        window: { setTimeout() {} },
++        document: { getElementById: () => ({ classList: { add() {}, remove() {} } }) },
++        fetch: () => { calls++; return new Promise(resolve => { resolveFetch = resolve; }); },
++    });
++    vm.runInContext(probeSource, context);
++    const pending = context.probe();
++    await context.probe();
++    assert.equal(calls, 1);
++    resolveFetch({ ok: true });
++    await pending;
++    assert.equal(context.probeInFlight, false);
++    context.navigator.onLine = false;
++    await context.probe();
++    assert.equal(calls, 1);
++});
