@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'canovia-shell-v33';
+const CACHE_VERSION = 'canovia-shell-v37';
 const META_CACHE = 'canovia-shell-meta-v1';
 const LAST_NETWORK_KEY = '/__canovia_last_network_success__';
 const LIKELY_SLEEP_AFTER_MS = 12 * 60 * 1000;
@@ -17,16 +17,12 @@ self.addEventListener('install', (event) => {
     event.waitUntil((async () => {
         const cache = await caches.open(CACHE_VERSION);
         await cache.addAll(STATIC_ASSETS);
-        // Installation itself proves the origin just responded successfully,
-        // so the very next navigation should not flash the fallback shell.
         await rememberNetworkSuccess();
     })());
 });
 
 self.addEventListener('message', (event) => {
-    if (event.data?.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
+    if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -43,7 +39,6 @@ self.addEventListener('activate', (event) => {
         if (self.registration.navigationPreload) {
             await self.registration.navigationPreload.enable().catch(() => {});
         }
-
         await self.clients.claim();
     })());
 });
@@ -70,9 +65,7 @@ async function lastNetworkSuccessAt() {
 }
 
 function markServerWarm(response) {
-    if (response?.ok) {
-        void rememberNetworkSuccess();
-    }
+    if (response?.ok) void rememberNetworkSuccess();
     return response;
 }
 
@@ -97,14 +90,8 @@ self.addEventListener('fetch', (event) => {
     if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
     if (request.mode === 'navigate') {
-        // Once the shell confirms the server is ready, retry the original URL
-        // without the Instant Start timeout. Keep the old parameter during the
-        // PaceKeeper -> Canovia compatibility window.
         if (url.searchParams.get('_canovia_network') === '1' || url.searchParams.get('_pk_network') === '1') {
-            event.respondWith(
-                navigationNetworkResponse(event, request)
-                    .catch(() => offlineShell())
-            );
+            event.respondWith(navigationNetworkResponse(event, request).catch(() => offlineShell()));
             return;
         }
 
@@ -114,14 +101,7 @@ self.addEventListener('fetch', (event) => {
         event.respondWith((async () => {
             const lastSuccess = await lastNetworkSuccessAt();
             const likelySleeping = !lastSuccess || (Date.now() - lastSuccess) >= LIKELY_SLEEP_AFTER_MS;
-
-            // Render Free normally sleeps after 15 minutes. If we have not seen
-            // a successful response for ~12 minutes, show the local shell
-            // immediately while the original navigation wakes the server in the
-            // background. This avoids a blank/loading screen on PWA launch.
-            if (likelySleeping) {
-                return offlineShell();
-            }
+            if (likelySleeping) return offlineShell();
 
             return Promise.race([
                 networkPromise,

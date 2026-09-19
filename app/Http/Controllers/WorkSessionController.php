@@ -11,6 +11,7 @@ use App\Services\BehaviorEventLogger;
 use App\Services\BehaviorIdentityService;
 use App\Services\PlanOwnershipService;
 use App\Services\WorkSessionService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -151,10 +152,18 @@ class WorkSessionController extends Controller
         $this->authorizeSession($request, $workSession, $identity, $ownership);
         $workSession->load(['plan', 'task']);
         $actorToken = $identity->resolve($request);
+        [$finishOptions, $timerMetadata, $durationConfirmed] = $this->resolveTimerAdjustment($request, $workSession);
+        $preview = $sessions->previewFinish($workSession, $finishOptions);
+        $this->guardLongDuration($workSession, $preview['active_seconds'], $durationConfirmed, $sessions);
 
-        $metrics = DB::transaction(function () use ($request, $workSession, $actorToken, $logger, $sessions) {
-            $metrics = $sessions->finish($workSession, 'completed');
-            $workSession->forceFill(['needs_plan_update' => true, 'plan_updated_at' => null])->save();
+        $metrics = DB::transaction(function () use ($request, $workSession, $actorToken, $logger, $sessions, $finishOptions, $timerMetadata) {
+            $metrics = $sessions->finish($workSession, 'completed', $finishOptions);
+            $metadata = $this->appendTimerMetadata($workSession->metadata, $timerMetadata, $metrics);
+            $workSession->forceFill([
+                'needs_plan_update' => true,
+                'plan_updated_at' => null,
+                'metadata' => $metadata,
+            ])->save();
 
             if ($workSession->plan && $workSession->task) {
                 WorkLog::updateOrCreate(
@@ -163,7 +172,7 @@ class WorkSessionController extends Controller
                         'plan_id' => $workSession->plan_id,
                         'task_id' => $workSession->task_id,
                         'task_title_snapshot' => $workSession->task->title,
-                        'worked_on' => today(),
+                        'worked_on' => $metrics['ended_at']->toDateString(),
                         'actual_minutes' => $metrics['actual_minutes'],
                         'progress_delta_percent' => 0,
                         'progress_before_percent' => $workSession->task->progress_percent,
@@ -183,6 +192,8 @@ class WorkSessionController extends Controller
                 'paused_seconds' => $metrics['paused_seconds'],
                 'actual_minutes' => $metrics['actual_minutes'],
                 'intended_minutes' => $workSession->intended_minutes,
+                'timer_adjusted' => $timerMetadata !== [],
+                'timer_action' => $timerMetadata['action'] ?? 'normal',
             ]);
 
             return $metrics;
@@ -251,11 +262,21 @@ class WorkSessionController extends Controller
         $this->authorizeSession($request, $workSession, $identity, $ownership);
         $workSession->load(['plan', 'task']);
         $actorToken = $identity->resolve($request);
+        [$finishOptions, $timerMetadata, $durationConfirmed] = $this->resolveTimerAdjustment($request, $workSession);
+        $preview = $sessions->previewFinish($workSession, $finishOptions);
+        $this->guardLongDuration($workSession, $preview['active_seconds'], $durationConfirmed, $sessions);
 
-        $metrics = DB::transaction(function () use ($request, $workSession, $actorToken, $logger, $sessions) {
-            $metrics = $sessions->finish($workSession, 'interrupted');
+        $metrics = DB::transaction(function () use ($request, $workSession, $actorToken, $logger, $sessions, $finishOptions, $timerMetadata) {
+            $metrics = $sessions->finish($workSession, 'interrupted', $finishOptions);
+            $metadata = $this->appendTimerMetadata($workSession->metadata, $timerMetadata, $metrics);
             if (($metrics['actual_minutes'] ?? 0) >= 2) {
-                $workSession->forceFill(['needs_plan_update' => true, 'plan_updated_at' => null])->save();
+                $workSession->forceFill([
+                    'needs_plan_update' => true,
+                    'plan_updated_at' => null,
+                    'metadata' => $metadata,
+                ])->save();
+            } elseif ($timerMetadata !== []) {
+                $workSession->forceFill(['metadata' => $metadata])->save();
             }
 
             if ($workSession->plan && $workSession->task && $metrics['actual_minutes'] >= 2) {
@@ -265,7 +286,7 @@ class WorkSessionController extends Controller
                         'plan_id' => $workSession->plan_id,
                         'task_id' => $workSession->task_id,
                         'task_title_snapshot' => $workSession->task->title,
-                        'worked_on' => today(),
+                        'worked_on' => $metrics['ended_at']->toDateString(),
                         'actual_minutes' => $metrics['actual_minutes'],
                         'progress_delta_percent' => 0,
                         'progress_before_percent' => $workSession->task->progress_percent,
@@ -285,12 +306,99 @@ class WorkSessionController extends Controller
                 'paused_seconds' => $metrics['paused_seconds'],
                 'actual_minutes' => $metrics['actual_minutes'],
                 'intended_minutes' => $workSession->intended_minutes,
+                'timer_adjusted' => $timerMetadata !== [],
+                'timer_action' => $timerMetadata['action'] ?? 'normal',
             ]);
 
             return $metrics;
         });
 
         return redirect()->route('home')->with('status', "{$metrics['actual_minutes']}分で中断しました。取り組んだ記録は残っています。");
+    }
+
+    /** @return array{0: array<string,mixed>, 1: array<string,mixed>, 2: bool} */
+    private function resolveTimerAdjustment(Request $request, WorkSession $workSession): array
+    {
+        $validated = $request->validate([
+            'timer_action' => ['nullable', 'in:normal,continued,away_end,manual'],
+            'away_started_at' => ['nullable', 'date'],
+            'additional_paused_seconds' => ['nullable', 'integer', 'min:0', 'max:31536000'],
+            'manual_minutes' => ['nullable', 'integer', 'min:1', 'max:480'],
+            'duration_confirmed' => ['nullable', 'boolean'],
+        ]);
+
+        $action = $validated['timer_action'] ?? 'normal';
+        $additionalPaused = max(0, (int) ($validated['additional_paused_seconds'] ?? 0));
+        $options = ['additional_paused_seconds' => $additionalPaused];
+        $metadata = [];
+        $explicitChoice = in_array($action, ['continued', 'away_end', 'manual'], true);
+        $durationConfirmed = $explicitChoice || (bool) ($validated['duration_confirmed'] ?? false);
+
+        if ($additionalPaused > 0) {
+            $metadata['reviewed_break_seconds'] = $additionalPaused;
+        }
+
+        if ($action === 'away_end') {
+            if (empty($validated['away_started_at'])) {
+                throw ValidationException::withMessages(['timer' => '離れた時刻を確認できませんでした。もう一度お試しください。']);
+            }
+            $awayAt = Carbon::parse($validated['away_started_at']);
+            if ($awayAt->lt($workSession->started_at) || $awayAt->gt(now())) {
+                throw ValidationException::withMessages(['timer' => '離れた時刻が作業時間の範囲外です。']);
+            }
+            $options['ended_at'] = $awayAt;
+            $metadata['away_started_at'] = $awayAt->toIso8601String();
+        }
+
+        if ($action === 'manual') {
+            $minutes = (int) ($validated['manual_minutes'] ?? 0);
+            if ($minutes < 1) {
+                throw ValidationException::withMessages(['timer' => '実際の作業時間を入力してください。']);
+            }
+            $options['manual_active_seconds'] = $minutes * 60;
+            $metadata['manual_minutes'] = $minutes;
+        }
+
+        if ($action !== 'normal' || $metadata !== []) {
+            $metadata['action'] = $action;
+            $metadata['adjusted_at'] = now()->toIso8601String();
+        }
+
+        return [$options, $metadata, $durationConfirmed];
+    }
+
+    private function guardLongDuration(
+        WorkSession $workSession,
+        int $activeSeconds,
+        bool $durationConfirmed,
+        WorkSessionService $sessions,
+    ): void {
+        if ($durationConfirmed || $activeSeconds <= $sessions->durationConfirmationThresholdSeconds($workSession)) {
+            return;
+        }
+
+        $minutes = max(1, (int) ceil($activeSeconds / 60));
+        throw ValidationException::withMessages([
+            'timer' => "作業時間が{$minutes}分になっています。終了忘れの可能性があるため、画面の確認から時間を確定してください。",
+        ]);
+    }
+
+    /** @param array<string,mixed>|null $existing */
+    private function appendTimerMetadata(?array $existing, array $adjustment, array $metrics): array
+    {
+        $metadata = $existing ?? [];
+        if ($adjustment === []) {
+            return $metadata;
+        }
+
+        $history = is_array($metadata['timer_adjustments'] ?? null) ? $metadata['timer_adjustments'] : [];
+        $history[] = array_merge($adjustment, [
+            'recorded_active_seconds' => $metrics['active_seconds'],
+            'recorded_wall_seconds' => $metrics['wall_seconds'],
+        ]);
+        $metadata['timer_adjustments'] = array_slice($history, -10);
+
+        return $metadata;
     }
 
     private function authorizeSession(
