@@ -73,6 +73,264 @@ function updateTimers() {
     });
 }
 
+
+const CANOVIA_TIMER_AWAY_THRESHOLD_MS = 15 * 60 * 1000;
+const CANOVIA_TIMER_HEARTBEAT_MS = 60 * 1000;
+
+function timerActiveSeconds(element) {
+    if (!element) return 0;
+    const startedAt = Date.parse(element.dataset.startedAt || '');
+    if (!Number.isFinite(startedAt)) return 0;
+    const pausedSeconds = Number(element.dataset.pausedSeconds || 0);
+    const pausedAt = Date.parse(element.dataset.pausedAt || '');
+    const status = element.dataset.sessionStatus || 'active';
+    let currentPauseSeconds = 0;
+    if (status === 'paused' && Number.isFinite(pausedAt)) {
+        currentPauseSeconds = Math.max(0, Math.floor((Date.now() - pausedAt) / 1000));
+    }
+    return Math.max(0, Math.floor((Date.now() - startedAt) / 1000) - pausedSeconds - currentPauseSeconds);
+}
+
+function mountWorkTimerSafety() {
+    const root = document.querySelector('[data-work-session-safety]');
+    if (!root) return;
+    const timer = root.querySelector('[data-work-timer]');
+    if (!timer) return;
+
+    const sessionId = root.dataset.sessionId;
+    const sessionStatus = root.dataset.sessionStatus || 'active';
+    const intendedMinutes = Number(root.dataset.intendedMinutes || 0);
+    const basePausedSeconds = Number(root.dataset.pausedSeconds || timer.dataset.pausedSeconds || 0);
+    const storageKey = `canovia.timer.safety.${sessionId}`;
+    const finishForms = [...root.querySelectorAll('[data-work-finish-form]')];
+    const completeForm = root.querySelector('[data-work-complete-form]') || finishForms[0];
+    const awayDialog = root.querySelector('[data-timer-away-dialog]');
+    const longDialog = root.querySelector('[data-timer-long-dialog]');
+    const awayLabel = awayDialog?.querySelector('[data-timer-away-label]');
+    const manualWrap = awayDialog?.querySelector('[data-timer-manual-wrap]');
+    const manualInput = awayDialog?.querySelector('[data-timer-manual-input]');
+    const longLabel = longDialog?.querySelector('[data-timer-long-label]');
+    const longManualWrap = longDialog?.querySelector('[data-timer-long-manual-wrap]');
+    const longManualInput = longDialog?.querySelector('[data-timer-long-manual-input]');
+    let submitting = false;
+
+    const loadState = () => {
+        try {
+            return JSON.parse(localStorage.getItem(storageKey) || '{}') || {};
+        } catch (_) {
+            return {};
+        }
+    };
+    let state = loadState();
+    state.pending_excluded_seconds = Number(state.pending_excluded_seconds || 0);
+
+    const persist = () => {
+        try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch (_) {}
+    };
+    if (sessionStatus !== 'active') {
+        // A server-side pause is authoritative. Do not carry a pagehide marker
+        // from the navigation that submitted the pause into the next resume.
+        state.away_started_at = null;
+        state.last_heartbeat_at = new Date().toISOString();
+        persist();
+    }
+    const openDialog = (dialog) => {
+        if (!dialog) return;
+        if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+        else dialog.setAttribute('open', '');
+    };
+    const closeDialog = (dialog) => {
+        if (!dialog) return;
+        if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+        else dialog.removeAttribute('open');
+    };
+    const setFormValue = (form, selector, value) => {
+        const input = form?.querySelector(selector);
+        if (input) input.value = value ?? '';
+    };
+    const applyPendingPause = () => {
+        const adjustedPaused = Math.max(0, basePausedSeconds + Number(state.pending_excluded_seconds || 0));
+        timer.dataset.pausedSeconds = String(adjustedPaused);
+        finishForms.forEach((form) => setFormValue(form, '[data-timer-extra-paused]', Math.round(state.pending_excluded_seconds || 0)));
+        updateTimers();
+    };
+    const clearAway = () => {
+        state.away_started_at = null;
+        state.last_heartbeat_at = new Date().toISOString();
+        persist();
+    };
+    const markAway = () => {
+        if (sessionStatus !== 'active' || submitting) return;
+        const now = new Date().toISOString();
+        state.away_started_at ||= now;
+        state.last_heartbeat_at = now;
+        persist();
+    };
+    const unresolvedAwayAt = () => {
+        const explicit = Date.parse(state.away_started_at || '');
+        if (Number.isFinite(explicit)) return explicit;
+        const heartbeat = Date.parse(state.last_heartbeat_at || '');
+        if (Number.isFinite(heartbeat) && Date.now() - heartbeat >= CANOVIA_TIMER_AWAY_THRESHOLD_MS) return heartbeat;
+        return null;
+    };
+    const showAwayReview = () => {
+        if (sessionStatus !== 'active' || submitting) return false;
+        const awayAt = unresolvedAwayAt();
+        if (!awayAt) return false;
+        if (Date.now() - awayAt < CANOVIA_TIMER_AWAY_THRESHOLD_MS) {
+            // Short app switches are treated as normal work. Clear the marker
+            // so multiple brief switches never accumulate into one fake absence.
+            clearAway();
+            return false;
+        }
+        state.away_started_at = new Date(awayAt).toISOString();
+        persist();
+        const minutes = Math.max(1, Math.round((Date.now() - awayAt) / 60000));
+        if (awayLabel) awayLabel.textContent = `${new Date(awayAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}ごろから約${minutes}分、Canoviaを離れていました。`;
+        manualWrap?.classList.add('hidden');
+        if (manualInput) manualInput.value = String(Math.max(1, Math.round(timerActiveSeconds(timer) / 60)));
+        openDialog(awayDialog);
+        return true;
+    };
+    const rawSubmit = (form) => {
+        if (!form) return;
+        submitting = true;
+        HTMLFormElement.prototype.submit.call(form);
+    };
+    const prepareForm = (form, action = 'normal') => {
+        setFormValue(form, '[data-timer-action]', action);
+        setFormValue(form, '[data-timer-away-started]', state.away_started_at || '');
+        setFormValue(form, '[data-timer-extra-paused]', Math.round(state.pending_excluded_seconds || 0));
+    };
+
+    applyPendingPause();
+
+    awayDialog?.querySelectorAll('[data-timer-away-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.timerAwayAction;
+            const awayAt = unresolvedAwayAt();
+            if (!awayAt) {
+                clearAway();
+                closeDialog(awayDialog);
+                return;
+            }
+            if (action === 'continued') {
+                clearAway();
+                closeDialog(awayDialog);
+                return;
+            }
+            if (action === 'break') {
+                state.pending_excluded_seconds += Math.max(0, Math.floor((Date.now() - awayAt) / 1000));
+                clearAway();
+                applyPendingPause();
+                closeDialog(awayDialog);
+                return;
+            }
+            if (action === 'end') {
+                prepareForm(completeForm, 'away_end');
+                setFormValue(completeForm, '[data-timer-away-started]', new Date(awayAt).toISOString());
+                setFormValue(completeForm, '[data-timer-duration-confirmed]', '1');
+                rawSubmit(completeForm);
+                return;
+            }
+            if (action === 'manual') {
+                manualWrap?.classList.remove('hidden');
+                manualInput?.focus();
+            }
+        });
+    });
+
+    awayDialog?.querySelector('[data-timer-manual-apply]')?.addEventListener('click', () => {
+        const minutes = Number(manualInput?.value || 0);
+        if (!Number.isFinite(minutes) || minutes < 1 || minutes > 480) {
+            manualInput?.setCustomValidity('1〜480分で入力してください。');
+            manualInput?.reportValidity();
+            manualInput?.setCustomValidity('');
+            return;
+        }
+        prepareForm(completeForm, 'manual');
+        setFormValue(completeForm, '[data-timer-manual-minutes]', Math.round(minutes));
+        setFormValue(completeForm, '[data-timer-duration-confirmed]', '1');
+        rawSubmit(completeForm);
+    });
+
+    awayDialog?.querySelector('[data-timer-away-later]')?.addEventListener('click', () => closeDialog(awayDialog));
+
+    const showLongReview = (form) => {
+        const minutes = Math.max(1, Math.round(timerActiveSeconds(timer) / 60));
+        if (longLabel) longLabel.textContent = `現在の実作業時間は約${minutes}分です。長時間の計測なので、保存前に確認してください。`;
+        longManualWrap?.classList.add('hidden');
+        if (longManualInput) longManualInput.value = String(minutes);
+        longDialog.dataset.targetForm = finishForms.indexOf(form).toString();
+        openDialog(longDialog);
+    };
+
+    longDialog?.querySelector('[data-timer-long-record]')?.addEventListener('click', () => {
+        const form = finishForms[Number(longDialog.dataset.targetForm || 0)] || completeForm;
+        prepareForm(form, 'normal');
+        setFormValue(form, '[data-timer-duration-confirmed]', '1');
+        rawSubmit(form);
+    });
+    longDialog?.querySelector('[data-timer-long-manual]')?.addEventListener('click', () => {
+        longManualWrap?.classList.remove('hidden');
+        longManualInput?.focus();
+    });
+    longDialog?.querySelector('[data-timer-long-manual-apply]')?.addEventListener('click', () => {
+        const form = finishForms[Number(longDialog.dataset.targetForm || 0)] || completeForm;
+        const minutes = Number(longManualInput?.value || 0);
+        if (!Number.isFinite(minutes) || minutes < 1 || minutes > 480) {
+            longManualInput?.setCustomValidity('1〜480分で入力してください。');
+            longManualInput?.reportValidity();
+            longManualInput?.setCustomValidity('');
+            return;
+        }
+        prepareForm(form, 'manual');
+        setFormValue(form, '[data-timer-manual-minutes]', Math.round(minutes));
+        setFormValue(form, '[data-timer-duration-confirmed]', '1');
+        rawSubmit(form);
+    });
+    longDialog?.querySelector('[data-timer-long-cancel]')?.addEventListener('click', () => closeDialog(longDialog));
+
+    finishForms.forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            if (submitting) return;
+            prepareForm(form, form.querySelector('[data-timer-action]')?.value || 'normal');
+            if (showAwayReview()) {
+                event.preventDefault();
+                return;
+            }
+            const thresholdSeconds = (intendedMinutes > 0 ? Math.max(intendedMinutes * 2, 90) : 120) * 60;
+            const confirmed = form.querySelector('[data-timer-duration-confirmed]')?.value === '1';
+            if (!confirmed && timerActiveSeconds(timer) > thresholdSeconds) {
+                event.preventDefault();
+                showLongReview(form);
+                return;
+            }
+            submitting = true;
+        });
+    });
+
+    if (sessionStatus === 'active') {
+        const heartbeat = () => {
+            if (document.visibilityState !== 'visible' || submitting) return;
+            state.last_heartbeat_at = new Date().toISOString();
+            persist();
+        };
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') markAway();
+            else window.setTimeout(showAwayReview, 80);
+        });
+        window.addEventListener('pagehide', markAway);
+        window.addEventListener('pageshow', () => window.setTimeout(showAwayReview, 80));
+        window.setInterval(heartbeat, CANOVIA_TIMER_HEARTBEAT_MS);
+        // Check the persisted heartbeat before writing a new one. This catches
+        // abrupt browser/PWA termination where pagehide never had a chance to run.
+        window.setTimeout(() => {
+            if (!showAwayReview()) heartbeat();
+        }, 160);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     updateTimers();
     window.setInterval(updateTimers, 1000);
@@ -215,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingTimer = window.setTimeout(() => {
             loadingOverlay.classList.add('is-visible');
             loadingOverlay.setAttribute('aria-hidden', 'false');
-        }, 220);
+        }, 380);
     };
 
     document.addEventListener('submit', (event) => {
@@ -664,6 +922,9 @@ async function syncOfflineWorkSession(session) {
             ended_at: session.ended_at,
             actual_seconds: session.actual_seconds,
             intended_minutes: session.intended_minutes ?? null,
+            adjustment_reason: session.adjustment_reason ?? null,
+            adjustment_seconds: session.adjustment_seconds ?? null,
+            manual_minutes: session.manual_minutes ?? null,
         }),
     });
 
@@ -673,7 +934,7 @@ async function syncOfflineWorkSession(session) {
 
 async function mountOfflineTimerCard(session) {
     const card = document.querySelector('[data-offline-timer-card]');
-    if (!card || !session || session.ended_at) return false;
+    if (!card || !session) return false;
 
     const task = card.querySelector('[data-offline-timer-task]');
     const status = card.querySelector('[data-offline-timer-status]');
@@ -683,23 +944,133 @@ async function mountOfflineTimerCard(session) {
     const note = card.querySelector('[data-offline-timer-note]');
     let current = session;
     let busy = false;
+    let storageError = false;
+    const awayThresholdMs = 15 * 60 * 1000;
 
     card.classList.remove('hidden');
     if (task) task.textContent = current.task_title || 'オフライン作業';
 
+    const persist = async () => {
+        try {
+            await writeOfflineState('offline_session', current);
+            storageError = false;
+            return true;
+        } catch (_) {
+            storageError = true;
+            return false;
+        }
+    };
+
+    const thresholdSeconds = () => {
+        const intended = Number(current.intended_minutes || 0);
+        return (intended > 0 ? Math.max(intended * 2, 90) : 120) * 60;
+    };
+
+    const clearAway = () => {
+        current.away_started_at = null;
+        current.last_heartbeat_at = new Date().toISOString();
+    };
+
+    const finishAt = async (endedAt, reason, manualMinutes = null) => {
+        if (current.paused_at) {
+            current.paused_seconds = Number(current.paused_seconds || 0)
+                + Math.max(0, (Date.parse(endedAt) - Date.parse(current.paused_at)) / 1000);
+            current.paused_at = null;
+        }
+        current.ended_at = endedAt;
+        if (manualMinutes !== null) {
+            current.actual_seconds = Math.max(60, Number(manualMinutes) * 60);
+            current.manual_minutes = Number(manualMinutes);
+        } else {
+            current.actual_seconds = Math.max(1, offlineSessionElapsedSeconds(current));
+        }
+        current.adjustment_reason = reason || null;
+        clearAway();
+        await persist();
+    };
+
+    const reviewAway = async () => {
+        if (busy || current.ended_at || current.paused_at || !current.away_started_at) return;
+        const awayAt = Date.parse(current.away_started_at);
+        if (!Number.isFinite(awayAt)) return;
+        if (Date.now() - awayAt < awayThresholdMs) {
+            clearAway();
+            await persist();
+            return;
+        }
+
+        const awayMinutes = Math.max(1, Math.round((Date.now() - awayAt) / 60000));
+        const choice = window.prompt(
+            `${awayMinutes}分ほどCanoviaから離れていました。\n` +
+            '1: 作業を続けていた\n2: 休憩していた\n3: 離れた時点で終了\n4: 実際の作業分数を入力\n\n1〜4を入力してください。',
+            '1'
+        );
+        if (choice === null) return;
+
+        if (choice === '1') {
+            clearAway();
+            await persist();
+            render();
+            return;
+        }
+
+        if (choice === '2') {
+            const awaySeconds = Math.max(0, Math.floor((Date.now() - awayAt) / 1000));
+            current.paused_seconds = Number(current.paused_seconds || 0) + awaySeconds;
+            current.adjustment_reason = 'away_break';
+            current.adjustment_seconds = Number(current.adjustment_seconds || 0) + awaySeconds;
+            clearAway();
+            await persist();
+            render();
+            return;
+        }
+
+        if (choice === '3') {
+            await finishAt(new Date(awayAt).toISOString(), 'away_end');
+            render();
+            return;
+        }
+
+        if (choice === '4') {
+            const entered = window.prompt('実際に作業した時間を分単位で入力してください。', String(Math.max(1, Math.round(offlineSessionElapsedSeconds(current) / 60))));
+            const minutes = Number(entered);
+            if (!Number.isFinite(minutes) || minutes < 1 || minutes > 480) return;
+            await finishAt(new Date().toISOString(), 'manual', Math.round(minutes));
+            render();
+        }
+    };
+
+    const markAway = () => {
+        if (current.ended_at || current.paused_at) return;
+        const now = new Date().toISOString();
+        current.away_started_at ||= now;
+        current.last_heartbeat_at = now;
+        void persist();
+    };
+
     const render = () => {
         if (value) value.textContent = formatTimer(offlineSessionElapsedSeconds(current));
-        if (toggle) toggle.textContent = current.paused_at ? '再開' : '一時停止';
+        if (toggle) {
+            toggle.textContent = current.paused_at ? '再開' : '一時停止';
+            toggle.disabled = busy || Boolean(current.ended_at);
+        }
         const online = navigator.onLine;
         if (complete) {
             complete.disabled = !online || busy;
             complete.classList.toggle('opacity-50', !online || busy);
+            complete.textContent = current.ended_at ? '同期を再試行' : '記録して終了';
         }
-        if (status) status.textContent = current.paused_at ? '一時停止中' : '計測中';
+        if (status) status.textContent = busy ? '作業記録を同期中…'
+            : current.ended_at ? '未同期の作業記録'
+            : current.paused_at ? '一時停止中' : '計測中';
         if (note) {
-            note.textContent = online
-                ? '接続できています。終了すると作業記録へ同期します。'
-                : 'オフライン中は再生・一時停止だけ利用できます。記録して終了は接続復帰後に使えます。';
+            note.textContent = storageError
+                ? '端末に記録を保存できません。ページを閉じずに、空き容量やブラウザ設定を確認してください。'
+                : current.ended_at
+                    ? '計測は終了しています。接続後に「同期を再試行」できます。'
+                    : online
+                        ? '接続できています。終了すると作業記録へ同期します。'
+                        : 'オフライン中もタイマー状態は端末に保持されます。長時間離れた場合は復帰時に確認します。';
         }
     };
 
@@ -709,28 +1080,30 @@ async function mountOfflineTimerCard(session) {
             current.paused_seconds = Number(current.paused_seconds || 0)
                 + Math.max(0, (Date.now() - Date.parse(current.paused_at)) / 1000);
             current.paused_at = null;
+            current.last_heartbeat_at = new Date().toISOString();
         } else {
             current.paused_at = new Date().toISOString();
+            current.away_started_at = null;
         }
-        await writeOfflineState('offline_session', current).catch(() => {});
+        await persist();
         render();
     });
 
     complete?.addEventListener('click', async () => {
-        if (busy || !navigator.onLine || current.ended_at) return;
+        if (busy || !navigator.onLine) return;
+        if (!current.ended_at) {
+            await reviewAway();
+            if (current.away_started_at) return;
+            const elapsed = offlineSessionElapsedSeconds(current);
+            if (elapsed > thresholdSeconds()) {
+                const ok = window.confirm(`現在の計測は約${Math.max(1, Math.round(elapsed / 60))}分です。長時間の記録ですが、この時間で保存しますか？`);
+                if (!ok) return;
+            }
+            await finishAt(new Date().toISOString(), current.adjustment_reason || null);
+        }
+
         busy = true;
         render();
-
-        if (current.paused_at) {
-            current.paused_seconds = Number(current.paused_seconds || 0)
-                + Math.max(0, (Date.now() - Date.parse(current.paused_at)) / 1000);
-            current.paused_at = null;
-        }
-        current.ended_at = new Date().toISOString();
-        current.actual_seconds = Math.max(1, offlineSessionElapsedSeconds(current));
-        await writeOfflineState('offline_session', current).catch(() => {});
-
-        if (status) status.textContent = '作業記録を同期中…';
         const result = await syncOfflineWorkSession(current).catch(() => null);
         if (result?.work_session_id) {
             await deleteOfflineState('offline_session').catch(() => {});
@@ -741,16 +1114,38 @@ async function mountOfflineTimerCard(session) {
 
         busy = false;
         if (status) status.textContent = 'まだ同期できていません';
-        if (note) note.textContent = '記録は端末に残っています。接続を確認して、もう一度「記録して終了」を押してください。';
         render();
     });
 
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') markAway();
+        else void reviewAway();
+    });
+    window.addEventListener('pagehide', markAway);
+    window.addEventListener('pageshow', () => { void reviewAway(); });
     window.addEventListener('online', render);
     window.addEventListener('offline', render);
+
     window.setInterval(() => {
-        if (!current.paused_at) render();
+        if (!current.ended_at && !current.paused_at && document.visibilityState === 'visible') {
+            current.last_heartbeat_at = new Date().toISOString();
+            void persist();
+        }
+        render();
+    }, 60 * 1000);
+    window.setInterval(() => {
+        if (!current.paused_at && !current.ended_at) render();
     }, 1000);
+
+    if (!current.away_started_at && current.last_heartbeat_at && !current.paused_at && !current.ended_at) {
+        const heartbeat = Date.parse(current.last_heartbeat_at);
+        if (Number.isFinite(heartbeat) && Date.now() - heartbeat >= awayThresholdMs) {
+            current.away_started_at = current.last_heartbeat_at;
+        }
+    }
+
     render();
+    window.setTimeout(() => { void reviewAway(); }, 120);
     return true;
 }
 
@@ -810,6 +1205,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     setSyncStatus('online', 'オフライン作業を同期済み', 2200);
                 } else {
                     setSyncStatus('pending', '未同期の作業があります');
+                    const mounted = await mountOfflineTimerCard(pendingOfflineSession);
+                    if (!mounted) {
+                        const banner = document.createElement('a');
+                        banner.href = '/navigate?resume_offline_timer=1';
+                        banner.className = 'offline-session-banner';
+                        banner.textContent = '未同期の作業があります · 今日で確認';
+                        document.body.appendChild(banner);
+                    }
                 }
             } else if (pendingOfflineSession && !pendingOfflineSession.ended_at) {
                 const mounted = await mountOfflineTimerCard(pendingOfflineSession);
@@ -1651,4 +2054,72 @@ document.addEventListener('DOMContentLoaded', () => {
     // If onboarding completed on the timer screen, the offer waits until the
     // next normal page rather than interrupting the user's work.
     if (body?.dataset.focusMode !== '1') window.setTimeout(() => showInstallGuide(), 900);
+});
+
+
+// -----------------------------------------------------------------------------
+// v37 UX cleanup: prioritise the current action and reduce visual noise.
+// -----------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const dashboard = document.getElementById('behaviorDashboard');
+    if (dashboard) {
+        const hero = dashboard.querySelector('.pk-v22-hero-stage');
+        const active = dashboard.querySelector('.pk-v18-active-session');
+        const recommendation = dashboard.querySelector('.pk-v18-recommendation');
+        let anchor = hero;
+        if (anchor && active) {
+            anchor.after(active);
+            anchor = active;
+        }
+        if (anchor && recommendation) {
+            anchor.after(recommendation);
+        }
+    }
+
+    // Layout already renders flash status globally. Remove identical duplicates
+    // produced by page-specific legacy blocks.
+    const notices = [...document.querySelectorAll('.assistant-notice-info')];
+    const seen = new Set();
+    notices.forEach((notice) => {
+        const key = notice.textContent.trim();
+        if (key && seen.has(key)) notice.remove();
+        else if (key) seen.add(key);
+    });
+
+    // Dark is currently Canovia's only official theme, so do not present a
+    // non-actionable theme section as if it were a setting.
+    const settingsDialog = document.querySelector('[data-ui-settings-dialog]');
+    settingsDialog?.querySelectorAll('fieldset').forEach((fieldset) => {
+        if (fieldset.querySelector('legend')?.textContent.trim() === 'テーマ') fieldset.classList.add('hidden');
+    });
+
+    // On narrow screens keep Roadmap's primary actions visible and move
+    // supporting links into the existing overflow menu.
+    const roadmapPage = document.querySelector('.pk-v19-roadmap-page');
+    const roadmapMenuSummary = roadmapPage?.querySelector('summary[aria-label="計画メニュー"]');
+    const roadmapMenu = roadmapMenuSummary?.parentElement?.querySelector(':scope > div');
+    if (roadmapPage && roadmapMenu) {
+        const existingMenuHrefs = new Set([...roadmapMenu.querySelectorAll('a[href]')].map((link) => link.href));
+        const supportingLinks = [...roadmapPage.querySelectorAll('a[href]')].filter((link) =>
+            !roadmapMenu.contains(link)
+            && !existingMenuHrefs.has(link.href)
+            && (link.href.includes('/resources') || link.href.includes('/collaboration'))
+        );
+        const clones = supportingLinks.map((link) => {
+            const clone = link.cloneNode(true);
+            clone.className = 'block rounded-xl px-3 py-2 text-sm text-slate-200 hover:bg-slate-800';
+            clone.dataset.v37MobileRoadmapLink = '1';
+            roadmapMenu.prepend(clone);
+            return clone;
+        });
+        const applyRoadmapDensity = () => {
+            const mobile = window.matchMedia('(max-width: 767px)').matches;
+            supportingLinks.forEach((link) => link.classList.toggle('hidden', mobile));
+            clones.forEach((link) => link.classList.toggle('hidden', !mobile));
+        };
+        applyRoadmapDensity();
+        window.addEventListener('resize', applyRoadmapDensity, { passive: true });
+    }
+
+    mountWorkTimerSafety();
 });

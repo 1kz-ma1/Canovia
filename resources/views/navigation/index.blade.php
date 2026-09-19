@@ -100,6 +100,12 @@
                     <div class="assistant-avatar pk-assistant-avatar"><img src="/brand/logo-mark.svg" alt="" width="26" height="26"></div>
                     <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
                         @if ($recommendation)
+                            @php
+                                $alternativeRecommendations = collect($recommendations ?? [])
+                                    ->reject(fn ($candidate) => (int) $candidate->task->id === (int) $recommendation->task->id)
+                                    ->take(2)
+                                    ->values();
+                            @endphp
                             <section class="pk-v18-today-card plan-identity-shell" data-plan-accent="{{ $recommendation->plan->accentKey() }}">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
@@ -128,8 +134,8 @@
                                 @endif
 
                                 <div class="mt-5 rounded-2xl border border-emerald-400/15 bg-emerald-500/5 px-4 py-4 text-center">
-                                    <p class="text-4xl font-black tabular-nums text-slate-100 md:text-5xl">00:00</p>
-                                    <p class="mt-2 text-xs leading-5 text-slate-400">押した瞬間から計測。まず{{ $recommendation->recommendedMinutes }}分を目安に。</p>
+                                    <p class="text-lg font-black text-slate-100">準備ができたら開始</p>
+                                    <p class="mt-1 text-xs leading-5 text-slate-400">開始ボタンを押した瞬間から計測します。まず{{ $recommendation->recommendedMinutes }}分を目安に。</p>
                                 </div>
 
                                 <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form class="mobile-sticky-primary mt-4">
@@ -142,7 +148,7 @@
                             </section>
 
                             <div class="mt-4" data-candidate-carousel data-event-url="{{ route('behavior_events.store') }}">
-                                @if (($recommendations ?? collect())->count() > 1)
+                                @if ($alternativeRecommendations->isNotEmpty())
                                     <button type="button" class="btn-secondary w-full justify-center sm:w-auto" data-candidate-toggle aria-expanded="false">
                                         別候補を見る
                                     </button>
@@ -151,23 +157,21 @@
                                         <div class="mb-2 flex items-center justify-between gap-3">
                                             <div>
                                                 <p class="text-sm font-bold text-slate-100">横にスワイプして選ぶ</p>
-                                                <p class="mt-0.5 text-xs text-slate-500">候補は迷いすぎないよう最大3件です。</p>
+                                                <p class="mt-0.5 text-xs text-slate-500">おすすめ以外の候補だけを表示します。</p>
                                             </div>
                                             <a href="{{ route('navigation.index', ['configure' => 1]) }}" class="whitespace-nowrap text-xs font-semibold text-sky-300">条件変更</a>
                                         </div>
 
                                         <div class="candidate-track" data-candidate-track>
-                                            @foreach ($recommendations as $candidate)
-                                                <article class="candidate-card {{ $loop->first ? 'is-primary' : '' }} plan-identity-shell"
+                                            @foreach ($alternativeRecommendations as $candidate)
+                                                <article class="candidate-card plan-identity-shell"
                                                          data-plan-accent="{{ $candidate->plan->accentKey() }}"
                                                          data-candidate-card
                                                          data-task-id="{{ $candidate->task->id }}"
                                                          data-plan-id="{{ $candidate->plan->id }}">
                                                     <div class="flex items-start justify-between gap-3">
                                                         <div class="min-w-0">
-                                                            <p class="text-[10px] font-bold uppercase tracking-[0.16em] {{ $loop->first ? 'text-sky-300' : 'text-slate-500' }}">
-                                                                {{ $loop->first ? 'おすすめ' : '候補 ' . ($loop->iteration) }}
-                                                            </p>
+                                                            <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">候補 {{ $loop->iteration }}</p>
                                                             <h3 class="mt-2 text-base font-bold text-slate-100">{{ $candidate->task->title }}</h3>
                                                             <p class="mt-1 plan-identity-chip truncate text-xs"><span aria-hidden="true">{{ $candidate->plan->displayIcon() }}</span>{{ $candidate->plan->title }}</p>
                                                         </div>
@@ -187,13 +191,13 @@
                                                         <input type="hidden" name="task_id" value="{{ $candidate->task->id }}">
                                                         <input type="hidden" name="intended_minutes" value="{{ $candidate->recommendedMinutes }}">
                                                         <input type="hidden" name="source" value="navigation">
-                                                        <button class="{{ $loop->first ? 'btn-primary' : 'btn-secondary' }} w-full justify-center">これを始める</button>
+                                                        <button class="btn-secondary w-full justify-center">これを始める</button>
                                                     </form>
                                                 </article>
                                             @endforeach
                                         </div>
                                         <div class="candidate-pagination" aria-hidden="true">
-                                            @foreach ($recommendations as $candidate)
+                                            @foreach ($alternativeRecommendations as $candidate)
                                                 <button type="button" class="candidate-dot {{ $loop->first ? 'is-active' : '' }}" data-candidate-dot></button>
                                             @endforeach
                                         </div>
