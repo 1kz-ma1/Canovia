@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'canovia-shell-v37';
+const CACHE_VERSION = 'canovia-shell-v38';
 const META_CACHE = 'canovia-shell-meta-v1';
 const LAST_NETWORK_KEY = '/__canovia_last_network_success__';
 const LIKELY_SLEEP_AFTER_MS = 12 * 60 * 1000;

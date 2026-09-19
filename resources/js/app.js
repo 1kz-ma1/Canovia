@@ -1,3 +1,5 @@
+import { normalizeAiJsonText, buildAiJsonRepairPrompt } from './ai-json.mjs';
+
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
 
@@ -51,6 +53,144 @@ function formatTimer(totalSeconds) {
         ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
         : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
+
+function aiJsonInputForForm(form) {
+    return form?.querySelector?.('textarea[name="operations_json"], textarea[name="tasks_json"], textarea[name="ai_json"], textarea[name="assignment_json"]') || null;
+}
+
+function clearAiJsonErrorBubble(form) {
+    const owner = form?.dataset?.aiJsonErrorOwner;
+    if (!owner) return;
+    document.querySelectorAll(`[data-ai-json-error-owner="${owner}"]`).forEach((node) => node.remove());
+}
+
+async function copyTextSafely(value) {
+    const text = String(value || '');
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch (_) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch (_) {}
+        textarea.remove();
+        return copied;
+    }
+}
+
+function renderAiJsonErrorBubble(form, message, originalJson) {
+    if (!form) return;
+    document.getElementById('review-errors')?.remove();
+    if (!form.dataset.aiJsonErrorOwner) {
+        form.dataset.aiJsonErrorOwner = `ai-json-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+    const owner = form.dataset.aiJsonErrorOwner;
+    clearAiJsonErrorBubble(form);
+
+    const row = document.createElement('div');
+    row.className = 'assistant-message-row assistant-message-left mt-4';
+    row.dataset.aiJsonErrorOwner = owner;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'assistant-avatar';
+    avatar.textContent = 'CV';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'assistant-bubble assistant-bubble-support assistant-wide-bubble';
+
+    const speaker = document.createElement('p');
+    speaker.className = 'assistant-speaker';
+    speaker.textContent = 'Canovia サポーター';
+
+    const title = document.createElement('h3');
+    title.className = 'mt-2 text-lg font-bold text-slate-100';
+    title.textContent = 'JSONを読み込めませんでした';
+
+    const guidance = document.createElement('p');
+    guidance.className = 'mt-2 text-sm leading-6 text-slate-300';
+    guidance.textContent = '入力を消す必要はありません。下の修正依頼をコピーして、さっきJSONを作ったAIへ送ってください。修正版JSONが返ったら同じ欄へ貼り直せます。';
+
+    const errorBox = document.createElement('div');
+    errorBox.className = 'assistant-notice assistant-notice-error mt-4';
+    const errorLabel = document.createElement('p');
+    errorLabel.className = 'font-bold';
+    errorLabel.textContent = 'Canoviaが検出した内容';
+    const errorCopy = document.createElement('p');
+    errorCopy.className = 'mt-1 text-sm leading-6';
+    errorCopy.textContent = String(message || 'JSONを読み込めませんでした。');
+    errorBox.append(errorLabel, errorCopy);
+
+    const repairPrompt = buildAiJsonRepairPrompt(message, originalJson);
+    const prompt = document.createElement('textarea');
+    prompt.className = 'form-control mt-4 min-h-[220px] font-mono text-xs';
+    prompt.readOnly = true;
+    prompt.value = repairPrompt;
+    prompt.setAttribute('aria-label', 'AIへ送るJSON修正依頼');
+
+    const actions = document.createElement('div');
+    actions.className = 'mt-3 flex flex-wrap items-center gap-3';
+    const copyButton = document.createElement('button');
+    copyButton.type = 'button';
+    copyButton.className = 'btn-primary';
+    copyButton.textContent = '修正依頼をコピー';
+    const copyStatus = document.createElement('span');
+    copyStatus.className = 'text-xs text-slate-400';
+    copyButton.addEventListener('click', async () => {
+        const copied = await copyTextSafely(repairPrompt);
+        copyStatus.textContent = copied
+            ? 'コピーしました。JSONを作ったAIへそのまま送ってください。'
+            : '自動コピーできませんでした。上の文章を選択してコピーしてください。';
+        if (!copied) {
+            prompt.focus();
+            prompt.select();
+        }
+    });
+    actions.append(copyButton, copyStatus);
+
+    bubble.append(speaker, title, guidance, errorBox, prompt, actions);
+    row.append(avatar, bubble);
+
+    const messageRow = form.closest('.assistant-message-row');
+    if (messageRow?.parentElement) messageRow.insertAdjacentElement('afterend', row);
+    else form.insertAdjacentElement('afterend', row);
+
+    requestAnimationFrame(() => row.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+}
+
+// Normalize AI JSON before page-specific validation runs. This keeps all AI
+// import surfaces consistent and prevents harmless wrappers/trailing commas
+// from becoming user-facing syntax errors.
+document.addEventListener('submit', (event) => {
+    const form = event.target instanceof HTMLFormElement ? event.target : null;
+    const input = aiJsonInputForForm(form);
+    if (!form || !input || !input.value.trim()) return;
+
+    const original = input.value;
+    try {
+        const normalized = normalizeAiJsonText(original);
+        input.value = normalized.text;
+        clearAiJsonErrorBubble(form);
+    } catch (error) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        renderAiJsonErrorBubble(form, error?.message || 'JSONを読み込めませんでした。', original);
+    }
+}, true);
+
+document.addEventListener('input', (event) => {
+    const input = event.target instanceof HTMLTextAreaElement ? event.target : null;
+    if (!input || !['operations_json', 'tasks_json', 'ai_json', 'assignment_json'].includes(input.name)) return;
+    const form = input.closest('form');
+    clearAiJsonErrorBubble(form);
+});
 
 function updateTimers() {
     document.querySelectorAll('[data-work-timer]').forEach((element) => {
@@ -500,103 +640,151 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingOverlay?.setAttribute('aria-hidden', 'true');
     });
 
-    document.querySelectorAll('[data-async-plan-review]').forEach((form) => {
-        const submitButton = form.querySelector('[data-async-plan-review-submit]');
+    // Plan review uses one delegated async submit pipeline. The page also
+    // contains an older inline submit listener, so this capture-phase handler
+    // deliberately stops propagation to prevent duplicate POSTs.
+    document.addEventListener('submit', async (event) => {
+        const form = event.target instanceof HTMLFormElement
+            ? event.target.closest('form[data-async-plan-review]')
+            : null;
+        if (!form) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (form.dataset.asyncBusy === '1') return;
+        form.dataset.asyncBusy = '1';
+
+        window.clearTimeout(loadingTimer);
+        loadingOverlay?.classList.remove('is-visible');
+        loadingOverlay?.setAttribute('aria-hidden', 'true');
+        document.getElementById('review-errors')?.remove();
+
+        const submitButton = event.submitter || form.querySelector('[data-async-plan-review-submit]');
         const statusBox = form.querySelector('[data-async-plan-review-status]');
-        let inFlight = false;
+        const originalLabel = submitButton?.textContent || '送信';
+        const revealSelector = form.dataset.revealTarget || '';
+        const currentScrollY = window.scrollY;
+        const jsonInput = aiJsonInputForForm(form);
+        const originalJson = jsonInput?.value || '';
+        const isPromptGeneration = form.action.includes('/review-assistant/prompt');
+        const isReset = form.action.includes('/review-assistant/reset');
+        const pendingLabel = isPromptGeneration ? 'プロンプトを生成中…' : (isReset ? 'リセット中…' : '変更内容を確認中…');
+        const pendingMessage = isPromptGeneration
+            ? 'AI用プロンプトを生成しています。通常は数秒で完了します。'
+            : (isReset ? '入力内容をリセットしています。' : 'AIの更新内容を確認しています。通常は数秒で完了します。');
 
         const setStatus = (message, mode = 'info') => {
             if (!statusBox) return;
             statusBox.textContent = message;
             statusBox.classList.remove('hidden', 'border-red-400/30', 'bg-red-400/10', 'text-red-100', 'border-cyan-300/20', 'bg-cyan-300/5', 'text-cyan-100');
-            if (mode === 'error') {
-                statusBox.classList.add('border-red-400/30', 'bg-red-400/10', 'text-red-100');
-            } else {
-                statusBox.classList.add('border-cyan-300/20', 'bg-cyan-300/5', 'text-cyan-100');
-            }
+            statusBox.classList.add(...(mode === 'error'
+                ? ['border-red-400/30', 'bg-red-400/10', 'text-red-100']
+                : ['border-cyan-300/20', 'bg-cyan-300/5', 'text-cyan-100']));
         };
 
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            if (inFlight) return;
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = pendingLabel;
+        }
+        setStatus(pendingMessage);
 
-            // Async review forms manage their own loading state. Make sure an
-            // older/global overlay can never trap the user on this screen.
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 25000);
+        let completed = false;
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                credentials: 'same-origin',
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            let payload = null;
+            try { payload = await response.json(); } catch (_) {}
+
+            if (!response.ok) {
+                const errors = payload?.errors ? Object.values(payload.errors).flat() : [];
+                const message = errors[0] || payload?.message || `処理に失敗しました (${response.status})`;
+                if (jsonInput) {
+                    statusBox?.classList.add('hidden');
+                    renderAiJsonErrorBubble(form, message, originalJson);
+                    return;
+                }
+                throw new Error(message);
+            }
+
+            const redirect = payload?.redirect;
+            if (!redirect) throw new Error('次の画面の移動先を取得できませんでした。もう一度お試しください。');
+            completed = true;
+
+            // A successful JSON preview adds interactive roadmap controls, so
+            // keep the normal navigation there. Prompt generation/reset can be
+            // refreshed in place without losing page-level initializers.
+            if (!isPromptGeneration && !isReset) {
+                window.location.assign(redirect);
+                return;
+            }
+
+            // Refresh only the review conversation for prompt/reset. If this
+            // secondary GET fails, fall back to a normal navigation without
+            // showing a false "generation failed" alert.
+            try {
+                const pageResponse = await fetch(redirect, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: { 'Accept': 'text/html' },
+                });
+                if (!pageResponse.ok) throw new Error('partial-refresh-failed');
+
+                const html = await pageResponse.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextRoot = nextDocument.getElementById('plan-review-root');
+                const currentRoot = document.getElementById('plan-review-root');
+                if (!nextRoot || !currentRoot) throw new Error('partial-refresh-root-missing');
+
+                currentRoot.innerHTML = nextRoot.innerHTML;
+                if (nextDocument.title) document.title = nextDocument.title;
+                const redirectUrl = new URL(redirect, window.location.href);
+                window.history.replaceState({}, '', redirectUrl.pathname + redirectUrl.search + redirectUrl.hash);
+
+                const revealTarget = document.getElementById('review-errors')
+                    || (revealSelector ? document.querySelector(revealSelector) : null);
+                if (revealTarget) {
+                    requestAnimationFrame(() => revealTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+                } else {
+                    window.scrollTo({ top: currentScrollY, behavior: 'auto' });
+                }
+            } catch (_) {
+                window.location.assign(redirect);
+                return;
+            }
+        } catch (error) {
+            if (completed) return;
+            if (error?.name === 'AbortError') {
+                setStatus('処理に時間がかかりすぎたため中断しました。通信状態を確認して、もう一度お試しください。', 'error');
+            } else {
+                setStatus(error?.message || '処理を完了できませんでした。もう一度お試しください。', 'error');
+            }
+        } finally {
+            window.clearTimeout(timeout);
             window.clearTimeout(loadingTimer);
             loadingOverlay?.classList.remove('is-visible');
             loadingOverlay?.setAttribute('aria-hidden', 'true');
-
-            inFlight = true;
-            const originalLabel = submitButton?.textContent || '送信';
-            const isPromptGeneration = form.action.includes('/review-assistant/prompt');
-            const isReset = form.action.includes('/review-assistant/reset');
-            const pendingLabel = isPromptGeneration ? 'プロンプトを生成中…' : (isReset ? 'リセット中…' : '変更内容を確認中…');
-            const pendingMessage = isPromptGeneration
-                ? 'AI用プロンプトを生成しています。通常は数秒で完了します。'
-                : (isReset ? '入力内容をリセットしています。' : 'AIの更新内容を確認しています。通常は数秒で完了します。');
-
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.textContent = pendingLabel;
-            }
-            setStatus(pendingMessage);
-
-            const controller = new AbortController();
-            const timeout = window.setTimeout(() => controller.abort(), 25000);
-            let navigating = false;
-
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: new FormData(form),
-                    credentials: 'same-origin',
-                    signal: controller.signal,
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                });
-
-                let payload = null;
-                try {
-                    payload = await response.json();
-                } catch (_) {}
-
-                if (!response.ok) {
-                    const errors = payload?.errors ? Object.values(payload.errors).flat() : [];
-                    throw new Error(errors[0] || payload?.message || `処理に失敗しました (${response.status})`);
-                }
-
-                const redirect = payload?.redirect;
-                if (!redirect) {
-                    throw new Error('次の画面の移動先を取得できませんでした。もう一度お試しください。');
-                }
-
-                setStatus(payload?.message || '完了しました。画面を更新します。');
-                navigating = true;
-                window.location.assign(redirect);
-            } catch (error) {
-                if (error?.name === 'AbortError') {
-                    setStatus('処理に時間がかかりすぎたため中断しました。通信状態を確認して、もう一度お試しください。', 'error');
-                } else {
-                    setStatus(error?.message || '処理を完了できませんでした。もう一度お試しください。', 'error');
-                }
-            } finally {
-                window.clearTimeout(timeout);
-                window.clearTimeout(loadingTimer);
-                loadingOverlay?.classList.remove('is-visible');
-                loadingOverlay?.setAttribute('aria-hidden', 'true');
-
-                if (!navigating) {
-                    inFlight = false;
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.textContent = originalLabel;
-                    }
+            if (form.isConnected) {
+                form.dataset.asyncBusy = '0';
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalLabel;
                 }
             }
-        });
-    });
+        }
+    }, true);
 
     document.querySelectorAll('[data-candidate-carousel]').forEach((carousel) => {
         const shell = carousel.querySelector('[data-candidate-shell]');
