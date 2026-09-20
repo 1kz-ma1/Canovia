@@ -173,6 +173,10 @@ document.addEventListener('submit', (event) => {
     const input = aiJsonInputForForm(form);
     if (!form || !input || !input.value.trim()) return;
 
+    // Plan update preview is intentionally server-owned during the stability
+    // rollback. Do not let any client JSON parser block its native POST.
+    if (form.matches('[data-review-json-preview]')) return;
+
     const original = input.value;
     try {
         const normalized = normalizeAiJsonText(original);
@@ -583,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // successfully, without triggering another navigation.
     const currentUrl = new URL(window.location.href);
     const justAppliedUpdate = currentUrl.searchParams.has('_canovia_update');
-    const oneShotFlags = ['_pk_network', '_canovia_network', '_canovia_update'];
+    const oneShotFlags = ['_pk_network', '_canovia_network', '_canovia_update', '_canovia_stable'];
     if (oneShotFlags.some((key) => currentUrl.searchParams.has(key))) {
         oneShotFlags.forEach((key) => currentUrl.searchParams.delete(key));
         window.history.replaceState({}, '', currentUrl.pathname + currentUrl.search + currentUrl.hash);
@@ -1003,68 +1007,38 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target === feedbackDialog && typeof feedbackDialog.close === 'function') feedbackDialog.close();
     });
 
+    // V38.4 stability rollback: temporarily disable Service Worker / Instant
+    // Start. The core app must behave like a normal online web app while the
+    // navigation and plan-update flows are verified again.
     if ('serviceWorker' in navigator && window.isSecureContext) {
-        const updateBanner = document.querySelector('[data-app-update]');
-        const updateApply = document.querySelector('[data-app-update-apply]');
-        const updateLater = document.querySelector('[data-app-update-later]');
-        let pendingWorker = null;
-        let reloadForUpdate = false;
-        let updateReloaded = false;
-        let updateFallbackTimer = null;
+        const cleanupKey = 'canovia.sw-stability-cleanup.v38-4';
 
-        const reloadIntoFreshShell = () => {
-            if (updateReloaded) return;
-            updateReloaded = true;
-            window.clearTimeout(updateFallbackTimer);
-
-            // Force this one navigation to the network so Instant Start cannot
-            // immediately serve the previous cached shell again.
-            const url = new URL(window.location.href);
-            url.searchParams.set('_canovia_network', '1');
-            url.searchParams.set('_canovia_update', String(Date.now()));
-            window.location.replace(url.pathname + url.search + url.hash);
+        const clearCanoviaShellCaches = async () => {
+            if (!('caches' in window)) return;
+            const keys = await caches.keys().catch(() => []);
+            await Promise.all(keys
+                .filter((key) => key.startsWith('canovia-shell-') || key.startsWith('pacekeeper-shell-'))
+                .map((key) => caches.delete(key).catch(() => false)));
         };
 
-        const showUpdate = (worker) => {
-            if (!worker || !updateBanner) return;
-            pendingWorker = worker;
-            updateBanner.classList.remove('hidden');
-        };
+        const disableLegacyWorkers = async () => {
+            const hadController = Boolean(navigator.serviceWorker.controller);
+            const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
+            await Promise.all(registrations.map((registration) => registration.unregister().catch(() => false)));
+            await clearCanoviaShellCaches();
 
-        navigator.serviceWorker.register('/sw.js').then((registration) => {
-            if (registration.waiting && navigator.serviceWorker.controller) {
-                showUpdate(registration.waiting);
+            // One network navigation releases pages that were still controlled
+            // by the old worker. Limit it to once per tab to avoid reload loops.
+            if ((hadController || registrations.length > 0) && sessionStorage.getItem(cleanupKey) !== '1') {
+                sessionStorage.setItem(cleanupKey, '1');
+                const url = new URL(window.location.href);
+                url.searchParams.set('_canovia_network', '1');
+                url.searchParams.set('_canovia_stable', '1');
+                window.location.replace(url.pathname + url.search + url.hash);
             }
+        };
 
-            registration.addEventListener('updatefound', () => {
-                const worker = registration.installing;
-                if (!worker) return;
-                worker.addEventListener('statechange', () => {
-                    if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-                        showUpdate(worker);
-                    }
-                });
-            });
-
-            updateApply?.addEventListener('click', async () => {
-                if (!pendingWorker || reloadForUpdate) return;
-                reloadForUpdate = true;
-                updateApply.disabled = true;
-                updateApply.textContent = '更新中…';
-
-                // The waiting worker normally becomes controller and triggers
-                // controllerchange. iOS/PWA can occasionally miss that event,
-                // so keep a timed network-reload fallback as well.
-                pendingWorker.postMessage({ type: 'SKIP_WAITING' });
-                updateFallbackTimer = window.setTimeout(reloadIntoFreshShell, 1800);
-            });
-
-            updateLater?.addEventListener('click', () => updateBanner?.classList.add('hidden'));
-        }).catch(() => {});
-
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (reloadForUpdate) reloadIntoFreshShell();
-        });
+        void disableLegacyWorkers();
     }
 });
 
