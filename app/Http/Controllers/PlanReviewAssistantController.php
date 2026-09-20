@@ -9,6 +9,7 @@ use App\Models\WorkLog;
 use App\Models\WorkSession;
 use App\Services\AiJsonInputNormalizer;
 use App\Services\PlanProgressService;
+use App\Services\PlanReviewJsonCompatibilityService;
 use App\Services\PlanActivityService;
 use Carbon\Carbon;
 use App\Services\PlanOwnershipService;
@@ -152,10 +153,15 @@ class PlanReviewAssistantController extends Controller
         }
 
         [$jsonText, $decoded] = $this->decodeJsonDocument($validated['operations_json']);
+        $decoded = app(PlanReviewJsonCompatibilityService::class)->adapt($plan, $decoded, $draft);
+        $jsonText = json_encode(
+            $decoded,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+        );
         $this->validateTargetPlanDescriptor($plan, $decoded);
         $action = $this->resolveJsonAction($decoded)
             ?? $this->inferPlanReviewAction($decoded);
-        $operations = $this->normalizeDecodedOperations($plan, $decoded, action: $action);
+        $operations = $this->normalizeDecodedOperations($plan, $decoded, allowTaskList: true, action: $action);
 
         $proposal = $this->buildProposal($plan, $decoded, $operations, $jsonText, $action);
         $request->session()->put($this->proposalSessionKey($plan), $proposal);
@@ -1009,6 +1015,16 @@ JSON;
 - reorder_tasks は items に task_id または task_ref を実行順で並べ、後続タスクを再編する
 - 同じタスクに相反する操作を出力しない
 - 操作は60件以内
+
+【出力直前チェック（必須）】
+1. schema_version が "2.0" か
+2. flow が "{$flow}" のままか
+3. target_plan.id が {$plan->id} のままか
+4. 既存task_idは上の登録済みタスク一覧に実在するIDだけか
+5. operationsが配列で、各要素にtypeがあるか
+6. 文字列内の改行はJSONとして有効にエスケープされているか
+7. 末尾カンマ・コメント・Markdownコードブロック・説明文が混ざっていないか
+8. 最後にJSONとして構文解析できることを自分で確認してから返すこと
 PROMPT;
     }
 
@@ -1923,19 +1939,6 @@ PROMPT;
 
             throw ValidationException::withMessages([
                 'operations_json' => "JSONの構文が正しくありません{$lineHint}。{$errorMessage}。意味上の検証へ進む前に、引用符・カンマ・キー名・重複項目を確認してください。",
-            ]);
-        }
-
-        if (array_is_list($decoded)) {
-            throw ValidationException::withMessages([
-                'operations_json' => 'JSONの最上位はオブジェクトにしてください。target_plan、summary、operationsを含む形式が必要です。',
-            ]);
-        }
-
-        if (array_key_exists('schema_version', $decoded)
-            && ! in_array((string) $decoded['schema_version'], ['1', '1.0', '1.1', '2', '2.0'], true)) {
-            throw ValidationException::withMessages([
-                'operations_json' => '対応していないschema_versionです。現在は2.0を使用してください。',
             ]);
         }
 
