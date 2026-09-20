@@ -173,9 +173,9 @@ document.addEventListener('submit', (event) => {
     const input = aiJsonInputForForm(form);
     if (!form || !input || !input.value.trim()) return;
 
-    // Plan update preview is intentionally server-owned during the stability
-    // rollback. Do not let any client JSON parser block its native POST.
-    if (form.matches('[data-review-json-preview]')) return;
+    // Critical plan JSON imports are intentionally server-owned. Do not let
+    // any client parser block the browser's native POST on Safari/PWA.
+    if (form.matches('[data-review-json-preview], [data-ai-plan-generation-import]')) return;
 
     const original = input.value;
     try {

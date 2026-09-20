@@ -3,10 +3,10 @@
 @section('title', 'AIと初期計画をつくる | Canovia')
 
 @section('content')
-    <div class="mx-auto max-w-5xl space-y-8">
+    <div class="initial-plan-page mx-auto max-w-5xl space-y-5 pb-32 sm:space-y-6 md:space-y-8 md:pb-10">
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-                <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 font-heading">
+                <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 font-heading sm:text-3xl">
                     AIと初期計画をつくる
                 </h1>
                 <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
@@ -21,7 +21,7 @@
 
         <section class="info-card">
             <div>
-                <h2 class="text-xl font-bold text-slate-900 font-heading">この計画について相談します</h2>
+                <h2 class="text-lg font-bold text-slate-900 font-heading sm:text-xl">この計画について相談します</h2>
                 <p class="mt-1 text-sm text-slate-600">{{ $plan->title }}</p>
             </div>
         </section>
@@ -29,7 +29,7 @@
         <section class="info-card">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-bold text-slate-100 font-heading">今回AIに共有する未来メモ</h2>
+                    <h2 class="text-base font-bold text-slate-100 font-heading sm:text-lg">今回AIに共有する未来メモ</h2>
                     <p class="mt-1 text-sm leading-6 text-slate-400">「AIへの参考情報として使う」がONの内容だけを、本人理解のために相談文へ追加しています。</p>
                 </div>
                 <a href="{{ route('future_memos.index') }}" class="btn-secondary px-3 py-2 text-xs">未来メモを編集</a>
@@ -54,7 +54,7 @@
 
         <section class="info-card space-y-4">
             <div>
-                <h2 class="text-xl font-bold text-slate-900 font-heading">
+                <h2 class="text-lg font-bold text-slate-900 font-heading sm:text-xl">
                     1. 相談用の文章をコピー
                 </h2>
                 <p class="mt-2 text-sm leading-7 text-slate-600">
@@ -79,7 +79,7 @@
 
         <section class="info-card space-y-4" data-onboarding-target="ai-import">
             <div>
-                <h2 class="text-xl font-bold text-slate-900 font-heading">
+                <h2 class="text-lg font-bold text-slate-900 font-heading sm:text-xl">
                     2. AIの回答をCanoviaへ戻す
                 </h2>
                 <p class="mt-2 text-sm leading-7 text-slate-600">
@@ -87,25 +87,11 @@
                 </p>
             </div>
 
-            @if ($errors->any())
-                <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    <p class="font-semibold">うまく読み込めませんでした。</p>
-                    <p class="mt-1">入力内容は残っています。下の内容を直して、もう一度試してください。</p>
-                    <ul class="mt-2 list-disc space-y-1 pl-5">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
             <form
                 method="POST"
                 action="{{ route('plans.ai_task_assistant.import', $plan) }}"
                 class="space-y-4"
-                data-ai-import-form
-                data-plan-id="{{ $plan->id }}"
-                data-plan-title="{{ $plan->title }}"
+                data-ai-plan-generation-import
             >
                 @csrf
 
@@ -119,9 +105,50 @@
                         class="form-control min-h-[320px] font-mono text-sm"
                         placeholder="AIの最後の回答をここへ貼り付け"
                         data-ai-json-input
+                        required
                     >{{ old('tasks_json') }}</textarea>
-                    <p class="mt-2 hidden text-sm font-semibold text-red-500" data-ai-json-client-error role="alert"></p>
                 </div>
+
+                @if ($errors->has('tasks_json'))
+                    @php
+                        $jsonErrorMessage = $errors->first('tasks_json');
+                        $jsonRepairPrompt = implode("\n", [
+                            'Canoviaの初期計画JSONでエラーが発生しました。',
+                            '下の「元のCanoviaプロンプト」を仕様と対象計画の唯一の正として扱ってください。',
+                            'エラー解消に必要な箇所だけ修正し、タスク内容・時間・順序など正しい情報はできるだけ保持してください。',
+                            'target_plan.idは '.$plan->id.' のままにし、別の計画IDを使わないでください。',
+                            'priorityとactivation_costは必ず1〜5です。タスクの実行順はpriorityを6以上にせず、reorder_tasksで表現してください。',
+                            '修正後はJSONとして構文解析できることと、Canoviaのエラー内容が解消されていることを確認してください。',
+                            '説明文・Markdown・コードフェンスを付けず、有効なJSONだけを返してください。',
+                            '',
+                            '【Canoviaのエラー】',
+                            $jsonErrorMessage,
+                            '',
+                            '【エラーになったJSON】',
+                            old('tasks_json', ''),
+                            '',
+                            '【元のCanoviaプロンプト】',
+                            $prompt,
+                        ]);
+                    @endphp
+                    <div class="assistant-message-row assistant-message-left">
+                        <div class="assistant-avatar">CV</div>
+                        <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+                            <p class="assistant-speaker">Canovia サポーター</p>
+                            <h3 class="mt-2 text-lg font-bold text-slate-100">初期計画JSONを確認できませんでした</h3>
+                            <p class="mt-2 text-sm leading-6 text-slate-300">
+                                入力内容は残しています。下の修正依頼をコピーして、JSONを作ったAIへそのまま送ってください。
+                            </p>
+                            <div class="assistant-notice assistant-notice-error mt-4">
+                                <p class="font-bold">Canoviaが検出した内容</p>
+                                <p class="mt-1 text-sm leading-6">{{ $jsonErrorMessage }}</p>
+                            </div>
+                            <textarea id="initialPlanJsonRepairPrompt" class="form-control mt-4 min-h-[220px] font-mono text-xs" readonly>{{ $jsonRepairPrompt }}</textarea>
+                            <button type="button" class="btn-primary mt-3" data-initial-plan-copy-repair>修正依頼をコピー</button>
+                            <p class="mt-2 text-xs text-slate-400" data-initial-plan-copy-repair-status aria-live="polite"></p>
+                        </div>
+                    </div>
+                @endif
 
                 <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-800">
                     <p class="font-semibold">反映前にCanoviaが確認します</p>
@@ -148,89 +175,47 @@
             const copyButton = document.querySelector('[data-ai-copy-prompt]');
             const copyStatus = document.querySelector('[data-ai-copy-status]');
             const prompt = document.getElementById('aiPrompt');
-            const form = document.querySelector('[data-ai-import-form]');
-            const input = document.querySelector('[data-ai-json-input]');
-            const error = document.querySelector('[data-ai-json-client-error]');
-            const submit = document.querySelector('[data-ai-import-submit]');
+            const repairButton = document.querySelector('[data-initial-plan-copy-repair]');
+            const repairPrompt = document.getElementById('initialPlanJsonRepairPrompt');
+            const repairStatus = document.querySelector('[data-initial-plan-copy-repair-status]');
 
-            const showError = (message) => {
-                if (!error) return;
-                error.textContent = message;
-                error.classList.remove('hidden');
-                input?.focus();
-            };
-
-            const clearError = () => {
-                if (!error) return;
-                error.textContent = '';
-                error.classList.add('hidden');
-            };
-
-            const extractJson = (value) => {
-                const text = String(value || '').trim();
-                const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-                if (fenced?.[1]) return fenced[1].trim();
-                if (text.startsWith('{') && text.endsWith('}')) return text;
-                const start = text.indexOf('{');
-                const end = text.lastIndexOf('}');
-                return start >= 0 && end > start ? text.slice(start, end + 1).trim() : text;
+            const copyText = async (value) => {
+                try {
+                    await navigator.clipboard.writeText(value);
+                    return true;
+                } catch (_) {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = value;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    textarea.setSelectionRange(0, textarea.value.length);
+                    let copied = false;
+                    try { copied = document.execCommand('copy'); } catch (_) {}
+                    textarea.remove();
+                    return copied;
+                }
             };
 
             copyButton?.addEventListener('click', async () => {
                 if (!prompt) return;
-                try {
-                    await navigator.clipboard.writeText(prompt.value);
-                    if (copyStatus) copyStatus.textContent = 'コピーしました。普段使っているAIに貼り付けてください。';
-                } catch (_) {
-                    prompt.focus();
-                    prompt.select();
-                    prompt.setSelectionRange(0, prompt.value.length);
-                    const copied = document.execCommand?.('copy');
-                    if (copyStatus) {
-                        copyStatus.textContent = copied
-                            ? 'コピーしました。普段使っているAIに貼り付けてください。'
-                            : '自動コピーできませんでした。選択された文章を手動でコピーしてください。';
-                    }
+                const copied = await copyText(prompt.value);
+                if (copyStatus) {
+                    copyStatus.textContent = copied
+                        ? 'コピーしました。普段使っているAIに貼り付けてください。'
+                        : '自動コピーできませんでした。相談用の文章を手動でコピーしてください。';
                 }
             });
 
-            input?.addEventListener('input', clearError);
-
-            form?.addEventListener('submit', (event) => {
-                clearError();
-                const raw = input?.value || '';
-                if (!raw.trim()) {
-                    event.preventDefault();
-                    showError('AIの最後の回答を貼り付けてください。');
-                    return;
-                }
-
-                let parsed;
-                try {
-                    parsed = JSON.parse(extractJson(raw));
-                } catch (_) {
-                    event.preventDefault();
-                    showError('JSON部分を見つけられませんでした。AIに「最後はJSONだけで出力して」と伝えて、もう一度貼り付けてください。');
-                    return;
-                }
-
-                if (String(parsed?.schema_version || '') !== '2.0' || parsed?.flow !== 'plan_generation') {
-                    event.preventDefault();
-                    showError('Canovia用の計画データではないようです。上の相談用文章をもう一度AIへ貼り付けてください。');
-                    return;
-                }
-
-                const target = parsed?.target_plan || {};
-                if (Number(target.id || 0) !== Number(form.dataset.planId)
-                    || String(target.title || '').trim() !== String(form.dataset.planTitle || '').trim()) {
-                    event.preventDefault();
-                    showError('別の計画向けの回答のようです。この画面の相談用文章から作った回答を貼り付けてください。');
-                    return;
-                }
-
-                if (submit) {
-                    submit.disabled = true;
-                    submit.textContent = '確認して反映中…';
+            repairButton?.addEventListener('click', async () => {
+                if (!repairPrompt) return;
+                const copied = await copyText(repairPrompt.value);
+                if (repairStatus) {
+                    repairStatus.textContent = copied
+                        ? 'コピーしました。JSONを作ったAIへそのまま送ってください。'
+                        : '自動コピーできませんでした。上の修正依頼を手動でコピーしてください。';
                 }
             });
         })();
