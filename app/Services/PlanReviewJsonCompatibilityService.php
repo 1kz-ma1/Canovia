@@ -59,7 +59,7 @@ class PlanReviewJsonCompatibilityService
 
         if (! isset($decoded['operations']) && isset($decoded['tasks']) && is_array($decoded['tasks'])) {
             $decoded['operations'] = array_map(
-                fn ($task) => $this->taskListItemToOperation($plan, $task, $notes),
+                fn ($task) => $this->taskListItemToOperation($plan, $task),
                 $decoded['tasks']
             );
             unset($decoded['tasks']);
@@ -106,6 +106,55 @@ class PlanReviewJsonCompatibilityService
                 $decoded['operations']
             );
 
+            $workLogRecorded = (bool) ($draft['work_session_facts']['work_log_recorded'] ?? false);
+            if ($workLogRecorded) {
+                $before = count($decoded['operations']);
+                $decoded['operations'] = array_values(array_filter(
+                    $decoded['operations'],
+                    fn ($operation) => ! is_array($operation)
+                        || ! in_array(($operation['type'] ?? null), ['record_result', 'create_work_log'], true)
+                ));
+                if (count($decoded['operations']) !== $before) {
+                    $notes[] = '今回のWorkSessionは作業記録済みのため、重複するrecord_resultを自動で除外しました。';
+                }
+            } else {
+                $decoded['operations'] = array_map(function ($operation) use ($draft, &$notes) {
+                    if (! is_array($operation)
+                        || ! in_array(($operation['type'] ?? null), ['record_result', 'create_work_log'], true)) {
+                        return $operation;
+                    }
+
+                    if (! isset($operation['actual_minutes']) && isset($draft['actual_minutes']) && $draft['actual_minutes'] !== null) {
+                        $operation['actual_minutes'] = (int) $draft['actual_minutes'];
+                        $notes[] = 'record_resultのactual_minutesをCanoviaの作業記録から補完しました。';
+                    }
+                    if (empty($operation['worked_on']) && ! empty($draft['worked_on'])) {
+                        $operation['worked_on'] = $draft['worked_on'];
+                        $notes[] = 'record_resultのworked_onをCanoviaの作業日から補完しました。';
+                    }
+                    if (empty($operation['task_id']) && ! empty($draft['task_id'])) {
+                        $operation['task_id'] = (int) $draft['task_id'];
+                        $notes[] = 'record_resultのtask_idを今回の対象タスクから補完しました。';
+                    }
+
+                    return $operation;
+                }, $decoded['operations']);
+            }
+
+            $reviseIndexes = [];
+            foreach ($decoded['operations'] as $index => $operation) {
+                if (is_array($operation) && ($operation['type'] ?? null) === 'revise_task') {
+                    $reviseIndexes[] = $index;
+                }
+            }
+            if (count($reviseIndexes) === 1 && ! empty($draft['task_id'])) {
+                $index = $reviseIndexes[0];
+                if (empty($decoded['operations'][$index]['task_id'])) {
+                    $decoded['operations'][$index]['task_id'] = (int) $draft['task_id'];
+                    $notes[] = '単一のrevise_taskのtask_idを今回のWorkSession対象タスクから補完しました。';
+                }
+            }
+
             if ($decoded['operations'] !== [] && $notes !== [] && is_array($decoded['operations'][0])) {
                 $existing = $decoded['operations'][0]['_normalization_notes'] ?? [];
                 $decoded['operations'][0]['_normalization_notes'] = array_values(array_unique(array_merge(
@@ -118,7 +167,7 @@ class PlanReviewJsonCompatibilityService
         return $decoded;
     }
 
-    private function taskListItemToOperation(Plan $plan, mixed $task, array &$notes): mixed
+    private function taskListItemToOperation(Plan $plan, mixed $task): mixed
     {
         if (! is_array($task)) {
             return $task;
