@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'canovia-shell-v38-2';
+const CACHE_VERSION = 'canovia-shell-v38-3';
 const META_CACHE = 'canovia-shell-meta-v1';
 const LAST_NETWORK_KEY = '/__canovia_last_network_success__';
 const LIKELY_SLEEP_AFTER_MS = 12 * 60 * 1000;
@@ -21,11 +21,14 @@ self.addEventListener('install', (event) => {
     })());
 });
 
-let reloadClientIdAfterActivate = null;
+let reloadClientsAfterActivate = false;
 
 self.addEventListener('message', (event) => {
     if (event.data?.type !== 'SKIP_WAITING') return;
-    reloadClientIdAfterActivate = event.source?.id || null;
+    // Some iOS/PWA builds do not provide a stable event.source id to a
+    // waiting worker. The update is user-initiated, so mark the activation to
+    // refresh every open Canovia window instead of depending on that id.
+    reloadClientsAfterActivate = true;
     self.skipWaiting();
 });
 
@@ -48,15 +51,19 @@ self.addEventListener('activate', (event) => {
         // If the user explicitly pressed "更新する", navigate that same app
         // window once the new worker is active. This also covers iOS/PWA cases
         // where controllerchange is not delivered reliably to the old page.
-        if (reloadClientIdAfterActivate) {
-            const client = await self.clients.get(reloadClientIdAfterActivate).catch(() => null);
-            if (client && 'navigate' in client) {
+        if (reloadClientsAfterActivate) {
+            const windows = await self.clients.matchAll({
+                type: 'window',
+                includeUncontrolled: true,
+            });
+            await Promise.all(windows.map(async (client) => {
+                if (!('navigate' in client)) return;
                 const url = new URL(client.url);
                 url.searchParams.set('_canovia_network', '1');
                 url.searchParams.set('_canovia_update', String(Date.now()));
                 await client.navigate(url.href).catch(() => {});
-            }
-            reloadClientIdAfterActivate = null;
+            }));
+            reloadClientsAfterActivate = false;
         }
     })());
 });
