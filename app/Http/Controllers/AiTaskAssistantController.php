@@ -256,7 +256,12 @@ PROMPT;
             ]);
         });
 
-        return redirect()->route('plans.show', $plan)->with('success', 'AIが生成した初期タスクを登録しました。');
+        $message = 'AIが生成した初期タスクを登録しました。';
+        if ($normalizationNotes !== []) {
+            $message .= ' 形式の違いはCanovia側で'.count($normalizationNotes).'件調整しました。';
+        }
+
+        return redirect()->route('plans.show', $plan)->with('success', $message);
     }
 
     private function authorizePlanOwner(Plan $plan): void
