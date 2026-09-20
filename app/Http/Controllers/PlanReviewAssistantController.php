@@ -18,6 +18,7 @@ use App\Services\FutureMemoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -152,18 +153,29 @@ class PlanReviewAssistantController extends Controller
             ]);
         }
 
-        [$jsonText, $decoded] = $this->decodeJsonDocument($validated['operations_json']);
-        $decoded = app(PlanReviewJsonCompatibilityService::class)->adapt($plan, $decoded, $draft);
-        $jsonText = json_encode(
-            $decoded,
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
-        );
-        $this->validateTargetPlanDescriptor($plan, $decoded);
-        $action = $this->resolveJsonAction($decoded)
-            ?? $this->inferPlanReviewAction($decoded);
-        $operations = $this->normalizeDecodedOperations($plan, $decoded, allowTaskList: true, action: $action);
+        try {
+            [$jsonText, $decoded] = $this->decodeJsonDocument($validated['operations_json']);
+            $decoded = app(PlanReviewJsonCompatibilityService::class)->adapt($plan, $decoded, $draft);
+            $jsonText = json_encode(
+                $decoded,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+            );
+            $this->validateTargetPlanDescriptor($plan, $decoded);
+            $action = $this->resolveJsonAction($decoded)
+                ?? $this->inferPlanReviewAction($decoded);
+            $operations = $this->normalizeDecodedOperations($plan, $decoded, allowTaskList: true, action: $action);
 
-        $proposal = $this->buildProposal($plan, $decoded, $operations, $jsonText, $action);
+            $proposal = $this->buildProposal($plan, $decoded, $operations, $jsonText, $action);
+        } catch (ValidationException $exception) {
+            // Do not log the pasted JSON itself. The validation message and
+            // plan context are enough to diagnose compatibility gaps safely.
+            Log::warning('plan_review_preview_validation_failed', [
+                'plan_id' => $plan->id,
+                'work_session_id' => $draft['work_session_id'] ?? null,
+                'errors' => $exception->errors(),
+            ]);
+            throw $exception;
+        }
         $request->session()->put($this->proposalSessionKey($plan), $proposal);
 
         if ($request->expectsJson()) {
