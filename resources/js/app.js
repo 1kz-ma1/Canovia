@@ -649,6 +649,34 @@ document.addEventListener('DOMContentLoaded', () => {
             : null;
         if (!form) return;
 
+        // JSON preview must use a normal browser submission. The server stores
+        // the proposal in the session and then redirects back to this page.
+        // Bypassing every JS submit listener here prevents the input area from
+        // being replaced before the proposal is rendered.
+        const isJsonPreview = form.action.includes('/review-assistant/preview');
+        if (isJsonPreview) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            if (form.dataset.asyncBusy === '1') return;
+            form.dataset.asyncBusy = '1';
+
+            window.clearTimeout(loadingTimer);
+            loadingOverlay?.classList.remove('is-visible');
+            loadingOverlay?.setAttribute('aria-hidden', 'true');
+
+            const submitButton = event.submitter || form.querySelector('[data-async-plan-review-submit]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = '変更内容を確認中…';
+            }
+
+            // The capture-phase AI JSON normalizer has already run at this
+            // point. Native submit intentionally skips both this handler and
+            // the legacy inline handler in the Blade view.
+            HTMLFormElement.prototype.submit.call(form);
+            return;
+        }
+
         event.preventDefault();
         event.stopImmediatePropagation();
         if (form.dataset.asyncBusy === '1') return;
