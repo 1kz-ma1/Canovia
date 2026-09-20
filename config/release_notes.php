@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v38.6',
+        'date' => '2026-09-20',
+        'title' => 'JSONの揺れをCanovia側で吸収',
+        'summary' => 'AIへ何度も修正を頼まなくても済むよう、よくあるJSON形式の違いをCanovia側で安全に補正する互換レイヤーを追加しました。',
+        'highlights' => [
+            'actions・changes・updates・tasksなど、operations以外の一般的な配列名をCanovia形式へ変換します。',
+            'camelCaseのキー、操作typeの別名、status表記などをCanovia側で正規化します。',
+            '計画更新画面では現在開いている計画を正としてtarget_plan・flow・schema_versionを安全に補正します。',
+            '既存タスクIDが欠けていても、タスク名が一意に一致する場合はCanovia側でtask_idを補完します。',
+            '補正した内容はプレビュー上の「自動調整」として表示し、意味を勝手に変更する補正は行いません。',
+            'AI用プロンプトへ出力直前の8項目セルフチェックを追加しました。',
+        ],
+        'tip' => '軽微な形式差はCanoviaが吸収します。意味や対象タスクを安全に判断できない場合だけエラーとして止めます。',
+    ],
+    [
         'version' => 'v38.5',
         'date' => '2026-09-20',
         'title' => 'JSON修正ループを改善',
