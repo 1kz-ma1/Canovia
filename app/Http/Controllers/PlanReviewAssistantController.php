@@ -7,6 +7,7 @@ use App\Models\PlanAdjustment;
 use App\Models\Task;
 use App\Models\WorkLog;
 use App\Models\WorkSession;
+use App\Services\AiJsonInputNormalizer;
 use App\Services\PlanProgressService;
 use App\Services\PlanActivityService;
 use Carbon\Carbon;
@@ -1902,7 +1903,17 @@ PROMPT;
 
     private function decodeJsonDocument(string $text): array
     {
-        $jsonText = $this->extractJson($text);
+        try {
+            // Use the same shared normalizer here as the request middleware.
+            // This guarantees plan review does not fall back to its older,
+            // stricter JSON extractor when a request reaches this method.
+            $jsonText = app(AiJsonInputNormalizer::class)->normalize($text);
+        } catch (\InvalidArgumentException $exception) {
+            throw ValidationException::withMessages([
+                'operations_json' => $exception->getMessage(),
+            ]);
+        }
+
         $decoded = json_decode($jsonText, true);
 
         if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
