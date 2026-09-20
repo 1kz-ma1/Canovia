@@ -189,7 +189,7 @@
                             外部AIとの対話後、最終的に返されたJSONを貼り付けます。
                         </p>
 
-                        <form method="POST" action="{{ route('plans.review_assistant.preview', $plan) }}" class="mt-4 space-y-4" data-async-plan-review data-reveal-target="#review-proposal-section" data-loading-skip>
+                        <form method="POST" action="{{ route('plans.review_assistant.preview', $plan) }}" class="mt-4 space-y-4" data-review-json-preview>
                             @csrf
                             <textarea
                                 name="operations_json"
