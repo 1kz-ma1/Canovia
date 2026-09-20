@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Plan;
 use App\Models\PlanAdjustment;
 use App\Models\Task;
+use App\Services\AiJsonInputNormalizer;
+use App\Services\PlanGenerationJsonCompatibilityService;
 use App\Services\PlanProgressService;
 use App\Services\PlanOwnershipService;
 use App\Services\FutureMemoService;
@@ -75,7 +77,18 @@ class AiTaskAssistantController extends Controller
 
 期限が未設定なら、タスク生成前にユーザーへ希望時期・使える時間・現在地を質問してください。会話で期限が決まった場合だけupdate_planを含め、まだ決めない場合はupdate_planを省略してください。
 進捗率は最新の完成条件に対する絶対値、remaining_minutesは今後実際に必要な時間として別々に判断してください。
+priorityは必ず1～5で、1が最優先、5が低優先です。6以上を実行順の番号として使わないでください。実行順はreorder_tasksのitemsで表現してください。
 activation_costは1～5で、難易度ではなく「そのTaskを始めるまでの心理的・準備的な重さ」を推定してください。1はすぐ始められ、5はかなり準備や集中が必要です。
+
+【出力直前チェック（必須）】
+1. schema_versionが"2.0"か
+2. flowが"plan_generation"か
+3. target_plan.idが{$plan->id}、titleが「{$plan->title}」のままか
+4. operationsが1～60件の配列か
+5. add_taskのclient_refが重複していないか
+6. priorityとactivation_costがすべて1～5か
+7. reorder_tasksを出す場合、全add_taskのclient_refを重複なく1回ずつ含んでいるか
+8. 説明文・Markdown・コードフェンス・コメント・末尾カンマを付けず、有効なJSONだけを返しているか
 PROMPT;
 
         return view('plans.ai_task_assistant', compact('plan', 'prompt', 'futureMemos'));
@@ -86,22 +99,30 @@ PROMPT;
         $this->authorizePlanOwner($plan);
 
         $validated = $request->validate(['tasks_json' => ['required', 'string', 'max:100000']]);
-        $json = $this->extractJson($validated['tasks_json']);
+
+        try {
+            $json = app(AiJsonInputNormalizer::class)->normalize($validated['tasks_json']);
+        } catch (\InvalidArgumentException $exception) {
+            throw ValidationException::withMessages([
+                'tasks_json' => $exception->getMessage(),
+            ]);
+        }
+
         $decoded = json_decode($json, true);
 
         if (! is_array($decoded) || json_last_error() !== JSON_ERROR_NONE) {
-            throw ValidationException::withMessages(['tasks_json' => 'AIの回答から計画データを読み取れませんでした。最後の回答をそのまま貼り付けるか、AIに「最後はJSONだけで出力して」と伝えてください。']);
+            throw ValidationException::withMessages([
+                'tasks_json' => 'AIの回答から計画データを読み取れませんでした。下の修正依頼をAIへ送り、返ってきたJSONを貼り直してください。',
+            ]);
         }
 
-        if ((string) ($decoded['schema_version'] ?? '') !== '2.0' || ($decoded['flow'] ?? null) !== 'plan_generation') {
-            throw ValidationException::withMessages(['tasks_json' => 'Canovia用の計画データではないようです。この画面の相談用文章から作った回答を貼り付けてください。']);
-        }
-
-        $target = $decoded['target_plan'] ?? [];
-
-        if ((int) ($target['id'] ?? 0) !== $plan->id || trim((string) ($target['title'] ?? '')) !== $plan->title) {
-            throw ValidationException::withMessages(['tasks_json' => '別の計画向けの回答のようです。この画面から作った相談内容を使って、もう一度AIへ相談してください。']);
-        }
+        $compatibility = app(PlanGenerationJsonCompatibilityService::class)->adapt($plan, $decoded);
+        $decoded = $compatibility['decoded'];
+        $normalizationNotes = $compatibility['notes'];
+        $json = json_encode(
+            $decoded,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+        );
 
         $operations = $decoded['operations'] ?? null;
 
@@ -191,7 +212,7 @@ PROMPT;
 
         $metricsBefore = $progressService->calculate($plan);
 
-        DB::transaction(function () use ($plan, $decoded, $json, $normalizedTasks, $normalizedDeadline, $metricsBefore, $progressService) {
+        DB::transaction(function () use ($plan, $decoded, $json, $normalizedTasks, $normalizedDeadline, $metricsBefore, $progressService, $normalizationNotes) {
             $applied = [];
 
             if ($normalizedDeadline !== null) {
@@ -215,7 +236,9 @@ PROMPT;
                 'plan_id' => $plan->id,
                 'flow' => 'plan_generation',
                 'summary' => trim((string) ($decoded['summary'] ?? 'AIが初期計画を生成')),
-                'user_input' => [],
+                'user_input' => [
+                    'normalization_notes' => $normalizationNotes,
+                ],
                 'prompt' => 'AI計画生成画面から読み込み',
                 'response_json' => $json,
                 'applied_operations' => $applied,
@@ -226,33 +249,6 @@ PROMPT;
         });
 
         return redirect()->route('plans.show', $plan)->with('success', 'AIが生成した初期タスクを登録しました。');
-    }
-
-    private function extractJson(string $text): string
-    {
-        $trimmed = trim($text);
-
-        if (preg_match('/```(?:json)?\s*(.*?)\s*```/is', $trimmed, $matches)) {
-            return trim($matches[1]);
-        }
-
-        if (str_starts_with($trimmed, '{') && str_ends_with($trimmed, '}')) {
-            return $trimmed;
-        }
-
-        $start = strpos($trimmed, '{');
-        $end = strrpos($trimmed, '}');
-
-        if ($start !== false && $end !== false && $end > $start) {
-            $candidate = trim(substr($trimmed, $start, $end - $start + 1));
-            json_decode($candidate, true);
-
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $candidate;
-            }
-        }
-
-        return $trimmed;
     }
 
     private function authorizePlanOwner(Plan $plan): void
