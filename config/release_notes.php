@@ -2,6 +2,20 @@
 
 return [
     [
+        'version' => 'v38.4',
+        'date' => '2026-09-20',
+        'title' => '安定性を優先した一時調整',
+        'summary' => '計画更新の確実性を優先するため、Instant StartとService Worker更新機構を一時停止し、通常のオンライン動作へ戻しました。',
+        'highlights' => [
+            'Service Workerによる画面差し替えとInstant Startを一時停止しました。',
+            '既存のCanovia/PaceKeeper用Service Workerとシェルキャッシュを自動で解除・整理します。',
+            '「Canoviaを更新できます」の更新バナーを一時的に停止しました。',
+            '計画更新のJSONはクライアント側で送信を止めず、Laravel側で正規化・検証する通常POSTへ一本化しました。',
+            'JSON構文エラーは、Canoviaサポーターのチャット形式で修正依頼を案内します。',
+        ],
+        'tip' => 'まず計画更新などのコア機能を安定させ、その確認後にInstant Startを再設計して戻します。',
+    ],
+    [
         'version' => 'v38.3',
         'date' => '2026-09-20',
         'title' => '計画更新とPWA更新を再修正',
