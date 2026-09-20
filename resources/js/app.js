@@ -579,11 +579,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // Mobile app shell enhancements
 // -----------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-    // Remove the one-shot Instant Start network-only flag after the real app
-    // has loaded successfully, without triggering another navigation.
+    // Remove one-shot navigation flags after the real app has loaded
+    // successfully, without triggering another navigation.
     const currentUrl = new URL(window.location.href);
-    if (currentUrl.searchParams.has('_pk_network')) {
-        currentUrl.searchParams.delete('_pk_network');
+    const oneShotFlags = ['_pk_network', '_canovia_network', '_canovia_update'];
+    if (oneShotFlags.some((key) => currentUrl.searchParams.has(key))) {
+        oneShotFlags.forEach((key) => currentUrl.searchParams.delete(key));
         window.history.replaceState({}, '', currentUrl.pathname + currentUrl.search + currentUrl.hash);
     }
 
@@ -1016,6 +1017,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateLater = document.querySelector('[data-app-update-later]');
         let pendingWorker = null;
         let reloadForUpdate = false;
+        let updateReloaded = false;
+        let updateFallbackTimer = null;
+
+        const reloadIntoFreshShell = () => {
+            if (updateReloaded) return;
+            updateReloaded = true;
+            window.clearTimeout(updateFallbackTimer);
+
+            // Force this one navigation to the network so Instant Start cannot
+            // immediately serve the previous cached shell again.
+            const url = new URL(window.location.href);
+            url.searchParams.set('_canovia_network', '1');
+            url.searchParams.set('_canovia_update', String(Date.now()));
+            window.location.replace(url.pathname + url.search + url.hash);
+        };
 
         const showUpdate = (worker) => {
             if (!worker || !updateBanner) return;
@@ -1038,19 +1054,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
 
-            updateApply?.addEventListener('click', () => {
-                if (!pendingWorker) return;
+            updateApply?.addEventListener('click', async () => {
+                if (!pendingWorker || reloadForUpdate) return;
                 reloadForUpdate = true;
                 updateApply.disabled = true;
                 updateApply.textContent = '更新中…';
+
+                // The waiting worker normally becomes controller and triggers
+                // controllerchange. iOS/PWA can occasionally miss that event,
+                // so keep a timed network-reload fallback as well.
                 pendingWorker.postMessage({ type: 'SKIP_WAITING' });
+                updateFallbackTimer = window.setTimeout(reloadIntoFreshShell, 3500);
             });
 
             updateLater?.addEventListener('click', () => updateBanner?.classList.add('hidden'));
         }).catch(() => {});
 
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (reloadForUpdate) window.location.reload();
+            if (reloadForUpdate) reloadIntoFreshShell();
         });
     }
 });

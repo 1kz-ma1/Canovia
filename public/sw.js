@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'canovia-shell-v38-1';
+const CACHE_VERSION = 'canovia-shell-v38-2';
 const META_CACHE = 'canovia-shell-meta-v1';
 const LAST_NETWORK_KEY = '/__canovia_last_network_success__';
 const LIKELY_SLEEP_AFTER_MS = 12 * 60 * 1000;
@@ -21,8 +21,12 @@ self.addEventListener('install', (event) => {
     })());
 });
 
+let reloadClientIdAfterActivate = null;
+
 self.addEventListener('message', (event) => {
-    if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+    if (event.data?.type !== 'SKIP_WAITING') return;
+    reloadClientIdAfterActivate = event.source?.id || null;
+    self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -40,6 +44,20 @@ self.addEventListener('activate', (event) => {
             await self.registration.navigationPreload.enable().catch(() => {});
         }
         await self.clients.claim();
+
+        // If the user explicitly pressed "更新する", navigate that same app
+        // window once the new worker is active. This also covers iOS/PWA cases
+        // where controllerchange is not delivered reliably to the old page.
+        if (reloadClientIdAfterActivate) {
+            const client = await self.clients.get(reloadClientIdAfterActivate).catch(() => null);
+            if (client && 'navigate' in client) {
+                const url = new URL(client.url);
+                url.searchParams.set('_canovia_network', '1');
+                url.searchParams.set('_canovia_update', String(Date.now()));
+                await client.navigate(url.href).catch(() => {});
+            }
+            reloadClientIdAfterActivate = null;
+        }
     })());
 });
 

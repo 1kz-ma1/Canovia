@@ -462,6 +462,7 @@
             'status' => $item['progress']['status'],
             'progress_percent' => $item['progress']['weighted_progress_percent'],
             'today_minutes' => $item['today_minutes'],
+            'daily_required_minutes' => $item['progress']['daily_required_minutes'],
             'deadline' => $item['plan']->deadline?->format('Y-m-d'),
         ])->values()->all(),
         'home' => [
