@@ -216,26 +216,40 @@
                 @if ($errors->has('operations_json'))
                     @php
                         $jsonErrorMessage = $errors->first('operations_json');
+                        $jsonErrorKind = str_contains($jsonErrorMessage, '構文')
+                            || str_contains($jsonErrorMessage, '閉じ括弧')
+                            || str_contains($jsonErrorMessage, '引用符')
+                            ? 'syntax'
+                            : 'contract';
                         $jsonRepairPrompt = implode("\n", [
                             'Canoviaに貼り付けたJSONでエラーが発生しました。',
-                            '以下のエラー内容と元のJSONを確認し、元の意図・数値・ID・進捗情報をできるだけ保持したまま、エラー解消に必要な箇所だけ修正してください。',
-                            '情報不足で安全に修正できない場合は、JSONを作らず必要な確認質問だけをしてください。',
-                            '修正できる場合は、返答前にJSONとして構文解析できることを確認し、説明文・Markdown・コードフェンスを付けず、有効なJSONだけを最後の回答として返してください。',
+                            '下にある「元のCanoviaプロンプト」を仕様・計画ID・タスクIDの唯一の正として扱ってください。',
+                            'エラー内容を満たすために必要な箇所だけ修正し、正しいID・数値・進捗情報・操作は可能な限り保持してください。',
+                            '存在しないtask_idを推測で置き換えないでください。元のCanoviaプロンプトに記載されたIDだけを使用してください。',
+                            'flow、target_plan、操作type、必須項目は元のCanoviaプロンプトの操作仕様に従ってください。',
+                            '修正後はJSONとして構文解析できることに加え、エラーで指摘されたCanovia側の条件を満たしているか確認してください。',
+                            '説明文・Markdown・コードフェンスを付けず、有効なJSONだけを最後の回答として返してください。',
                             '',
                             '【Canoviaのエラー】',
                             $jsonErrorMessage,
                             '',
-                            '【元のJSON】',
+                            '【エラーになったJSON】',
                             old('operations_json', ''),
+                            '',
+                            '【元のCanoviaプロンプト（正しい仕様・ID・現在値）】',
+                            $draft['prompt'] ?? '元のプロンプトを取得できませんでした。',
                         ]);
                     @endphp
                     <div class="assistant-message-row assistant-message-left">
                         <div class="assistant-avatar">CV</div>
                         <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
                             <p class="assistant-speaker">Canovia サポーター</p>
-                            <h3 class="mt-2 text-lg font-bold text-slate-100">JSONを読み込めませんでした</h3>
+                            <h3 class="mt-2 text-lg font-bold text-slate-100">
+                                {{ $jsonErrorKind === 'syntax' ? 'JSONの構文を読み込めませんでした' : 'JSONは読めましたが、Canoviaの条件に合わない箇所があります' }}
+                            </h3>
                             <p class="mt-2 text-sm leading-6 text-slate-300">
-                                入力内容は残しています。下の修正依頼をコピーして、JSONを作ったAIへそのまま送ってください。
+                                入力内容は残しています。修正依頼には、今回のエラーだけでなく元のCanoviaプロンプトと正しい計画・タスクIDも含めます。
+                                コピーして、JSONを作ったAIへそのまま送ってください。
                             </p>
                             <div class="assistant-notice assistant-notice-error mt-4">
                                 <p class="font-bold">Canoviaが検出した内容</p>
