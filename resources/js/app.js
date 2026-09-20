@@ -582,10 +582,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Remove one-shot navigation flags after the real app has loaded
     // successfully, without triggering another navigation.
     const currentUrl = new URL(window.location.href);
+    const justAppliedUpdate = currentUrl.searchParams.has('_canovia_update');
     const oneShotFlags = ['_pk_network', '_canovia_network', '_canovia_update'];
     if (oneShotFlags.some((key) => currentUrl.searchParams.has(key))) {
         oneShotFlags.forEach((key) => currentUrl.searchParams.delete(key));
         window.history.replaceState({}, '', currentUrl.pathname + currentUrl.search + currentUrl.hash);
+    }
+
+    if (justAppliedUpdate) {
+        const notice = document.createElement('div');
+        notice.className = 'assistant-notice assistant-notice-info fixed left-1/2 top-4 z-[100] w-[min(92vw,28rem)] -translate-x-1/2 shadow-2xl';
+        notice.setAttribute('role', 'status');
+        notice.textContent = 'Canoviaを最新バージョンへ更新しました。';
+        document.body.appendChild(notice);
+        window.setTimeout(() => notice.remove(), 3200);
     }
 
     const mobileBack = document.querySelector('[data-mobile-back]');
@@ -650,31 +660,13 @@ document.addEventListener('DOMContentLoaded', () => {
             : null;
         if (!form) return;
 
-        // JSON preview must use a normal browser submission. The server stores
-        // the proposal in the session and then redirects back to this page.
-        // Bypassing every JS submit listener here prevents the input area from
-        // being replaced before the proposal is rendered.
+        // JSON preview must stay a completely native browser form submission.
+        // The JSON normalizer above already ran in capture phase. Do not call
+        // preventDefault(), fetch(), requestSubmit() or form.submit() here:
+        // Safari/PWA proved unreliable when we re-issued this submit from JS.
+        // Let the browser perform POST -> Laravel session save -> redirect.
         const isJsonPreview = form.action.includes('/review-assistant/preview');
         if (isJsonPreview) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            if (form.dataset.asyncBusy === '1') return;
-            form.dataset.asyncBusy = '1';
-
-            window.clearTimeout(loadingTimer);
-            loadingOverlay?.classList.remove('is-visible');
-            loadingOverlay?.setAttribute('aria-hidden', 'true');
-
-            const submitButton = event.submitter || form.querySelector('[data-async-plan-review-submit]');
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.textContent = '変更内容を確認中…';
-            }
-
-            // The capture-phase AI JSON normalizer has already run at this
-            // point. Native submit intentionally skips both this handler and
-            // the legacy inline handler in the Blade view.
-            HTMLFormElement.prototype.submit.call(form);
             return;
         }
 
@@ -1064,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // controllerchange. iOS/PWA can occasionally miss that event,
                 // so keep a timed network-reload fallback as well.
                 pendingWorker.postMessage({ type: 'SKIP_WAITING' });
-                updateFallbackTimer = window.setTimeout(reloadIntoFreshShell, 3500);
+                updateFallbackTimer = window.setTimeout(reloadIntoFreshShell, 1800);
             });
 
             updateLater?.addEventListener('click', () => updateBanner?.classList.add('hidden'));
