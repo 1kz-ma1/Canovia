@@ -116,6 +116,14 @@ PROMPT;
             ]);
         }
 
+        $incomingTarget = $decoded['target_plan'] ?? null;
+        $incomingPlanId = is_array($incomingTarget) ? ($incomingTarget['id'] ?? null) : null;
+        if ($incomingPlanId !== null && $incomingPlanId !== '' && (int) $incomingPlanId !== (int) $plan->id) {
+            throw ValidationException::withMessages([
+                'tasks_json' => '別の計画ID向けの回答です。現在の計画IDは '.$plan->id.' です。下の修正依頼をAIへ送り、target_plan.idだけでなく内容全体がこの計画向けか確認してください。',
+            ]);
+        }
+
         $compatibility = app(PlanGenerationJsonCompatibilityService::class)->adapt($plan, $decoded);
         $decoded = $compatibility['decoded'];
         $normalizationNotes = $compatibility['notes'];
