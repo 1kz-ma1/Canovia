@@ -47,11 +47,16 @@
             </div>
         @endif
 
-        @if ($errors->any())
+        @php
+            $pageErrors = collect($errors->getBag('default')->getMessages())
+                ->except(['operations_json'])
+                ->flatten();
+        @endphp
+        @if ($pageErrors->isNotEmpty())
             <div id="review-errors" class="assistant-notice assistant-notice-error">
                 <p class="font-bold">入力内容を確認してください。</p>
                 <ul class="mt-2 list-disc space-y-1 pl-5 text-sm">
-                    @foreach ($errors->all() as $error)
+                    @foreach ($pageErrors as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
@@ -207,6 +212,40 @@
                     </div>
                     <div class="assistant-avatar assistant-avatar-user">YOU</div>
                 </div>
+
+                @if ($errors->has('operations_json'))
+                    @php
+                        $jsonErrorMessage = $errors->first('operations_json');
+                        $jsonRepairPrompt = implode("\n", [
+                            'Canoviaに貼り付けたJSONでエラーが発生しました。',
+                            '以下のエラー内容と元のJSONを確認し、元の意図・数値・ID・進捗情報をできるだけ保持したまま、エラー解消に必要な箇所だけ修正してください。',
+                            '情報不足で安全に修正できない場合は、JSONを作らず必要な確認質問だけをしてください。',
+                            '修正できる場合は、返答前にJSONとして構文解析できることを確認し、説明文・Markdown・コードフェンスを付けず、有効なJSONだけを最後の回答として返してください。',
+                            '',
+                            '【Canoviaのエラー】',
+                            $jsonErrorMessage,
+                            '',
+                            '【元のJSON】',
+                            old('operations_json', ''),
+                        ]);
+                    @endphp
+                    <div class="assistant-message-row assistant-message-left">
+                        <div class="assistant-avatar">CV</div>
+                        <div class="assistant-bubble assistant-bubble-support assistant-wide-bubble">
+                            <p class="assistant-speaker">Canovia サポーター</p>
+                            <h3 class="mt-2 text-lg font-bold text-slate-100">JSONを読み込めませんでした</h3>
+                            <p class="mt-2 text-sm leading-6 text-slate-300">
+                                入力内容は残しています。下の修正依頼をコピーして、JSONを作ったAIへそのまま送ってください。
+                            </p>
+                            <div class="assistant-notice assistant-notice-error mt-4">
+                                <p class="font-bold">Canoviaが検出した内容</p>
+                                <p class="mt-1 text-sm leading-6">{{ $jsonErrorMessage }}</p>
+                            </div>
+                            <textarea id="reviewJsonRepairPrompt" class="form-control mt-4 min-h-[220px] font-mono text-xs" readonly>{{ $jsonRepairPrompt }}</textarea>
+                            <button type="button" class="btn-primary mt-3" onclick="copyReviewJsonRepairPrompt()">修正依頼をコピー</button>
+                        </div>
+                    </div>
+                @endif
             @endif
 
             @if ($proposal)
@@ -407,6 +446,22 @@
             }
         }
 
-        // Async review submission is handled centrally in resources/js/app.js.
+        async function copyReviewJsonRepairPrompt() {
+            const prompt = document.getElementById('reviewJsonRepairPrompt');
+            if (! prompt) return;
+
+            try {
+                await navigator.clipboard.writeText(prompt.value);
+                alert('修正依頼をコピーしました。JSONを作ったAIへ送ってください。');
+            } catch (error) {
+                prompt.focus();
+                prompt.select();
+                prompt.setSelectionRange(0, prompt.value.length);
+                alert('自動コピーできませんでした。選択された内容を手動でコピーしてください。');
+            }
+        }
+
+        // Prompt/reset async submission is handled centrally in resources/js/app.js.
+        // JSON preview intentionally uses the browser's native form submission.
     </script>
 @endsection

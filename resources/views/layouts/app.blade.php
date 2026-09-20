@@ -243,17 +243,6 @@
             </form>
         </dialog>
 
-        <div class="app-update-banner hidden" data-app-update role="status" aria-live="polite">
-            <div class="min-w-0">
-                <p class="font-bold text-slate-50">Canoviaを更新できます</p>
-                <p class="mt-1 text-xs text-slate-300">作業中に勝手に再読み込みはしません。</p>
-            </div>
-            <div class="flex shrink-0 gap-2">
-                <button type="button" class="btn-secondary px-3 py-2 text-xs" data-app-update-later>あとで</button>
-                <button type="button" class="btn-primary px-3 py-2 text-xs" data-app-update-apply>更新する</button>
-            </div>
-        </div>
-
         <dialog class="release-notes-dialog" data-release-notes-dialog data-latest-release-key="{{ $latestReleaseKey }}" aria-labelledby="release-notes-title">
             <div class="release-notes-card">
                 <div class="release-notes-header">
