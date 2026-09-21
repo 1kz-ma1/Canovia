@@ -73,7 +73,7 @@ class BehaviorEventLogger
             $event = $this->record($actorToken, $type, $request, $plan, $task, $sanitized, $occurredAt);
             $persisted = true;
         } catch (Throwable $exception) {
-            Log::warning('behavior_event_persist_failed', [
+            $this->safeLog('warning', 'behavior_event_persist_failed', [
                 'event_type' => $type->value,
                 'error_class' => class_basename($exception),
             ]);
@@ -81,7 +81,7 @@ class BehaviorEventLogger
 
         // Render keeps this structured line even if the analytics table is
         // temporarily unavailable. Never include prompt/JSON/user text here.
-        Log::info('canovia_funnel_event', [
+        $this->safeLog('info', 'canovia_funnel_event', [
             'event_type' => $type->value,
             'actor_ref' => substr(hash('sha256', $actorToken), 0, 16),
             'plan_ref' => $plan ? substr(hash('sha256', 'plan:'.$plan->id), 0, 16) : null,
@@ -119,13 +119,22 @@ class BehaviorEventLogger
                 return null;
             }
         } catch (Throwable $exception) {
-            Log::warning('behavior_event_dedupe_failed', [
+            $this->safeLog('warning', 'behavior_event_dedupe_failed', [
                 'event_type' => $type->value,
                 'error_class' => class_basename($exception),
             ]);
         }
 
         return $this->recordSafely($actorToken, $type, $request, $plan, $task, $metadata);
+    }
+
+    private function safeLog(string $level, string $message, array $context): void
+    {
+        try {
+            Log::log($level, $message, $context);
+        } catch (Throwable) {
+            // Observability must never become a product outage.
+        }
     }
 
     private function sanitizeMetadata(array $metadata): array
