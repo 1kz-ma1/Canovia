@@ -203,6 +203,25 @@
         </section>
     @endif
 
+    @if (($canEdit ?? false) && $toolFocusTask && ! empty($planTools))
+        <section class="mb-6 page-card border-cyan-300/20 p-4 sm:p-5">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-cyan-300">CANOVIA TOOLS</p>
+                    <h2 class="mt-1 text-lg font-black text-slate-50">「{{ $toolFocusTask->title }}」を進める</h2>
+                    <p class="mt-1 text-xs leading-5 text-slate-400">時間を計るだけでなく、このTaskに合う道具をCanoviaから使えます。</p>
+                </div>
+                <span class="badge badge-slate">Task #{{ $toolFocusTask->id }}</span>
+            </div>
+            @include('plans.partials.task-tools', [
+                'tools' => $planTools,
+                'toolTask' => $toolFocusTask,
+                'toolPlan' => $plan,
+                'compactTools' => false,
+            ])
+        </section>
+    @endif
+
     <section class="mb-8 page-card roadmap-shell p-4 sm:p-6">
         <div class="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -433,6 +452,15 @@
                                 </div>
                             @endif
                         </div>
+
+                        @if (($canEdit ?? false) && ! empty($taskTools[(int) $task->id] ?? []))
+                            @include('plans.partials.task-tools', [
+                                'tools' => $taskTools[(int) $task->id],
+                                'toolTask' => $task,
+                                'toolPlan' => $plan,
+                                'compactTools' => true,
+                            ])
+                        @endif
 
                         <div class="mt-4 mobile-metric-strip md:grid md:grid-cols-6">
                             <div class="metric-card"><p class="text-xs text-slate-500">総想定時間</p><p class="font-semibold text-slate-900">{{ $task->estimated_minutes }}分</p></div>
