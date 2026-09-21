@@ -45,7 +45,7 @@ class AdminFeedbackController extends Controller
     public function index(Request $request)
     {
         if (! $this->authorized($request)) {
-            return redirect()->route('admin.feedback.login');
+            return redirect()->route('admin.login');
         }
 
         $validated = $request->validate([
