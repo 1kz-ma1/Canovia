@@ -4,6 +4,8 @@
 
 @section('content')
     <div class="space-y-6">
+        @include('admin.partials.nav')
+
         <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <p class="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">AI Funnel Diagnostics</p>
@@ -14,7 +16,6 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('admin.feedback.index') }}" class="btn-secondary">フィードバック</a>
                 @foreach ([7, 30] as $range)
                     <a
                         href="{{ route('admin.telemetry.index', ['days' => $range]) }}"
