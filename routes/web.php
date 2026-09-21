@@ -178,6 +178,7 @@ Route::get('/plans/{plan}/tasks/{task}/study-practice', [StudyPracticeController
 Route::post('/plans/{plan}/tasks/{task}/study-practice/import', [StudyPracticeController::class, 'import'])->name('plans.tasks.study_practice.import');
 Route::post('/plans/{plan}/tasks/{task}/study-practice/answers', [StudyPracticeController::class, 'submitAnswers'])->name('plans.tasks.study_practice.answers');
 Route::post('/plans/{plan}/tasks/{task}/study-practice/assessment', [StudyPracticeController::class, 'previewAssessment'])->name('plans.tasks.study_practice.assessment');
+Route::post('/plans/{plan}/tasks/{task}/study-practice/apply', [StudyPracticeController::class, 'applyAssessment'])->name('plans.tasks.study_practice.apply');
 Route::post('/plans/{plan}/tasks/{task}/study-practice/reset', [StudyPracticeController::class, 'reset'])->name('plans.tasks.study_practice.reset');
 
 Route::get('/plans/{plan}/ai-task-assistant', [AiTaskAssistantController::class, 'show'])

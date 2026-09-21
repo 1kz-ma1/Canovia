@@ -10,7 +10,7 @@ class PlanTimelineService
 {
     public function build(Plan $plan): Collection
     {
-        $plan->loadMissing(['workLogs.task', 'adjustments']);
+        $plan->loadMissing(['workLogs.task', 'adjustments', 'studyPracticeAttempts.task']);
 
         $results = $plan->workLogs->toBase()->map(function ($log) {
             return [
@@ -43,8 +43,27 @@ class PlanTimelineService
             ];
         });
 
+        $study = $plan->studyPracticeAttempts
+            ->whereNotNull('applied_at')
+            ->toBase()
+            ->map(function ($attempt) {
+                return [
+                    'type' => 'study',
+                    'occurred_at' => $attempt->applied_at,
+                    'date_label' => $attempt->applied_at?->format('Y-m-d H:i'),
+                    'title' => ($attempt->task?->title ?? '学習Task').'・AI演習',
+                    'summary' => $attempt->evidence_summary,
+                    'score_percent' => $attempt->score_percent,
+                    'progress_before' => $attempt->progress_before_percent,
+                    'progress_after' => $attempt->progress_after_percent,
+                    'next_action' => $attempt->next_action,
+                    'model' => $attempt,
+                ];
+            });
+
         return $results
             ->concat($changes)
+            ->concat($study)
             ->sortByDesc(fn (array $event) => $event['occurred_at']?->timestamp ?? 0)
             ->values();
     }

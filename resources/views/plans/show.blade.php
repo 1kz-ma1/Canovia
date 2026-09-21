@@ -482,18 +482,31 @@
 
     <section class="page-card p-6">
         <h2 class="text-2xl font-bold text-slate-900">これまでの記録</h2>
-        <p class="mt-1 text-sm text-slate-500">作業結果と計画変更を、現在地がどう変わったかと一緒に時系列で残します。</p>
+        <p class="mt-1 text-sm text-slate-500">作業結果・AI演習・計画変更を、現在地がどう変わったかと一緒に時系列で残します。</p>
 
         @if ($timeline->isEmpty())
             <div class="empty-state mt-5">まだ記録はありません。</div>
         @else
             <div class="mt-5 space-y-4 border-l-2 border-slate-200 pl-5">
                 @foreach ($timeline as $event)
+                    @php
+                        $eventDotClass = match ($event['type']) {
+                            'result' => 'bg-sky-500',
+                            'study' => 'bg-violet-500',
+                            default => 'bg-emerald-500',
+                        };
+                        $eventBadgeClass = $event['type'] === 'change' ? 'badge-green' : 'badge-slate';
+                        $eventTypeLabel = match ($event['type']) {
+                            'result' => '結果',
+                            'study' => 'AI演習',
+                            default => '変更',
+                        };
+                    @endphp
                     <article class="relative rounded-xl border border-slate-200 p-4">
-                        <span class="absolute -left-[1.85rem] top-5 h-3 w-3 rounded-full {{ $event['type'] === 'result' ? 'bg-sky-500' : 'bg-emerald-500' }}"></span>
+                        <span class="absolute -left-[1.85rem] top-5 h-3 w-3 rounded-full {{ $eventDotClass }}"></span>
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                                <span class="badge {{ $event['type'] === 'result' ? 'badge-slate' : 'badge-green' }}">{{ $event['type'] === 'result' ? '結果' : '変更' }}</span>
+                                <span class="badge {{ $eventBadgeClass }}">{{ $eventTypeLabel }}</span>
                                 <h3 class="mt-2 font-bold text-slate-900">{{ $event['title'] }}</h3>
                             </div>
                             <p class="text-sm text-slate-500">{{ $event['date_label'] }}</p>
@@ -508,6 +521,12 @@
                                 <span class="badge badge-slate">{{ $event['actual_minutes'] }}分</span>
                                 @if ($event['progress_after'] !== null)<span class="badge badge-slate">進捗 {{ $event['progress_before'] ?? '—' }}% → {{ $event['progress_after'] }}%</span>@endif
                                 @if ($event['remaining_after'] !== null)<span class="badge badge-slate">残り {{ $event['remaining_before'] ?? '—' }}分 → {{ $event['remaining_after'] }}分</span>@endif
+                            </div>
+                        @elseif ($event['type'] === 'study')
+                            <div class="mt-4 flex flex-wrap gap-2 text-sm">
+                                <span class="badge badge-slate">score {{ $event['score_percent'] }}%</span>
+                                @if ($event['progress_after'] !== null)<span class="badge badge-slate">Task進捗 {{ $event['progress_before'] ?? '—' }}% → {{ $event['progress_after'] }}%</span>@endif
+                                @if ($event['next_action'])<span class="badge badge-slate">次：{{ $event['next_action'] }}</span>@endif
                             </div>
                         @else
                             <div class="mt-4 flex flex-wrap gap-2 text-sm">

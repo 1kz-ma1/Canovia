@@ -4,13 +4,32 @@ namespace App\Services;
 
 use App\Models\Plan;
 use App\Models\Task;
+use Illuminate\Support\Collection;
 
 class StudyPracticePromptService
 {
-    public function generationPrompt(Plan $plan, Task $task): string
+    public function generationPrompt(Plan $plan, Task $task, ?Collection $recentAttempts = null): string
     {
         $planDescription = trim((string) ($plan->description ?? '')) ?: '未設定';
         $taskDescription = trim((string) ($task->description ?? '')) ?: '未設定';
+        $history = collect($recentAttempts ?? [])
+            ->take(5)
+            ->map(function ($attempt) {
+                $weaknesses = collect($attempt->weaknesses ?? [])->filter()->implode(' / ');
+                $strengths = collect($attempt->strengths ?? [])->filter()->implode(' / ');
+                $next = trim((string) ($attempt->next_action ?? ''));
+
+                return sprintf(
+                    '- %s | score:%d%% | strengths:%s | weaknesses:%s | next:%s',
+                    $attempt->created_at?->format('Y-m-d H:i') ?? '日時不明',
+                    (int) $attempt->score_percent,
+                    $strengths !== '' ? $strengths : 'なし',
+                    $weaknesses !== '' ? $weaknesses : 'なし',
+                    $next !== '' ? $next : 'なし',
+                );
+            })
+            ->implode("\n");
+        $history = $history !== '' ? $history : '- まだAI演習履歴はありません';
 
         return <<<PROMPT
 あなたはCanoviaの学習演習作成AIです。
@@ -28,9 +47,15 @@ task_id: {$task->id}
 説明: {$taskDescription}
 現在進捗: {$task->progress_percent}%
 残り想定時間: {$task->remaining_minutes}分
+現在の次Action: {$task->next_action_note}
+
+【最近のAI演習履歴】
+{$history}
 
 【目的】
 - このTaskの達成に直接役立つ問題を10問前後作る
+- 過去のAI演習でweaknessesがある場合は、その弱点を優先して再確認する
+- すでに安定して正解できている内容だけを同じ形で繰り返さず、弱点補強と定着確認の比重を高める
 - 単なる暗記だけでなく、可能なら理解・判断・計算も含める
 - 難易度は現在のTask内容に合わせる
 - 問題文だけで解答に必要な条件が分かるようにする
