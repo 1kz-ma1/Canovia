@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Canovia">
     <meta name="referrer" content="no-referrer">
-    <link rel="manifest" href="{{ route('pwa.manifest') }}" crossorigin="use-credentials">
+    <link rel="manifest" href="{{ $manifestUrl }}" crossorigin="use-credentials">
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
     <title>ホーム画面に追加 | Canovia</title>
     <style>
@@ -45,7 +45,7 @@
             <img class="mascot" src="/brand/mascot-guide.webp" alt="">
             <h1>データをそのまま、ホーム画面へ。</h1>
             <p class="lead">この画面から追加すると、Safariで使っているログイン状態やGuest計画を、ホーム画面版Canoviaへ安全に引き継げます。</p>
-            <div class="protect"><strong>重要：</strong>この画面を閉じずに追加してください。引き継ぎリンクは一度だけ使え、30分で期限切れになります。</div>
+            <div class="protect"><strong>重要：</strong>この画面を閉じずに追加してください。初回起動だけ安全な引き継ぎリンクを使い、その後は通常のCanoviaホームから起動します。</div>
             <ol class="steps">
                 <li><span>Safari下部の<strong>共有</strong>ボタンを押す</span></li>
                 <li><span><strong>「ホーム画面に追加」</strong>を選ぶ</span></li>

@@ -10,6 +10,7 @@ class WorkSession extends Model
         'actor_token',
         'browser_session_id',
         'client_session_id',
+        'start_request_id',
         'plan_id',
         'task_id',
         'status',

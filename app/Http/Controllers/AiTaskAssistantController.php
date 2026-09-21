@@ -131,6 +131,18 @@ PROMPT;
             $decoded,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
         );
+        $requestHash = hash('sha256', 'plan_generation|'.$plan->id.'|'.$json);
+
+        // A successful import can be retried by Safari/PWA when the redirect is
+        // not rendered. Treat the normalized JSON as the idempotency key so the
+        // same plan payload never creates a second copy of every task.
+        if (PlanAdjustment::query()
+            ->where('plan_id', $plan->id)
+            ->where('request_hash', $requestHash)
+            ->exists()) {
+            return redirect()->route('plans.show', $plan)
+                ->with('success', 'この初期計画はすでに反映済みです。重複登録せず、既存の計画を開きました。');
+        }
 
         $operations = $decoded['operations'] ?? null;
 
@@ -218,9 +230,22 @@ PROMPT;
             $normalizedTasks = $orderRefs->map(fn ($ref) => $byRef->get($ref))->values();
         }
 
-        $metricsBefore = $progressService->calculate($plan);
+        $appliedNow = DB::transaction(function () use ($plan, $decoded, $json, $normalizedTasks, $normalizedDeadline, $progressService, $normalizationNotes, $requestHash) {
+            // Serialize imports for the same Plan. This closes the race where two
+            // identical POSTs arrive before either request has written its
+            // PlanAdjustment row.
+            Plan::query()->whereKey($plan->id)->lockForUpdate()->firstOrFail();
 
-        DB::transaction(function () use ($plan, $decoded, $json, $normalizedTasks, $normalizedDeadline, $metricsBefore, $progressService, $normalizationNotes) {
+            if (PlanAdjustment::query()
+                ->where('plan_id', $plan->id)
+                ->where('request_hash', $requestHash)
+                ->exists()) {
+                return false;
+            }
+
+            $plan->unsetRelation('tasks');
+            $plan->unsetRelation('workLogs');
+            $metricsBefore = $progressService->calculate($plan);
             $applied = [];
 
             if ($normalizedDeadline !== null) {
@@ -243,6 +268,7 @@ PROMPT;
             PlanAdjustment::create([
                 'plan_id' => $plan->id,
                 'flow' => 'plan_generation',
+                'request_hash' => $requestHash,
                 'summary' => trim((string) ($decoded['summary'] ?? 'AIが初期計画を生成')),
                 'user_input' => [
                     'normalization_notes' => $normalizationNotes,
@@ -254,7 +280,14 @@ PROMPT;
                 'metrics_after' => $progressService->calculate($plan),
                 'applied_at' => now(),
             ]);
+
+            return true;
         });
+
+        if (! $appliedNow) {
+            return redirect()->route('plans.show', $plan)
+                ->with('success', 'この初期計画はすでに反映済みです。重複登録せず、既存の計画を開きました。');
+        }
 
         $message = 'AIが生成した初期タスクを登録しました。';
         if ($normalizationNotes !== []) {

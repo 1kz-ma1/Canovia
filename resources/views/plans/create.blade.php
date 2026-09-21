@@ -51,8 +51,10 @@
             method="POST"
             class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start"
             data-onboarding-target="plan-form"
+            data-mutation-once
         >
             @csrf
+            <input type="hidden" name="create_request_id" value="{{ old('create_request_id', (string) \Illuminate\Support\Str::uuid()) }}">
 
             <section class="page-card space-y-5 p-5 sm:p-6">
                 <div class="rounded-2xl border border-cyan-300/20 bg-cyan-400/[.045] p-4 sm:p-5">
@@ -213,6 +215,7 @@
                         type="submit"
                         class="btn-primary w-full justify-center py-3 text-sm sm:text-base"
                         data-onboarding-target="create-plan-submit"
+                        data-processing-label="計画を作成しています…"
                     >
                         計画を作ってAIへ進む
                     </button>
