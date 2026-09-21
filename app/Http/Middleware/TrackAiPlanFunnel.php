@@ -103,7 +103,7 @@ class TrackAiPlanFunnel
             ],
             'plans.review_assistant.prompt' => [
                 'success' => BehaviorEventType::PlanUpdatePromptGenerated,
-                'failure' => BehaviorEventType::PlanUpdatePreviewFailed,
+                'failure' => BehaviorEventType::PlanUpdatePromptFailed,
             ],
             'plans.review_assistant.preview' => [
                 'attempt' => BehaviorEventType::PlanUpdatePreviewAttempted,
