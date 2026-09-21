@@ -65,6 +65,9 @@
                     @if ($aiPracticeTask ?? false)
                         <a href="{{ route('plans.tasks.study_practice.show', [$plan, $aiPracticeTask]) }}" class="btn-primary flex-1 md:flex-none">✦ AI演習</a>
                     @endif
+                    @if (! empty($planTools))
+                        <a href="#canovia-tools" class="btn-secondary flex-1 md:flex-none">Tools</a>
+                    @endif
                     @if ($canManage ?? false)
                         <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-primary flex-1 md:flex-none">計画を更新</a>
                     @endif
@@ -101,7 +104,7 @@
     </section>
 
     @if (($studyToolCategoryMismatch ?? false) && ($canEdit ?? false))
-        <section id="canovia-tools" class="mb-6 page-card border-amber-300/20 bg-amber-300/[0.035] p-4 sm:p-5">
+        <section id="ai-practice-hint" class="mb-6 page-card border-amber-300/20 bg-amber-300/[0.035] p-4 sm:p-5">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="max-w-3xl">
                     <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">CANOVIA TOOLS</p>
