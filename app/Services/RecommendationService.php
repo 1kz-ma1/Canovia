@@ -24,9 +24,11 @@ class RecommendationService
         ?string $intent = null,
         ?string $actorToken = null,
         ?int $preferredPlanId = null,
+        array $candidateTaskIds = [],
     ): ?TaskRecommendationData {
         $weights = config('recommendations.weights');
         $excludedTaskIds = array_map('intval', $excludedTaskIds);
+        $candidateTaskIds = array_map('intval', $candidateTaskIds);
         $personalization = $this->personalizationService->profile($actorToken);
         $recentTaskSessions = $this->recentTaskSessions($actorToken);
         $totalDailyRequired = 0;
@@ -57,7 +59,8 @@ class RecommendationService
             $remainingDays = $progress['remaining_days'];
 
             foreach ($plan->tasks as $task) {
-                if (in_array($task->id, $excludedTaskIds, true)
+                if (($candidateTaskIds !== [] && ! in_array((int) $task->id, $candidateTaskIds, true))
+                    || in_array($task->id, $excludedTaskIds, true)
                     || in_array($task->status, ['done', 'cancelled'], true)
                     || $task->progress_percent >= 100) {
                     continue;
