@@ -156,6 +156,14 @@ class StudyPracticeController extends Controller
         $decoded = json_decode($json, true);
         $this->assertEnvelope($decoded, 'study_assessment', $plan, $task, 'assessment_json');
 
+        $key = $this->sessionKey($plan, $task);
+        $state = $request->session()->get($key, []);
+        if (empty($state['evaluation_prompt']) || empty($state['answers'])) {
+            throw ValidationException::withMessages([
+                'assessment_json' => '先にCanovia上で問題へ回答し、評価用プロンプトを生成してください。',
+            ]);
+        }
+
         $score = filter_var($decoded['score_percent'] ?? null, FILTER_VALIDATE_INT);
         $recommendedProgress = filter_var($decoded['recommended_task_progress_percent'] ?? null, FILTER_VALIDATE_INT);
 
@@ -175,8 +183,6 @@ class StudyPracticeController extends Controller
             'next_action' => mb_substr(trim((string) ($decoded['next_action'] ?? '')), 0, 1000),
         ];
 
-        $key = $this->sessionKey($plan, $task);
-        $state = $request->session()->get($key, []);
         $state['assessment'] = $assessment;
         $request->session()->put($key, $state);
 
@@ -188,6 +194,7 @@ class StudyPracticeController extends Controller
     public function reset(Request $request, Plan $plan, Task $task, PlanOwnershipService $ownership)
     {
         $this->authorizeTask($request, $plan, $task, $ownership);
+        abort_unless(trim((string) $plan->category) === '資格学習', 404);
         $request->session()->forget($this->sessionKey($plan, $task));
 
         return redirect()
@@ -239,8 +246,10 @@ class StudyPracticeController extends Controller
             $type = trim((string) ($question['type'] ?? ''));
             $prompt = trim((string) ($question['prompt'] ?? ''));
 
-            if ($id === '' || isset($seen[$id])) {
-                throw ValidationException::withMessages(['questions_json' => 'question.idは重複しない値にしてください。']);
+            if ($id === '' || preg_match('/^[A-Za-z0-9_-]{1,64}$/', $id) !== 1 || isset($seen[$id])) {
+                throw ValidationException::withMessages([
+                    'questions_json' => 'question.idは英数字・_・-だけを使い、重複しない64文字以内の値にしてください。',
+                ]);
             }
             if (! in_array($type, $allowedTypes, true)) {
                 throw ValidationException::withMessages(['questions_json' => 'question.typeがCanoviaの対応形式ではありません。']);
@@ -256,16 +265,25 @@ class StudyPracticeController extends Controller
                     throw ValidationException::withMessages(['questions_json' => '選択式問題のchoicesは2〜6件にしてください。']);
                 }
 
+                $seenChoiceIds = [];
                 foreach (array_values($rawChoices) as $choiceIndex => $choice) {
                     if (! is_array($choice)) {
                         throw ValidationException::withMessages(['questions_json' => 'choiceはidとlabelを持つJSONオブジェクトにしてください。']);
                     }
                     $choiceId = trim((string) ($choice['id'] ?? chr(65 + $choiceIndex)));
                     $label = trim((string) ($choice['label'] ?? ''));
-                    if ($choiceId === '' || $label === '') {
-                        throw ValidationException::withMessages(['questions_json' => 'choiceのidまたはlabelが空です。']);
+                    if (
+                        $choiceId === ''
+                        || preg_match('/^[A-Za-z0-9_-]{1,20}$/', $choiceId) !== 1
+                        || isset($seenChoiceIds[$choiceId])
+                        || $label === ''
+                    ) {
+                        throw ValidationException::withMessages([
+                            'questions_json' => 'choice.idは英数字・_・-だけの重複しない20文字以内の値にし、labelも入力してください。',
+                        ]);
                     }
-                    $choices[] = ['id' => mb_substr($choiceId, 0, 20), 'label' => mb_substr($label, 0, 1000)];
+                    $seenChoiceIds[$choiceId] = true;
+                    $choices[] = ['id' => $choiceId, 'label' => mb_substr($label, 0, 1000)];
                 }
             }
 
