@@ -101,6 +101,25 @@ class StudyPracticeToolV392Test extends TestCase
             ->assertSee('名前解決');
     }
 
+    public function test_smart_quoted_question_json_is_absorbed_without_ai_repair_roundtrip(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $json = '｛“schema_version”：“1.0”，“flow”：“study_practice”，“target_plan”：｛“id”：'.$plan->id.'｝，“target_task”：｛“id”：'.$task->id.'｝，“title”：“引用符補正確認”，“questions”：［｛“id”：“q1”，“type”：“text”，“prompt”：“いわゆる“ゼロトラスト”を説明せよ”，“choices”：［］｝］｝';
+
+        $this->actingAs($user)
+            ->post(route('plans.tasks.study_practice.import', [$plan, $task]), [
+                'questions_json' => $json,
+            ])
+            ->assertRedirect(route('plans.tasks.study_practice.show', [$plan, $task]))
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($user)
+            ->get(route('plans.tasks.study_practice.show', [$plan, $task]))
+            ->assertOk()
+            ->assertSee('引用符補正確認')
+            ->assertSee('いわゆる“ゼロトラスト”を説明せよ');
+    }
+
     public function test_wrong_task_target_is_rejected(): void
     {
         [$user, $plan, $task] = $this->studyPlan();

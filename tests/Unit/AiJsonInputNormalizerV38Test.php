@@ -52,23 +52,33 @@ JSON);
         $this->assertSame('a } b { c', json_decode($json, true)['text']);
     }
 
-    public function test_reports_structural_smart_quotes_without_rewriting_semantic_content(): void
+    public function test_repairs_structural_smart_quotes_without_rewriting_semantic_content(): void
     {
-        try {
-            $this->normalizer->normalize('{“schema_version”:“1.0”,“flow”:“study_practice”}');
-            $this->fail('Expected invalid smart-quote JSON to be rejected.');
-        } catch (InvalidArgumentException $exception) {
-            $this->assertStringContainsString('スマートクォート', $exception->getMessage());
-            $this->assertStringContainsString('半角ダブルクォート', $exception->getMessage());
-        }
+        $json = $this->normalizer->normalize(
+            '{“schema_version”:“1.0”,“flow”:“study_practice”,“title”:“いわゆる“ゼロトラスト”とは”}'
+        );
+        $decoded = json_decode($json, true);
 
-        $json = $this->normalizer->normalize('{"text":"He said “yes”","operations":[]}');
-        $this->assertSame('He said “yes”', json_decode($json, true)['text']);
+        $this->assertSame('1.0', $decoded['schema_version']);
+        $this->assertSame('study_practice', $decoded['flow']);
+        $this->assertSame('いわゆる“ゼロトラスト”とは', $decoded['title']);
+    }
+
+    public function test_repairs_fullwidth_structural_punctuation_only_outside_strings(): void
+    {
+        $json = $this->normalizer->normalize(
+            '｛"title"："A，B：C"，"items"：［1，2，3］｝'
+        );
+        $decoded = json_decode($json, true);
+
+        $this->assertSame('A，B：C', $decoded['title']);
+        $this->assertSame([1, 2, 3], $decoded['items']);
     }
 
     public function test_throws_actionable_error_for_unclosed_json(): void
     {
         $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Canoviaで安全に自動補正できる範囲を試しました');
         $this->expectExceptionMessage('閉じ括弧');
         $this->normalizer->normalize('{"schema_version":"2.0"');
     }
