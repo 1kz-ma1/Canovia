@@ -160,6 +160,8 @@ class StudyPracticeLearningLoopV393Test extends TestCase
         $this->assertStringContainsString('MTU計算', $prompt);
         $this->assertStringContainsString('TCP分割', $prompt);
         $this->assertStringContainsString('過去のAI演習でweaknessesがある場合', $prompt);
+        $this->assertStringContainsString('返答直前にJSONとして構文解析できることを確認してください', $prompt);
+        $this->assertStringContainsString('スマートクォート（“ ”）は使わないでください', $prompt);
     }
 
     private function answeredSession(Plan $plan, Task $task): array
