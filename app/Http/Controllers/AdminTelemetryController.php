@@ -26,6 +26,7 @@ class AdminTelemetryController extends Controller
             BehaviorEventType::PlanGenerationImportSucceeded,
             BehaviorEventType::PlanUpdateOpened,
             BehaviorEventType::PlanUpdatePromptGenerated,
+            BehaviorEventType::PlanUpdatePromptFailed,
             BehaviorEventType::PlanUpdatePromptCopyClicked,
             BehaviorEventType::PlanUpdatePreviewAttempted,
             BehaviorEventType::PlanUpdatePreviewFailed,
@@ -52,6 +53,7 @@ class AdminTelemetryController extends Controller
         $updateStages = [
             BehaviorEventType::PlanUpdateOpened->value => '計画更新画面',
             BehaviorEventType::PlanUpdatePromptGenerated->value => 'プロンプト生成',
+            BehaviorEventType::PlanUpdatePromptFailed->value => 'プロンプト生成失敗',
             BehaviorEventType::PlanUpdatePromptCopyClicked->value => 'プロンプトコピー',
             BehaviorEventType::PlanUpdatePreviewAttempted->value => 'JSONプレビュー試行',
             BehaviorEventType::PlanUpdatePreviewSucceeded->value => 'プレビュー成功',
@@ -97,6 +99,7 @@ class AdminTelemetryController extends Controller
 
         $failureEvents = $events->filter(fn ($event) => in_array($event->event_type->value, [
             BehaviorEventType::PlanGenerationImportFailed->value,
+            BehaviorEventType::PlanUpdatePromptFailed->value,
             BehaviorEventType::PlanUpdatePreviewFailed->value,
             BehaviorEventType::PlanUpdateApplyFailed->value,
         ], true));
