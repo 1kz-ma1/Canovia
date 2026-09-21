@@ -28,6 +28,7 @@ enum BehaviorEventType: string
     case PlanGenerationImportSucceeded = 'plan_generation_import_succeeded';
     case PlanUpdateOpened = 'plan_update_opened';
     case PlanUpdatePromptGenerated = 'plan_update_prompt_generated';
+    case PlanUpdatePromptFailed = 'plan_update_prompt_failed';
     case PlanUpdatePromptCopyClicked = 'plan_update_prompt_copy_clicked';
     case PlanUpdatePreviewAttempted = 'plan_update_preview_attempted';
     case PlanUpdatePreviewFailed = 'plan_update_preview_failed';
