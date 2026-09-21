@@ -49,15 +49,24 @@ class TrackAiPlanFunnel
             $response = $next($request);
 
             if ($definition['success'] ?? null) {
-                $record = ($definition['once'] ?? false) ? 'recordOnceSafely' : 'recordSafely';
-                $this->logger->{$record}(
-                    $actorToken,
-                    $definition['success'],
-                    $request,
-                    $plan,
-                    metadata: $baseMetadata,
-                    ...(($definition['once'] ?? false) ? ['withinMinutes' => 5] : []),
-                );
+                if ($definition['once'] ?? false) {
+                    $this->logger->recordOnceSafely(
+                        $actorToken,
+                        $definition['success'],
+                        $request,
+                        $plan,
+                        metadata: $baseMetadata,
+                        withinMinutes: 5,
+                    );
+                } else {
+                    $this->logger->recordSafely(
+                        $actorToken,
+                        $definition['success'],
+                        $request,
+                        $plan,
+                        metadata: $baseMetadata,
+                    );
+                }
             }
 
             return $response;
