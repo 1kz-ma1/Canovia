@@ -6,6 +6,7 @@ use App\Data\UserStateData;
 use App\Enums\UserBehaviorState;
 use App\Models\Plan;
 use App\Models\Task;
+use App\Models\User;
 use App\Services\DashboardGuidanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -55,6 +56,43 @@ class DashboardGuidanceV395Test extends TestCase
 
         $this->assertSame($objective->id, $first['task']->id);
         $this->assertSame($objective->id, $first['adaptive']?->task->id);
+    }
+
+    public function test_existing_plan_update_without_priority_preserves_current_priority(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::create([
+            'user_id' => $user->id,
+            'owner_token' => Str::random(64),
+            'public_slug' => (string) Str::uuid(),
+            'title' => '互換更新',
+            'category' => '資格学習',
+            'priority' => 1,
+            'start_date' => today(),
+            'deadline' => today()->addMonth(),
+            'is_public' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('plans.update', $plan), ['title' => '互換更新後'])
+            ->assertRedirect(route('plans.show', $plan));
+
+        $this->assertSame(1, (int) $plan->fresh()->priority);
+    }
+
+    public function test_plan_without_explicit_priority_uses_default_three(): void
+    {
+        $plan = Plan::create([
+            'owner_token' => Str::random(64),
+            'public_slug' => (string) Str::uuid(),
+            'title' => '既存経路',
+            'category' => 'その他',
+            'start_date' => today(),
+            'deadline' => today()->addMonth(),
+            'is_public' => false,
+        ]);
+
+        $this->assertSame(3, (int) $plan->fresh()->priority);
     }
 
     public function test_study_task_surfaces_ai_practice_as_the_specialized_tool(): void
