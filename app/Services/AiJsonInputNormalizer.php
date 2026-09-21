@@ -7,13 +7,13 @@ use InvalidArgumentException;
 class AiJsonInputNormalizer
 {
     /**
-     * Extract the JSON document from an AI response and apply only syntax-safe
-     * repairs (comments/trailing commas). Semantic values are never changed.
+     * Extract the JSON document from an AI response and apply only deterministic,
+     * syntax-safe repairs. Semantic values and string content are never guessed.
      */
     public function normalize(string $value): string
     {
         $text = trim($this->stripBom($value));
-        $hasStructuralSmartQuotes = preg_match('/(?:[{,:]\s*[“”]|[“”]\s*:)/u', $text) === 1;
+        $text = $this->normalizeStructuralUnicodeSyntax($text);
 
         if ($text === '') {
             throw new InvalidArgumentException('AIの最後の回答を貼り付けてください。');
@@ -56,13 +56,74 @@ class AiJsonInputNormalizer
             }
         }
 
-        $detail = $hasStructuralSmartQuotes
-            ? 'JSONのキーや文字列を囲む引用符にスマートクォート（“ ”）が使われています。半角ダブルクォート（"）へ修正してください'
-            : $this->humanizeDecodeError($lastError);
+        $detail = $this->humanizeDecodeError($lastError);
 
         throw new InvalidArgumentException(
-            'JSONの構文を読み取れませんでした。' . $detail . '。下の修正依頼をコピーしてAIへ送ってください。'
+            'Canoviaで安全に自動補正できる範囲を試しましたが、JSONの構文を読み取れませんでした。'
+            . $detail
+            . '。下の修正依頼をコピーしてAIへ送ってください。'
         );
+    }
+
+    private function normalizeStructuralUnicodeSyntax(string $text): string
+    {
+        // Repair curly quotes only when they occupy a JSON delimiter position.
+        // Smart quotes inside semantic string content are preserved.
+        $text = preg_replace(
+            '/(?<=[\{\[\,:｛［：，])(\s*)[“”]/u',
+            '$1"',
+            $text
+        ) ?? $text;
+        $text = preg_replace(
+            '/[“”](\s*)(?=[:,}\]：，｝］])/u',
+            '"$1',
+            $text
+        ) ?? $text;
+
+        $characters = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
+        if ($characters === false) {
+            return $text;
+        }
+
+        $output = '';
+        $inString = false;
+        $escaped = false;
+        $outsideStringMap = [
+            '：' => ':',
+            '，' => ',',
+            '｛' => '{',
+            '｝' => '}',
+            '［' => '[',
+            '］' => ']',
+            "\u{3000}" => ' ',
+            "\u{00A0}" => ' ',
+        ];
+
+        foreach ($characters as $char) {
+            if ($inString) {
+                $output .= $char;
+
+                if ($escaped) {
+                    $escaped = false;
+                } elseif ($char === '\\') {
+                    $escaped = true;
+                } elseif ($char === '"') {
+                    $inString = false;
+                }
+
+                continue;
+            }
+
+            if ($char === '"') {
+                $inString = true;
+                $output .= $char;
+                continue;
+            }
+
+            $output .= $outsideStringMap[$char] ?? $char;
+        }
+
+        return $output;
     }
 
     private function stripBom(string $value): string
