@@ -39,20 +39,22 @@ class DashboardPresentationService
             ->map(fn ($sessions) => $sessions->first());
 
         $editablePlanIds = collect($editablePlanIds)->map(fn ($id) => (int) $id)->flip();
-        $planTabs = $plans->map(function ($plan) use ($state, $actorToken, $previousSessions, $editablePlanIds) {
+        $guidanceDeck = $this->guidanceService->build(
+            $plans,
+            $state,
+            $actorToken,
+            $editablePlanIds->keys()->all(),
+        );
+        $planTabs = $plans->map(function ($plan) use ($previousSessions, $editablePlanIds, $guidanceDeck) {
             $progress = $this->progressService->calculate($plan);
             $todayMinutes = (int) $plan->workLogs
                 ->filter(fn ($log) => $log->worked_on?->isToday())
                 ->sum('actual_minutes');
             $canEdit = $editablePlanIds->has((int) $plan->id);
-            $recommendation = $canEdit
-                ? $this->recommendationService->recommend(
-                    collect([$plan]),
-                    $state,
-                    actorToken: $actorToken,
-                    preferredPlanId: $plan->id,
-                )
-                : null;
+            $planGuidance = $guidanceDeck->first(
+                fn (array $guidance) => (int) $guidance['plan']->id === (int) $plan->id
+            );
+            $recommendation = $canEdit ? data_get($planGuidance, 'adaptive') : null;
             $previousSession = $previousSessions->get($plan->id);
             $roadmap = $this->roadmapService->build(
                 $plan,
@@ -71,13 +73,6 @@ class DashboardPresentationService
                 'can_edit' => $canEdit,
             ];
         })->values();
-
-        $guidanceDeck = $this->guidanceService->build(
-            $plans,
-            $state,
-            $actorToken,
-            $editablePlanIds->keys()->all(),
-        );
 
         $recentActivity = $planTabs
             ->flatMap(fn (array $item) => $item['recent_logs']->map(fn ($log) => ['plan' => $item['plan'], 'log' => $log]))
