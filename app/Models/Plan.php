@@ -24,6 +24,7 @@ class Plan extends Model
     protected $fillable = [
         'user_id',
         'owner_token',
+        'creation_request_id',
         'public_slug',
         'title',
         'description',
