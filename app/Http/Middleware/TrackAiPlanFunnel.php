@@ -6,6 +6,7 @@ use App\Enums\BehaviorEventType;
 use App\Models\Plan;
 use App\Services\BehaviorEventLogger;
 use App\Services\BehaviorIdentityService;
+use App\Services\PlanOwnershipService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +19,7 @@ class TrackAiPlanFunnel
     public function __construct(
         private readonly BehaviorIdentityService $identity,
         private readonly BehaviorEventLogger $logger,
+        private readonly PlanOwnershipService $ownership,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -31,6 +33,13 @@ class TrackAiPlanFunnel
 
         $plan = $request->route('plan');
         $plan = $plan instanceof Plan ? $plan : null;
+
+        // These AI flows are owner-only. Do not let unauthorized route probes
+        // create analytics rows for another user's plan.
+        if ($plan && ! $this->ownership->owns($request, $plan)) {
+            return $next($request);
+        }
+
         $actorToken = $this->identity->resolve($request);
         $baseMetadata = $this->baseMetadata($request);
 
