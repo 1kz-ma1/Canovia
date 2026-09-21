@@ -56,7 +56,6 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         AiJsonInputNormalizer $normalizer,
-        BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -154,6 +153,7 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         AiJsonInputNormalizer $normalizer,
+        BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
