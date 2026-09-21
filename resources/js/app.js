@@ -45,6 +45,51 @@ function recordBehavior(root, eventType, payload = {}) {
     }).catch(() => {});
 }
 
+function canoviaClientSurface() {
+    return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
+        ? 'pwa'
+        : 'web';
+}
+
+function canoviaClientDevice() {
+    return /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+}
+
+function mountAiPlanFunnelTelemetry() {
+    const surface = canoviaClientSurface();
+    const device = canoviaClientDevice();
+
+    document.querySelectorAll(
+        'form[data-ai-plan-generation-import], form[data-async-plan-review], form[data-review-json-preview], form#review-apply-form'
+    ).forEach((form) => {
+        if (!(form instanceof HTMLFormElement)) return;
+        let input = form.querySelector('input[name="_client_surface"]');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '_client_surface';
+            form.appendChild(input);
+        }
+        input.value = surface;
+    });
+
+    document.querySelectorAll('[data-funnel-event]').forEach((trigger) => {
+        trigger.addEventListener('click', () => {
+            const root = trigger.closest('[data-funnel-root]');
+            const planId = Number(root?.dataset.planId || 0);
+            recordBehavior(root, trigger.dataset.funnelEvent, {
+                ...(planId > 0 ? { plan_id: planId } : {}),
+                metadata: {
+                    surface,
+                    device,
+                },
+            });
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', mountAiPlanFunnelTelemetry);
+
 function formatTimer(totalSeconds) {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
