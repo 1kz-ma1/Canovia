@@ -5,10 +5,15 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
 
 document.addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-copy-text]');
+    const button = event.target.closest('[data-copy-text], [data-copy-target]');
     if (!button) return;
 
-    const text = button.dataset.copyText || '';
+    const target = button.dataset.copyTarget
+        ? document.querySelector(button.dataset.copyTarget)
+        : null;
+    const text = target && 'value' in target
+        ? target.value
+        : (button.dataset.copyText || '');
     if (!text) return;
 
     const original = button.textContent;
