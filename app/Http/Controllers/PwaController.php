@@ -7,10 +7,19 @@ use Illuminate\Http\Request;
 
 class PwaController extends Controller
 {
-    public function manifest(Request $request, PwaHandoffService $handoffService)
+    public function manifest(Request $request)
     {
-        $token = $handoffService->create($request);
-        $startUrl = route('pwa.handoff', ['token' => $token], false);
+        // Normal app pages always advertise a stable launch URL. The install
+        // guide may supply one short-lived bootstrap token so the *first* PWA
+        // launch can transfer Safari identity without making that capability the
+        // permanent start URL for every future manifest request.
+        $handoffToken = trim((string) $request->query('handoff', ''));
+        $validHandoff = $handoffToken !== ''
+            && preg_match('/^[A-Za-z0-9]{40,100}$/', $handoffToken) === 1;
+
+        $startUrl = $validHandoff
+            ? route('pwa.handoff', ['token' => $handoffToken, 'launch' => 1], false)
+            : route('home', [], false);
 
         return response()->json([
             'id' => '/',
@@ -61,7 +70,8 @@ class PwaController extends Controller
     {
         return response()
             ->view('pwa.install', [
-                'handoffUrl' => route('pwa.handoff', ['token' => $token]),
+                'handoffUrl' => route('pwa.handoff', ['token' => $token, 'launch' => 1]),
+                'manifestUrl' => route('pwa.manifest', ['handoff' => $token]),
             ])
             ->header('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0')
             ->header('Referrer-Policy', 'no-referrer');
@@ -69,6 +79,13 @@ class PwaController extends Controller
 
     public function handoff(Request $request, string $token, PwaHandoffService $handoffService)
     {
+        // Some iOS/PWA launch paths probe start_url with HEAD before the real
+        // navigation. Never let that probe consume the one-time capability.
+        if ($request->isMethod('HEAD')) {
+            return response()->noContent()
+                ->header('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+        }
+
         $result = $handoffService->consume($request, $token);
         $nextPath = $this->safeNextPath((string) $request->query('next', ''));
         $redirect = $nextPath !== null ? redirect($nextPath) : redirect()->route('home');
@@ -86,7 +103,14 @@ class PwaController extends Controller
         }
 
         if ($result['type'] === 'invalid') {
-            return redirect()->route('home')->with('status', '引き継ぎリンクの期限が切れました。必要なら旧URLからもう一度アクセスしてください。');
+            // An installed app may keep the bootstrap start_url for a while even
+            // after the one-time token has been consumed. That is a normal
+            // relaunch, not an error: quietly converge on the stable Home URL.
+            if ($request->boolean('launch')) {
+                return $redirect;
+            }
+
+            return redirect()->route('home')->with('status', '引き継ぎリンクの期限が切れました。必要ならもう一度ホーム画面追加の手順を開いてください。');
         }
 
         return $redirect;
