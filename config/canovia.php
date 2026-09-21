@@ -4,7 +4,9 @@ return [
     'version' => env('CANOVIA_APP_VERSION', env('PACEKEEPER_APP_VERSION', 'v29')),
     'onboarding_version' => (int) env('CANOVIA_ONBOARDING_VERSION', 1),
     'admin_email' => env('CANOVIA_ADMIN_EMAIL', env('PACEKEEPER_ADMIN_EMAIL')),
-    'feedback_admin_password' => env('FEEDBACK_ADMIN_PASSWORD', env('TEMPLATE_ADMIN_PASSWORD')),
+    'admin_password' => env('CANOVIA_ADMIN_PASSWORD', env('FEEDBACK_ADMIN_PASSWORD', env('TEMPLATE_ADMIN_PASSWORD'))),
+    // Legacy config key kept while older admin code/routes are phased out.
+    'feedback_admin_password' => env('FEEDBACK_ADMIN_PASSWORD', env('CANOVIA_ADMIN_PASSWORD', env('TEMPLATE_ADMIN_PASSWORD'))),
 
     // Canonical public origin. Route generation and shared URLs use this URL in production.
     'canonical_url' => rtrim((string) env('CANOVIA_CANONICAL_URL', env('APP_URL', '')), '/'),
