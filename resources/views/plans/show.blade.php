@@ -51,6 +51,7 @@
 
                 <div class="mt-4 flex flex-wrap gap-2">
                     <span class="badge badge-slate">{{ $plan->category ?? '未設定' }}</span>
+                    <span class="badge badge-slate">優先度 {{ (int) ($plan->priority ?? 3) }}</span>
                     <span class="badge {{ $plan->is_public ? 'badge-green' : 'badge-slate' }}">
                         {{ $plan->is_public ? '公開' : '非公開' }}
                     </span>
