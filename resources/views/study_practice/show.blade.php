@@ -31,6 +31,49 @@
             <div class="rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-slate-300">{{ session('status') }}</div>
         @endif
 
+        @php
+            $questionJsonError = $errors->first('questions_json');
+            $questionJsonRepairPrompt = $questionJsonError ? implode("\n", [
+                'CanoviaのAI演習・問題JSONでエラーが発生しました。',
+                '下の「元のCanovia問題作成プロンプト」を仕様と対象Plan・Taskの唯一の正として扱ってください。',
+                'エラー解消に必要な箇所だけ修正し、問題文・選択肢・難易度・出題意図など正しい内容はできるだけ保持してください。',
+                'schema_versionは"1.0"、flowは"study_practice"のままにしてください。',
+                'target_plan.idは '.$plan->id.'、target_task.idは '.$task->id.' のままにし、別のIDを推測・生成しないでください。',
+                '修正後はJSONとして構文解析できることを確認してください。',
+                '説明文・Markdown・コードフェンス・コメントを付けず、有効なJSONだけを返してください。',
+                '',
+                '【Canoviaのエラー】',
+                $questionJsonError,
+                '',
+                '【エラーになったJSON】',
+                old('questions_json', ''),
+                '',
+                '【元のCanovia問題作成プロンプト】',
+                $generationPrompt,
+            ]) : null;
+
+            $assessmentJsonError = $errors->first('assessment_json');
+            $assessmentJsonRepairPrompt = $assessmentJsonError ? implode("\n", [
+                'CanoviaのAI演習・評価JSONでエラーが発生しました。',
+                '下の「元のCanovia評価プロンプト」を仕様と対象Plan・Taskの唯一の正として扱ってください。',
+                'エラー解消に必要な箇所だけ修正し、採点結果・強み・弱点・評価根拠・次のActionなど正しい内容はできるだけ保持してください。',
+                'schema_versionは"1.0"、flowは"study_assessment"のままにしてください。',
+                'target_plan.idは '.$plan->id.'、target_task.idは '.$task->id.' のままにし、別のIDを推測・生成しないでください。',
+                'score_percentとrecommended_task_progress_percentは0〜100の整数にしてください。',
+                '修正後はJSONとして構文解析できることを確認してください。',
+                '説明文・Markdown・コードフェンス・コメントを付けず、有効なJSONだけを返してください。',
+                '',
+                '【Canoviaのエラー】',
+                $assessmentJsonError,
+                '',
+                '【エラーになったJSON】',
+                old('assessment_json', ''),
+                '',
+                '【元のCanovia評価プロンプト】',
+                $evaluationPrompt ?: '（評価プロンプトを取得できませんでした。Canoviaで回答をまとめ直してください。）',
+            ]) : null;
+        @endphp
+
         <section class="page-card p-5 sm:p-6">
             <div class="flex items-center gap-3">
                 <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">1</span>
@@ -52,6 +95,16 @@
                 @csrf
                 <textarea name="questions_json" class="form-control min-h-[220px] font-mono text-xs" placeholder="AIが返したJSONを貼り付け">{{ old('questions_json') }}</textarea>
                 @error('questions_json')<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
+
+                @if ($questionJsonRepairPrompt)
+                    <div class="mt-4 rounded-2xl border border-rose-300/20 bg-rose-300/[0.04] p-4">
+                        <p class="text-sm font-black text-rose-100">修正依頼を作りました</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">この内容を、さっき問題JSONを作ったAIへそのまま送ってください。修正版JSONが返ったら上の欄へ貼り直せます。</p>
+                        <textarea id="studyPracticeQuestionRepairPrompt" readonly class="form-control mt-3 min-h-[240px] font-mono text-xs leading-5">{{ $questionJsonRepairPrompt }}</textarea>
+                        <button type="button" class="btn-primary mt-3" data-copy-target="#studyPracticeQuestionRepairPrompt">修正依頼をコピー</button>
+                    </div>
+                @endif
+
                 <button type="submit" class="btn-primary mt-3">問題を読み込む</button>
             </form>
         </section>
@@ -115,6 +168,16 @@
                     <label class="form-label" for="assessment_json">AIが返した評価JSON</label>
                     <textarea id="assessment_json" name="assessment_json" class="form-control mt-2 min-h-[220px] font-mono text-xs" placeholder="評価JSONを貼り付け">{{ old('assessment_json') }}</textarea>
                     @error('assessment_json')<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
+
+                    @if ($assessmentJsonRepairPrompt)
+                        <div class="mt-4 rounded-2xl border border-rose-300/20 bg-rose-300/[0.04] p-4">
+                            <p class="text-sm font-black text-rose-100">評価JSONの修正依頼を作りました</p>
+                            <p class="mt-1 text-xs leading-5 text-slate-400">評価を作ったAIへそのまま送り、返ってきた修正版JSONを同じ欄へ貼り直してください。</p>
+                            <textarea id="studyPracticeAssessmentRepairPrompt" readonly class="form-control mt-3 min-h-[240px] font-mono text-xs leading-5">{{ $assessmentJsonRepairPrompt }}</textarea>
+                            <button type="button" class="btn-primary mt-3" data-copy-target="#studyPracticeAssessmentRepairPrompt">修正依頼をコピー</button>
+                        </div>
+                    @endif
+
                     <button type="submit" class="btn-primary mt-3">評価を読み込んで確認</button>
                 </form>
             </section>
