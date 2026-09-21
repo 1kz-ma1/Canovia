@@ -2,6 +2,20 @@
 
 return [
     [
+        'version' => 'v39.5',
+        'date' => '2026-09-21',
+        'title' => '今日やることを優先順位から決める',
+        'summary' => 'Homeの「今日のおすすめ」をGuidance Deckへ変更し、何をやるかはPlan/Taskの優先順位、どう進めるかはCanoviaの行動適応提案という役割に分離しました。',
+        'highlights' => [
+            'Planに1〜5の計画優先度を追加し、1を最優先としてHomeの表示順に使用します。',
+            '各PlanからTask priority、進行中、sort orderの順で次Taskを客観的に1件選びます。',
+            '期限・行動状態・始めやすさなどのRecommendationServiceはTask選定に使わず、選定済みTaskの推奨時間と理由だけを提案します。',
+            'Planごとのカードを横スワイプでき、最優先Planを先頭にしながら他Planの次Taskも確認できます。',
+            'AI演習や制作ファイルなど、そのTaskに合うCanovia Toolがある場合はカード内から直接開けます。',
+        ],
+        'tip' => 'Plan編集の「計画優先度」で、今いちばん優先したい目標を1に設定できます。',
+    ],
+    [
         'version' => 'v39.4',
         'date' => '2026-09-21',
         'title' => 'Canovia Toolsへの入口を分かりやすく',
