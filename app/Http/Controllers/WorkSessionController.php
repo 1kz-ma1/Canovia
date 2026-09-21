@@ -14,6 +14,7 @@ use App\Services\WorkSessionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class WorkSessionController extends Controller
@@ -28,6 +29,7 @@ class WorkSessionController extends Controller
             'task_id' => ['required', 'integer', 'min:1'],
             'intended_minutes' => ['nullable', 'integer', 'min:5', 'max:480'],
             'source' => ['required', 'in:dashboard,navigation,plan,roadmap'],
+            'start_request_id' => ['nullable', 'uuid'],
         ]);
         $task = Task::with('plan')->findOrFail($validated['task_id']);
         $ownership->authorizeTask($request, $task);
@@ -37,15 +39,7 @@ class WorkSessionController extends Controller
         }
 
         $actorToken = $identity->resolve($request);
-        $activeQuery = WorkSession::query()
-            ->whereIn('status', ['active', 'paused'])
-            ->where('actor_token', $actorToken);
-        $active = $activeQuery->latest('started_at')->first();
-
-        if ($active) {
-            return redirect()->route('work_sessions.active', $active)
-                ->with('status', '進行中の作業があります。先に終了してください。');
-        }
+        $startRequestId = $validated['start_request_id'] ?? (string) Str::uuid();
 
         $lastEntry = in_array($validated['source'], ['dashboard', 'navigation'], true)
             ? BehaviorEvent::query()
@@ -63,10 +57,46 @@ class WorkSessionController extends Controller
             ? min(21600, max(0, (int) $lastEntry->occurred_at->diffInSeconds(now())))
             : null;
 
-        $workSession = DB::transaction(function () use ($request, $validated, $task, $actorToken, $logger, $startLatency) {
+        $startResult = DB::transaction(function () use ($request, $validated, $task, $actorToken, $logger, $startLatency, $startRequestId) {
+            // Serialize "start work" for one actor. A normal SELECT on active
+            // sessions is race-prone because two requests can both observe an
+            // empty set before either inserts. This tiny lock row closes that gap.
+            DB::table('work_session_actor_locks')->insertOrIgnore([
+                'actor_token' => $actorToken,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            DB::table('work_session_actor_locks')
+                ->where('actor_token', $actorToken)
+                ->lockForUpdate()
+                ->first();
+
+            $sameRequest = WorkSession::query()
+                ->where('start_request_id', $startRequestId)
+                ->first();
+
+            if ($sameRequest) {
+                if (! hash_equals((string) $sameRequest->actor_token, (string) $actorToken)) {
+                    abort(409, 'この作業開始リクエストは別の利用者で使用済みです。');
+                }
+
+                return ['session' => $sameRequest, 'reason' => 'same_request'];
+            }
+
+            $active = WorkSession::query()
+                ->whereIn('status', ['active', 'paused'])
+                ->where('actor_token', $actorToken)
+                ->latest('started_at')
+                ->first();
+
+            if ($active) {
+                return ['session' => $active, 'reason' => 'active'];
+            }
+
             $session = WorkSession::create([
                 'actor_token' => $actorToken,
                 'browser_session_id' => $request->session()->getId(),
+                'start_request_id' => $startRequestId,
                 'plan_id' => $task->plan_id,
                 'task_id' => $task->id,
                 'status' => 'active',
@@ -93,8 +123,19 @@ class WorkSessionController extends Controller
                 'work_session_id' => $session->id,
             ]);
 
-            return $session;
+            return ['session' => $session, 'reason' => 'created'];
         });
+
+        /** @var WorkSession $workSession */
+        $workSession = $startResult['session'];
+
+        if ($startResult['reason'] !== 'created') {
+            $message = $startResult['reason'] === 'same_request'
+                ? 'この作業はすでに開始済みです。同じタイマーへ戻りました。'
+                : '進行中の作業があります。新しいタイマーは作らず、進行中の作業へ戻りました。';
+
+            return redirect()->route('work_sessions.active', $workSession)->with('status', $message);
+        }
 
         $request->session()->forget(['dashboard.recommendation_excluded', 'navigation.draft']);
 
