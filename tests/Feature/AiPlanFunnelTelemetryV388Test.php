@@ -99,6 +99,49 @@ class AiPlanFunnelTelemetryV388Test extends TestCase
         $this->assertSame('web', $success->metadata['surface']);
     }
 
+    public function test_plan_update_prompt_and_preview_failure_are_recorded(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan($user);
+
+        $this->actingAs($user)
+            ->post(route('plans.review_assistant.prompt', $plan), [
+                'flow' => 'result_recording',
+                'activity_summary' => '進捗を確認',
+                '_client_surface' => 'web',
+            ])
+            ->assertRedirect(route('plans.review_assistant.show', $plan));
+
+        $this->assertDatabaseHas('behavior_events', [
+            'event_type' => BehaviorEventType::PlanUpdatePromptGenerated->value,
+            'plan_id' => $plan->id,
+        ]);
+
+        $this->actingAs($user)
+            ->from(route('plans.review_assistant.show', $plan))
+            ->post(route('plans.review_assistant.preview', $plan), [
+                'operations_json' => '{"schema_version":"2.0","operations":[',
+                '_client_surface' => 'pwa',
+            ])
+            ->assertRedirect(route('plans.review_assistant.show', $plan));
+
+        $this->assertDatabaseHas('behavior_events', [
+            'event_type' => BehaviorEventType::PlanUpdatePreviewAttempted->value,
+            'plan_id' => $plan->id,
+        ]);
+        $this->assertDatabaseHas('behavior_events', [
+            'event_type' => BehaviorEventType::PlanUpdatePreviewFailed->value,
+            'plan_id' => $plan->id,
+        ]);
+
+        $failed = BehaviorEvent::query()
+            ->where('event_type', BehaviorEventType::PlanUpdatePreviewFailed->value)
+            ->firstOrFail();
+
+        $this->assertSame('pwa', $failed->metadata['surface']);
+        $this->assertSame('invalid_json', $failed->metadata['failure_code']);
+    }
+
     public function test_prompt_copy_click_can_be_recorded_from_client(): void
     {
         $user = User::factory()->create();
