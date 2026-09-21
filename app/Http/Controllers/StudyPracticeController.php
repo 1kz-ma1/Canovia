@@ -11,6 +11,7 @@ use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticePromptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -83,6 +84,7 @@ class StudyPracticeController extends Controller
             'evaluation_prompt' => null,
             'assessment' => null,
             'attempt_id' => null,
+            'attempt_token' => (string) Str::uuid(),
         ]);
 
         return redirect()
@@ -200,8 +202,11 @@ class StudyPracticeController extends Controller
 
         $actorToken = $identity->resolve($request);
         $identityScope = $request->user() ? 'user:'.(int) $request->user()->id : 'actor:'.$actorToken;
+        $attemptToken = (string) ($state['attempt_token'] ?? Str::uuid());
+        $state['attempt_token'] = $attemptToken;
         $requestHash = hash('sha256', json_encode([
             'identity' => $identityScope,
+            'attempt_token' => $attemptToken,
             'plan_id' => (int) $plan->id,
             'task_id' => (int) $task->id,
             'questions' => $state['questions'] ?? [],
@@ -280,6 +285,12 @@ class StudyPracticeController extends Controller
                 ->whereKey($task->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ($lockedTask->status === 'cancelled') {
+                throw ValidationException::withMessages([
+                    'attempt_id' => 'このTaskは現在中止されています。学習結果を反映するには、先にTask状態を見直してください。',
+                ]);
+            }
 
             $progressBefore = (int) $lockedTask->progress_percent;
             $progressAfter = max($progressBefore, (int) $attempt->recommended_task_progress_percent);

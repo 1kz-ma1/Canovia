@@ -38,6 +38,25 @@ class StudyPracticeLearningLoopV393Test extends TestCase
         $this->assertNotNull($attempt->request_hash);
     }
 
+    public function test_same_content_in_a_new_practice_session_is_saved_as_a_new_attempt(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $json = json_encode($this->assessment($plan, $task, 84, 72), JSON_UNESCAPED_UNICODE);
+        $first = $this->answeredSession($plan, $task);
+        $second = $this->answeredSession($plan, $task);
+        $second["study_practice.{$plan->id}.{$task->id}"]['attempt_token'] = '00000000-0000-4000-8000-000000000002';
+
+        $this->actingAs($user)
+            ->withSession($first)
+            ->post(route('plans.tasks.study_practice.assessment', [$plan, $task]), ['assessment_json' => $json]);
+
+        $this->actingAs($user)
+            ->withSession($second)
+            ->post(route('plans.tasks.study_practice.assessment', [$plan, $task]), ['assessment_json' => $json]);
+
+        $this->assertDatabaseCount('study_practice_attempts', 2);
+    }
+
     public function test_confirmed_assessment_updates_task_once_and_never_regresses_progress(): void
     {
         [$user, $plan, $task] = $this->studyPlan(progress: 80);
@@ -161,6 +180,7 @@ class StudyPracticeLearningLoopV393Test extends TestCase
                 'evaluation_prompt' => 'evaluation prompt',
                 'assessment' => null,
                 'attempt_id' => null,
+                'attempt_token' => '00000000-0000-4000-8000-000000000001',
             ],
         ];
     }
