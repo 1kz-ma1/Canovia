@@ -37,6 +37,7 @@ class PlanController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
+            'priority' => ['nullable', 'integer', 'between:1,5'],
             'visual_icon' => ['nullable', 'string', 'max:16'],
             'accent_key' => ['nullable', Rule::in(Plan::ACCENT_KEYS)],
             'roadmap_world' => ['nullable', Rule::in(Plan::ROADMAP_WORLDS)],
@@ -73,6 +74,7 @@ class PlanController extends Controller
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
                 'category' => $validated['category'] ?? null,
+                'priority' => $validated['priority'] ?? 3,
                 'visual_icon' => $validated['visual_icon'] ?? null,
                 'accent_key' => $validated['accent_key'] ?? 'sky',
                 'roadmap_world' => $validated['roadmap_world'] ?? 'default',
@@ -228,6 +230,7 @@ class PlanController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
+            'priority' => ['nullable', 'integer', 'between:1,5'],
             'visual_icon' => ['nullable', 'string', 'max:16'],
             'accent_key' => ['nullable', Rule::in(Plan::ACCENT_KEYS)],
             'roadmap_world' => ['nullable', Rule::in(Plan::ROADMAP_WORLDS)],
@@ -246,12 +249,13 @@ class PlanController extends Controller
             return back()->withErrors(['deadline' => '期限は開始日以降にしてください。'])->withInput();
         }
 
-        $before = $plan->only(['title', 'description', 'category', 'start_date', 'deadline', 'is_public']);
+        $before = $plan->only(['title', 'description', 'category', 'priority', 'start_date', 'deadline', 'is_public']);
 
         $plan->update([
             'title' => $validated['title'],
             'description' => array_key_exists('description', $validated) ? $validated['description'] : $plan->description,
             'category' => array_key_exists('category', $validated) ? $validated['category'] : $plan->category,
+            'priority' => $validated['priority'] ?? (int) ($plan->priority ?? 3),
             'visual_icon' => array_key_exists('visual_icon', $validated) ? $validated['visual_icon'] : $plan->visual_icon,
             'accent_key' => $validated['accent_key'] ?? $plan->accentKey(),
             'roadmap_world' => $validated['roadmap_world'] ?? $plan->roadmapWorld(),

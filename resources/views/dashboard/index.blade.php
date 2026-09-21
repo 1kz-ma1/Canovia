@@ -7,6 +7,8 @@
         $state = $dashboard['state'];
         $baseline = $dashboard['baseline'];
         $recommendation = $dashboard['recommendation'];
+        $guidanceDeck = $dashboard['guidance_deck'] ?? collect();
+        $primaryGuidance = $guidanceDeck->first();
         $activeSession = $dashboard['active_work_session'];
         $todayRemaining = max(0, $dashboard['total_daily_required_minutes'] - $dashboard['today_minutes']);
         $calendarWeek = $dashboard['calendar_week'] ?? null;
@@ -21,7 +23,7 @@
         $overallDoing = $overallRoadmapNodes->filter(fn ($node) => ($node['is_current'] ?? false) || ($node['status'] ?? null) === 'doing')->count();
         $overallTodo = $overallRoadmapNodes->filter(fn ($node) => ! in_array(($node['status'] ?? null), ['done', 'cancelled', 'doing'], true) && ! ($node['is_current'] ?? false))->count();
         $nextOverallMilestone = $overallRoadmapNodes->first(fn ($node) => ! in_array(($node['status'] ?? null), ['done', 'cancelled'], true) && ! ($node['is_current'] ?? false));
-        $primaryPlan = $recommendation?->plan ?? data_get($dashboard['plan_tabs']->first(), 'plan');
+        $primaryPlan = data_get($primaryGuidance, 'plan') ?? $recommendation?->plan ?? data_get($dashboard['plan_tabs']->first(), 'plan');
         $roadmapUrl = $primaryPlan ? route('roadmap.index', ['plan_id' => $primaryPlan->id]) : route('roadmap.index');
         $processMessage = $dashboard['process_message'] ?? '続けることで、きっとどこかでつながってる。';
     @endphp
@@ -147,41 +149,85 @@
                 </div>
             </section>
         @else
-            @if ($recommendation)
-                <section class="pk-v18-recommendation plan-identity-shell" data-plan-accent="{{ $recommendation->plan->accentKey() }}">
+            @if ($guidanceDeck->isNotEmpty())
+                <section class="pk-v18-recommendation pk-v395-guidance plan-identity-shell" data-plan-accent="{{ data_get($primaryGuidance, 'plan')?->accentKey() ?? 'sky' }}">
                     <div class="pk-v18-recommendation-titlebar">
                         <div class="flex items-center gap-2">
                             <span class="pk-v18-starlight" aria-hidden="true">✦</span>
                             <div>
-                                <p class="pk-v18-card-kicker">TODAY'S GUIDANCE</p>
-                                <h2>今日のおすすめ</h2>
+                                <p class="pk-v18-card-kicker">TODAY'S ROUTE</p>
+                                <h2>今日やること</h2>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-400">PlanとTaskの優先度で決め、Canoviaは進め方を提案します。</p>
                             </div>
                         </div>
-                        <a href="{{ route('navigation.index', ['configure' => 1]) }}" class="pk-v18-ellipsis" aria-label="おすすめ条件を変更">•••</a>
+                        <a href="{{ route('my_plans.index') }}" class="pk-v18-ellipsis" aria-label="計画一覧を開く">•••</a>
                     </div>
 
-                    <div class="pk-v18-recommendation-main">
-                        <div class="pk-v18-plan-glyph" aria-hidden="true"><span>{{ $recommendation->plan->displayIcon() }}</span></div>
-                        <div class="min-w-0 flex-1">
-                            <p class="plan-identity-chip text-[11px]"><span aria-hidden="true">{{ $recommendation->plan->displayIcon() }}</span>{{ $recommendation->plan->title }}</p>
-                            <h3>{{ $recommendation->task->title }}</h3>
-                            <p class="pk-v18-recommendation-meta"><span>◷ {{ $recommendation->recommendedMinutes }}分</span><span>次の一歩</span></p>
-                        </div>
-                        <span class="pk-v18-chevron" aria-hidden="true">›</span>
+                    <div class="pk-v395-guidance-track" aria-label="計画ごとの今日やること">
+                        @foreach ($guidanceDeck as $guidanceIndex => $guidance)
+                            @php
+                                $guidancePlan = $guidance['plan'];
+                                $guidanceTask = $guidance['task'];
+                                $adaptive = $guidance['adaptive'];
+                                $tool = $guidance['recommended_tool'];
+                            @endphp
+                            <article class="pk-v395-guidance-card plan-identity-shell" data-plan-accent="{{ $guidancePlan->accentKey() }}">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="plan-identity-chip text-[11px]"><span aria-hidden="true">{{ $guidancePlan->displayIcon() }}</span>{{ $guidancePlan->title }}</p>
+                                        <h3 class="mt-2 text-base font-black leading-6 text-white">{{ $guidanceTask->title }}</h3>
+                                    </div>
+                                    <span class="badge {{ $guidanceIndex === 0 ? 'badge-green' : 'badge-slate' }}">{{ $guidanceIndex === 0 ? '最優先' : 'Plan '.($guidanceIndex + 1) }}</span>
+                                </div>
+
+                                <div class="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                                    <span>Plan優先度 {{ (int) ($guidancePlan->priority ?? 3) }}</span>
+                                    <span>Task優先度 {{ (int) $guidanceTask->priority }}</span>
+                                    <span>{{ $guidanceTask->status === 'doing' ? '進行中' : '未着手' }}</span>
+                                </div>
+
+                                @if ($adaptive)
+                                    <div class="pk-v395-adaptive-note">
+                                        <span class="text-cyan-200">Canoviaの提案</span>
+                                        <strong>◷ {{ $adaptive->recommendedMinutes }}分</strong>
+                                        @if (! empty($adaptive->reasons[0]))
+                                            <small>{{ $adaptive->reasons[0] }}</small>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                @if ($tool)
+                                    <div class="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2.5">
+                                        <p class="text-[11px] font-bold text-cyan-200">✦ {{ $tool['name'] }}がおすすめ</p>
+                                        <p class="mt-1 text-[11px] leading-4 text-slate-400">{{ $tool['description'] }}</p>
+                                    </div>
+                                @endif
+
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    @if (($tool['id'] ?? null) === 'ai_practice')
+                                        <a href="{{ route('plans.tasks.study_practice.show', [$guidancePlan, $guidanceTask]) }}" class="btn-primary flex-1 px-3 py-2 text-xs">AI演習で進める</a>
+                                    @elseif (($tool['id'] ?? null) === 'artifacts')
+                                        <a href="{{ route('plans.artifacts.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">制作ファイルを開く</a>
+                                    @elseif (($tool['id'] ?? null) === 'resources')
+                                        <a href="{{ route('plans.resources.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">関連資料を開く</a>
+                                    @endif
+
+                                    <form method="POST" action="{{ route('work_sessions.start') }}" class="flex-1" data-work-start-form>
+                                        @csrf
+                                        <input type="hidden" name="task_id" value="{{ $guidanceTask->id }}">
+                                        <input type="hidden" name="source" value="dashboard">
+                                        <button type="submit" class="{{ $tool && ($tool['id'] ?? null) !== 'timer' ? 'btn-secondary' : 'btn-primary' }} w-full px-3 py-2 text-xs" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
+                                            ▶ {{ $guidanceTask->status === 'doing' ? '続きを始める' : 'このTaskを始める' }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </article>
+                        @endforeach
                     </div>
 
-                    <div class="pk-v18-task-strip">
-                        <div class="pk-v18-mini-progress" style="--pk-mini-progress: {{ max(6, min(100, (int) $recommendation->task->progress_percent)) }}%;"><strong>{{ (int) $recommendation->task->progress_percent }}%</strong></div>
-                        <div class="min-w-0 flex-1">
-                            <span>今日のタスク</span>
-                            <strong>{{ $recommendation->task->next_action_note ?: $recommendation->task->title }}</strong>
-                        </div>
-                        <span class="pk-v18-chevron" aria-hidden="true">›</span>
-                    </div>
-
-                    <a href="{{ route('navigation.index') }}" class="pk-v18-start-cta" data-onboarding-target="today-start">
-                        <span aria-hidden="true">▶</span><strong>今すぐ始める</strong><span aria-hidden="true">→</span>
-                    </a>
+                    @if ($guidanceDeck->count() > 1)
+                        <p class="mt-2 text-center text-[10px] text-slate-500">横にスワイプすると、他のPlanの次Taskも確認できます。</p>
+                    @endif
                 </section>
             @endif
 
@@ -433,24 +479,27 @@
 
 @section('offline_snapshot')
 @php
-    $offlineCurrent = $recommendation ? [
-        'task_id' => $recommendation->task->id,
-        'title' => $recommendation->task->title,
-        'status' => $recommendation->task->status,
-        'status_label' => $recommendation->task->status === 'doing' ? '進行中' : '未着手',
-        'progress_percent' => $recommendation->task->progress_percent,
-        'remaining_minutes' => $recommendation->task->remaining_minutes,
-        'next_action_note' => $recommendation->task->next_action_note,
+    $offlineGuidance = collect($dashboard['guidance_deck'] ?? [])->first();
+    $offlineGuidanceTask = data_get($offlineGuidance, 'task');
+    $offlineGuidancePlan = data_get($offlineGuidance, 'plan');
+    $offlineCurrent = $offlineGuidanceTask ? [
+        'task_id' => $offlineGuidanceTask->id,
+        'title' => $offlineGuidanceTask->title,
+        'status' => $offlineGuidanceTask->status,
+        'status_label' => $offlineGuidanceTask->status === 'doing' ? '進行中' : '未着手',
+        'progress_percent' => $offlineGuidanceTask->progress_percent,
+        'remaining_minutes' => $offlineGuidanceTask->remaining_minutes,
+        'next_action_note' => $offlineGuidanceTask->next_action_note,
         'is_current' => true,
     ] : null;
-    $offlinePlanTab = $recommendation
-        ? collect($dashboard['plan_tabs'])->first(fn ($item) => $item['plan']->id === $recommendation->plan->id)
+    $offlinePlanTab = $offlineGuidancePlan
+        ? collect($dashboard['plan_tabs'])->first(fn ($item) => $item['plan']->id === $offlineGuidancePlan->id)
         : null;
     $offlineSnapshot = [
         'type' => 'dashboard',
         'captured_at' => now()->toIso8601String(),
         'csrf_token' => csrf_token(),
-        'plan' => $recommendation ? ['id' => $recommendation->plan->id, 'title' => $recommendation->plan->title] : null,
+        'plan' => $offlineGuidancePlan ? ['id' => $offlineGuidancePlan->id, 'title' => $offlineGuidancePlan->title] : null,
         'current' => $offlineCurrent,
         'roadmap' => collect(data_get($offlinePlanTab, 'roadmap.nodes', []))
             ->map(fn ($node) => collect($node)->only(['task_id', 'title', 'status', 'status_label', 'progress_percent', 'remaining_minutes', 'next_action_note', 'is_current'])->all())

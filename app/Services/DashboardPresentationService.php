@@ -16,6 +16,7 @@ class DashboardPresentationService
     public function __construct(
         private readonly PlanProgressService $progressService,
         private readonly RecommendationService $recommendationService,
+        private readonly DashboardGuidanceService $guidanceService,
         private readonly RoadmapService $roadmapService,
     ) {}
 
@@ -38,20 +39,22 @@ class DashboardPresentationService
             ->map(fn ($sessions) => $sessions->first());
 
         $editablePlanIds = collect($editablePlanIds)->map(fn ($id) => (int) $id)->flip();
-        $planTabs = $plans->map(function ($plan) use ($state, $actorToken, $previousSessions, $editablePlanIds) {
+        $guidanceDeck = $this->guidanceService->build(
+            $plans,
+            $state,
+            $actorToken,
+            $editablePlanIds->keys()->all(),
+        );
+        $planTabs = $plans->map(function ($plan) use ($previousSessions, $editablePlanIds, $guidanceDeck) {
             $progress = $this->progressService->calculate($plan);
             $todayMinutes = (int) $plan->workLogs
                 ->filter(fn ($log) => $log->worked_on?->isToday())
                 ->sum('actual_minutes');
             $canEdit = $editablePlanIds->has((int) $plan->id);
-            $recommendation = $canEdit
-                ? $this->recommendationService->recommend(
-                    collect([$plan]),
-                    $state,
-                    actorToken: $actorToken,
-                    preferredPlanId: $plan->id,
-                )
-                : null;
+            $planGuidance = $guidanceDeck->first(
+                fn (array $guidance) => (int) $guidance['plan']->id === (int) $plan->id
+            );
+            $recommendation = $canEdit ? data_get($planGuidance, 'adaptive') : null;
             $previousSession = $previousSessions->get($plan->id);
             $roadmap = $this->roadmapService->build(
                 $plan,
@@ -80,13 +83,10 @@ class DashboardPresentationService
         $totalDailyRequired = (int) $planTabs->sum(fn ($item) => $item['progress']['daily_required_minutes']);
         $todayMinutes = (int) $planTabs->sum('today_minutes');
         $remainingMinutes = (int) $planTabs->sum(fn ($item) => $item['progress']['remaining_minutes']);
-        $recommendationPlans = $plans->filter(fn ($plan) => $editablePlanIds->has((int) $plan->id))->values();
-        $recommendation = $this->recommendationService->recommend(
-            $recommendationPlans,
-            $state,
-            excludedTaskIds: $excludedTaskIds,
-            actorToken: $actorToken,
-        );
+        // Compatibility alias: consumers that still read dashboard['recommendation']
+        // receive the adaptive advice for the objective first Guidance Task.
+        // Home no longer lets behavioral scoring replace the selected Task.
+        $recommendation = data_get($guidanceDeck->first(), 'adaptive');
         $attentionPlans = $planTabs
             ->filter(fn ($item) => in_array($item['progress']['status'], ['遅れ気味', '期限切れ', '作業時間不足'], true))
             ->sortByDesc(fn ($item) => $item['progress']['daily_required_minutes'])
@@ -136,6 +136,7 @@ class DashboardPresentationService
             'today_minutes' => $todayMinutes,
             'remaining_minutes' => $remainingMinutes,
             'recommendation' => $recommendation,
+            'guidance_deck' => $guidanceDeck,
             'attention_plans' => $attentionPlans,
             'baseline' => $baseline,
             'state' => $state,

@@ -29,6 +29,7 @@ class Plan extends Model
         'title',
         'description',
         'category',
+        'priority',
         'start_date',
         'deadline',
         'is_public',
@@ -44,6 +45,7 @@ class Plan extends Model
     protected function casts(): array
     {
         return [
+            'priority' => 'integer',
             'start_date' => 'date',
             'deadline' => 'date',
             'is_public' => 'boolean',

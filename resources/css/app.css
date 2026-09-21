@@ -4331,3 +4331,47 @@ html[data-theme-resolved="light"] .release-note-section-title {
         height: 2rem;
     }
 }
+
+
+/* v39.5: objective Home guidance deck. */
+.pk-v395-guidance-track {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: .75rem;
+    margin-top: .9rem;
+    padding-bottom: .25rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+}
+.pk-v395-guidance-card {
+    flex: 0 0 min(88%, 34rem);
+    scroll-snap-align: start;
+    border: 1px solid rgb(var(--pk-v18-line) / .28);
+    border-radius: 1.1rem;
+    background: rgb(7 16 40 / .68);
+    padding: .9rem;
+}
+.pk-v395-adaptive-note {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .2rem .75rem;
+    margin-top: .75rem;
+    padding: .65rem .75rem;
+    border-radius: .8rem;
+    background: rgb(20 36 77 / .56);
+    color: rgb(218 228 255);
+    font-size: .72rem;
+}
+.pk-v395-adaptive-note small {
+    grid-column: 1 / -1;
+    color: rgb(148 163 196);
+    line-height: 1.45;
+}
+@media (min-width: 768px) {
+    .pk-v395-guidance-card { flex-basis: min(58%, 36rem); }
+}
+@media (min-width: 1180px) {
+    .pk-v395-guidance-card { flex-basis: min(46%, 37rem); }
+}

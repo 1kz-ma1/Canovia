@@ -134,6 +134,18 @@
                             </div>
 
                             <div>
+                                <label for="priority" class="form-label">計画優先度</label>
+                                <select id="priority" name="priority" class="form-control mt-2">
+                                    @for ($priority = 1; $priority <= 5; $priority++)
+                                        <option value="{{ $priority }}" @selected((int) old('priority', 3) === $priority)>
+                                            {{ $priority }}{{ $priority === 1 ? '（最優先）' : ($priority === 5 ? '（低）' : '') }}
+                                        </option>
+                                    @endfor
+                                </select>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-500">Homeの「今日やること」は、この優先度を最初に見ます。</p>
+                            </div>
+
+                            <div>
                                 <label for="start_date" class="form-label">開始日</label>
                                 <input id="start_date" type="date" name="start_date" value="{{ old('start_date', now()->toDateString()) }}" class="form-control mt-2">
                             </div>

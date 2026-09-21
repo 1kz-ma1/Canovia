@@ -33,7 +33,8 @@ class HomeController extends Controller
     ) {
         $actorToken = $identity->resolve($request);
         $plans = $ownership->ownedPlans($request, [
-            'tasks' => fn ($query) => $query->with('prerequisite')->orderBy('sort_order')->orderBy('id'),
+            'tasks' => fn ($query) => $query->with(['prerequisite', 'resources', 'artifacts'])->orderBy('sort_order')->orderBy('id'),
+            'resources',
             'workLogs' => fn ($query) => $query->with('task')->latest('worked_on')->latest('id'),
             'memberships',
         ]);
@@ -69,15 +70,23 @@ class HomeController extends Controller
         $dashboard['continuity'] = $continuity;
         $dashboard['calendar_week'] = $calendarService->weekSummary($plans);
 
-        if ($dashboard['recommendation']) {
-            $recommendation = $dashboard['recommendation'];
+        $primaryGuidance = $dashboard['guidance_deck']->first();
+
+        if ($primaryGuidance) {
+            $adaptive = $primaryGuidance['adaptive'];
             $eventLogger->recordOnce(
                 $actorToken,
                 BehaviorEventType::RecommendationShown,
                 $request,
-                $recommendation->plan,
-                $recommendation->task,
-                ['source' => 'dashboard', 'priority_score' => $recommendation->priorityScore],
+                $primaryGuidance['plan'],
+                $primaryGuidance['task'],
+                [
+                    'source' => 'dashboard_guidance',
+                    'selection' => 'objective_priority',
+                    'plan_priority' => (int) ($primaryGuidance['plan']->priority ?? 3),
+                    'task_priority' => (int) $primaryGuidance['task']->priority,
+                    'priority_score' => $adaptive?->priorityScore,
+                ],
                 withinMinutes: 2,
             );
         }
