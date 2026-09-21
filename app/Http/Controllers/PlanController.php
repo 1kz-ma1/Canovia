@@ -43,6 +43,7 @@ class PlanController extends Controller
             'deadline' => ['nullable', 'date'],
             'is_public' => ['nullable'],
             'is_collaborative' => ['nullable'],
+            'create_request_id' => ['nullable', 'uuid'],
         ]);
 
         $startDate = $validated['start_date'] ?? now()->toDateString();
@@ -57,21 +58,42 @@ class PlanController extends Controller
         }
 
         $ownerToken = Str::random(64);
-        $plan = Plan::create([
-            'user_id' => $request->user()?->id,
-            'owner_token' => $ownerToken,
-            'public_slug' => Str::uuid()->toString(),
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'category' => $validated['category'] ?? null,
-            'visual_icon' => $validated['visual_icon'] ?? null,
-            'accent_key' => $validated['accent_key'] ?? 'sky',
-            'roadmap_world' => $validated['roadmap_world'] ?? 'default',
-            'start_date' => $startDate,
-            'deadline' => $deadline,
-            'is_public' => $request->boolean('is_public'),
-            'is_collaborative' => false,
-        ]);
+        $createRequestId = $validated['create_request_id'] ?? (string) Str::uuid();
+
+        // The request ID is persisted on the Plan itself. If Safari/PWA resends
+        // the same form because the redirect was not rendered, createOrFirst()
+        // converges every retry onto the original Plan instead of duplicating it.
+        $plan = Plan::query()->createOrFirst(
+            ['creation_request_id' => $createRequestId],
+            [
+                'user_id' => $request->user()?->id,
+                'owner_token' => $ownerToken,
+                'public_slug' => Str::uuid()->toString(),
+                'title' => $validated['title'],
+                'description' => $validated['description'] ?? null,
+                'category' => $validated['category'] ?? null,
+                'visual_icon' => $validated['visual_icon'] ?? null,
+                'accent_key' => $validated['accent_key'] ?? 'sky',
+                'roadmap_world' => $validated['roadmap_world'] ?? 'default',
+                'start_date' => $startDate,
+                'deadline' => $deadline,
+                'is_public' => $request->boolean('is_public'),
+                'is_collaborative' => false,
+            ]
+        );
+
+        if (! $plan->wasRecentlyCreated) {
+            if ($plan->user_id !== null && (int) $plan->user_id !== (int) ($request->user()?->id ?? 0)) {
+                abort(409, 'この作成リクエストは別のアカウントで使用済みです。');
+            }
+
+            if (! $request->user() && is_string($plan->owner_token) && $plan->owner_token !== '') {
+                cookie()->queue('pace_keeper_owner_token_' . $plan->id, $plan->owner_token, 60 * 24 * 365, '/', null, app()->environment('production') || $request->isSecure(), true, false, 'lax');
+            }
+
+            return redirect()->route('plans.ai_task_assistant.show', $plan)
+                ->with('status', 'この計画はすでに作成済みです。重複を作らず、続きから開きました。');
+        }
 
         if ($request->boolean('is_collaborative') && $request->user()) {
             if (! $collaboration->canOwnCollaborativePlan($request->user())) {
