@@ -78,6 +78,18 @@
                     </select>
                 </div>
 
+                <div>
+                    <label for="priority" class="mb-2 block text-sm font-medium text-slate-700">計画優先度</label>
+                    <select id="priority" name="priority" class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200">
+                        @for ($priority = 1; $priority <= 5; $priority++)
+                            <option value="{{ $priority }}" @selected((int) old('priority', $plan->priority ?? 3) === $priority)>
+                                {{ $priority }}{{ $priority === 1 ? '（最優先）' : ($priority === 5 ? '（低）' : '') }}
+                            </option>
+                        @endfor
+                    </select>
+                    <p class="mt-2 text-xs leading-5 text-slate-500">1が最優先です。HomeではPlan優先度をTask選定より先に使います。</p>
+                </div>
+
                 <section id="plan-design" class="scroll-mt-28">
                     <div class="mb-3">
                         <h2 class="text-lg font-bold text-slate-900">この計画の見た目</h2>
