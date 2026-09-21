@@ -99,6 +99,11 @@ class Plan extends Model
         return $this->hasMany(PlanAdjustment::class);
     }
 
+    public function studyPracticeAttempts()
+    {
+        return $this->hasMany(StudyPracticeAttempt::class);
+    }
+
     public function availabilityRules()
     {
         return $this->hasMany(PlanAvailabilityRule::class);

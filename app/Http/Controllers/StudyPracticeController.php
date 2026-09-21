@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Plan;
+use App\Models\StudyPracticeAttempt;
 use App\Models\Task;
 use App\Services\AiJsonInputNormalizer;
+use App\Services\BehaviorIdentityService;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticePromptService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -19,12 +23,19 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         StudyPracticePromptService $promptService,
+        BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
 
         $state = $request->session()->get($this->sessionKey($plan, $task), []);
-        $generationPrompt = $promptService->generationPrompt($plan, $task);
+        $actorToken = $identity->resolve($request);
+        $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
+        $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
+        $currentAttempt = ! empty($state['attempt_id'])
+            ? (clone $attemptQuery)->whereKey((int) $state['attempt_id'])->first()
+            : null;
+        $generationPrompt = $promptService->generationPrompt($plan, $task, $recentAttempts);
 
         return view('study_practice.show', [
             'plan' => $plan,
@@ -35,6 +46,8 @@ class StudyPracticeController extends Controller
             'answers' => $state['answers'] ?? [],
             'evaluationPrompt' => $state['evaluation_prompt'] ?? null,
             'assessment' => $state['assessment'] ?? null,
+            'currentAttempt' => $currentAttempt,
+            'recentAttempts' => $recentAttempts,
         ]);
     }
 
@@ -70,6 +83,8 @@ class StudyPracticeController extends Controller
             'answers' => [],
             'evaluation_prompt' => null,
             'assessment' => null,
+            'attempt_id' => null,
+            'attempt_token' => (string) Str::uuid(),
         ]);
 
         return redirect()
@@ -126,6 +141,7 @@ class StudyPracticeController extends Controller
         $state['answers'] = $answers;
         $state['evaluation_prompt'] = $promptService->evaluationPrompt($plan, $task, $questions, $answers);
         $state['assessment'] = null;
+        $state['attempt_id'] = null;
         $request->session()->put($key, $state);
 
         return redirect()
@@ -139,6 +155,7 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         AiJsonInputNormalizer $normalizer,
+        BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -183,12 +200,130 @@ class StudyPracticeController extends Controller
             'next_action' => mb_substr(trim((string) ($decoded['next_action'] ?? '')), 0, 1000),
         ];
 
+        $actorToken = $identity->resolve($request);
+        $identityScope = $request->user() ? 'user:'.(int) $request->user()->id : 'actor:'.$actorToken;
+        $attemptToken = (string) ($state['attempt_token'] ?? Str::uuid());
+        $state['attempt_token'] = $attemptToken;
+        $requestHash = hash('sha256', json_encode([
+            'identity' => $identityScope,
+            'attempt_token' => $attemptToken,
+            'plan_id' => (int) $plan->id,
+            'task_id' => (int) $task->id,
+            'questions' => $state['questions'] ?? [],
+            'answers' => $state['answers'] ?? [],
+            'assessment' => $assessment,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+        $attempt = StudyPracticeAttempt::query()->createOrFirst(
+            ['request_hash' => $requestHash],
+            [
+                'plan_id' => $plan->id,
+                'task_id' => $task->id,
+                'user_id' => $request->user()?->id,
+                'actor_token' => $request->user() ? null : $actorToken,
+                'exercise_title' => mb_substr((string) ($state['title'] ?? 'AI演習'), 0, 120),
+                'questions' => $state['questions'] ?? [],
+                'answers' => $state['answers'] ?? [],
+                'assessment' => $assessment,
+                'score_percent' => $assessment['score_percent'],
+                'strengths' => $assessment['strengths'],
+                'weaknesses' => $assessment['weaknesses'],
+                'recommended_task_progress_percent' => $assessment['recommended_task_progress_percent'],
+                'evidence_summary' => $assessment['evidence_summary'] ?: null,
+                'next_action' => $assessment['next_action'] ?: null,
+            ]
+        );
+
         $state['assessment'] = $assessment;
+        $state['attempt_id'] = $attempt->id;
         $request->session()->put($key, $state);
 
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
-            ->with('success', 'AIの評価を読み込みました。内容を確認できます。');
+            ->with('success', $attempt->wasRecentlyCreated
+                ? 'AIの評価を学習履歴へ保存しました。内容を確認してTaskへ反映できます。'
+                : '同じ評価はすでに保存済みです。既存の学習履歴を開きました。');
+    }
+
+    public function applyAssessment(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+        BehaviorIdentityService $identity,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership);
+        abort_unless(trim((string) $plan->category) === '資格学習', 404);
+
+        $validated = $request->validate([
+            'attempt_id' => ['required', 'integer', 'min:1'],
+            'request_hash' => ['required', 'string', 'size:64', 'regex:/^[a-f0-9]{64}$/'],
+        ]);
+        $actorToken = $identity->resolve($request);
+        $alreadyApplied = false;
+
+        DB::transaction(function () use ($request, $plan, $task, $validated, $actorToken, &$alreadyApplied) {
+            $attempt = $this->attemptQuery($request, $plan, $task, $actorToken)
+                ->whereKey((int) $validated['attempt_id'])
+                ->where('request_hash', $validated['request_hash'])
+                ->lockForUpdate()
+                ->first();
+
+            if (! $attempt) {
+                throw ValidationException::withMessages([
+                    'attempt_id' => 'この学習結果を確認できません。AI演習画面からもう一度開いてください。',
+                ]);
+            }
+
+            if ($attempt->applied_at) {
+                $alreadyApplied = true;
+                return;
+            }
+
+            $lockedTask = Task::query()
+                ->where('plan_id', $plan->id)
+                ->whereKey($task->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedTask->status === 'cancelled') {
+                throw ValidationException::withMessages([
+                    'attempt_id' => 'このTaskは現在中止されています。学習結果を反映するには、先にTask状態を見直してください。',
+                ]);
+            }
+
+            $progressBefore = (int) $lockedTask->progress_percent;
+            $progressAfter = max($progressBefore, (int) $attempt->recommended_task_progress_percent);
+            $remainingAfter = $progressAfter >= 100 ? 0 : $lockedTask->remaining_minutes;
+            $statusAfter = match (true) {
+                $progressAfter >= 100 => 'done',
+                $progressAfter > 0 => 'doing',
+                default => $lockedTask->status,
+            };
+            $reason = trim('AI演習 '.$attempt->score_percent.'%'.(
+                $attempt->evidence_summary ? '：'.$attempt->evidence_summary : ''
+            ));
+
+            $lockedTask->update([
+                'progress_percent' => $progressAfter,
+                'remaining_minutes' => $remainingAfter,
+                'progress_reason' => mb_substr($reason, 0, 4000),
+                'next_action_note' => $attempt->next_action ?: $lockedTask->next_action_note,
+                'status' => $statusAfter,
+            ]);
+
+            $attempt->update([
+                'progress_before_percent' => $progressBefore,
+                'progress_after_percent' => $progressAfter,
+                'applied_at' => now(),
+            ]);
+        }, 3);
+
+        return redirect()
+            ->route('plans.tasks.study_practice.show', [$plan, $task])
+            ->with('success', $alreadyApplied
+                ? 'この学習結果はすでにTaskへ反映済みです。重複反映は行いませんでした。'
+                : '学習結果をTaskへ反映しました。弱点と次のActionは次回のAI演習にも引き継がれます。');
     }
 
     public function reset(Request $request, Plan $plan, Task $task, PlanOwnershipService $ownership)
@@ -314,6 +449,19 @@ class StudyPracticeController extends Controller
             ->take(12)
             ->values()
             ->all();
+    }
+
+    private function attemptQuery(Request $request, Plan $plan, Task $task, string $actorToken)
+    {
+        $query = StudyPracticeAttempt::query()
+            ->where('plan_id', $plan->id)
+            ->where('task_id', $task->id);
+
+        if ($request->user()) {
+            return $query->where('user_id', $request->user()->id);
+        }
+
+        return $query->whereNull('user_id')->where('actor_token', $actorToken);
     }
 
     private function sessionKey(Plan $plan, Task $task): string

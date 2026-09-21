@@ -21,7 +21,7 @@
                     @endif
                 </div>
             </div>
-            <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300">AIは問題作成と評価を担当し、CanoviaはTaskの文脈・回答UI・結果確認を担当します。現在は評価内容を確認するところまでで、Task進捗は自動変更しません。</p>
+            <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300">AIは問題作成と評価を担当し、CanoviaはTaskの文脈・回答UI・学習履歴・進捗反映を担当します。評価を読み込んだだけではTaskを変更せず、確認後に「Taskへ反映」を押したときだけ更新します。</p>
         </section>
 
         @if (session('success'))
@@ -126,7 +126,11 @@
                 <div class="mt-3 flex flex-wrap items-end gap-4">
                     <div><p class="text-xs text-slate-500">今回の評価</p><strong class="text-4xl text-slate-50">{{ $assessment['score_percent'] }}%</strong></div>
                     <div><p class="text-xs text-slate-500">AI提案のTask進捗</p><strong class="text-2xl text-cyan-200">{{ $assessment['recommended_task_progress_percent'] }}%</strong></div>
-                    <span class="badge badge-slate">まだ進捗へ未反映</span>
+                    @if ($currentAttempt?->applied_at)
+                        <span class="badge badge-green">Taskへ反映済み</span>
+                    @else
+                        <span class="badge badge-slate">確認待ち</span>
+                    @endif
                 </div>
 
                 <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -145,7 +149,55 @@
                 @if ($assessment['next_action'])
                     <div class="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4"><p class="text-xs font-bold text-cyan-300">次のAction</p><p class="mt-1 text-sm font-semibold text-slate-100">{{ $assessment['next_action'] }}</p></div>
                 @endif
-                <p class="mt-4 text-xs leading-5 text-slate-500">次の段階で、このプレビューを確認してからTask進捗・成果・次Actionへ反映できるようにします。</p>
+                @if ($currentAttempt)
+                    @if ($currentAttempt->applied_at)
+                        <div class="mt-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
+                            <p class="text-sm font-bold text-emerald-100">Taskへ反映済み</p>
+                            <p class="mt-1 text-xs text-slate-400">進捗 {{ $currentAttempt->progress_before_percent ?? '—' }}% → {{ $currentAttempt->progress_after_percent ?? '—' }}%。AI演習だけを理由に、既存の進捗を下げることはありません。</p>
+                        </div>
+                    @else
+                        <form method="POST" action="{{ route('plans.tasks.study_practice.apply', [$plan, $task]) }}" class="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-4" data-mutation-once>
+                            @csrf
+                            <input type="hidden" name="attempt_id" value="{{ $currentAttempt->id }}">
+                            <input type="hidden" name="request_hash" value="{{ $currentAttempt->request_hash }}">
+                            <p class="text-sm font-bold text-cyan-100">この結果をCanoviaへ反映しますか？</p>
+                            <p class="mt-1 text-xs leading-5 text-slate-400">Task進捗は現在値とAI提案の高い方を使うため、演習結果だけで進捗が後退することはありません。評価根拠と次のActionもTaskへ残します。</p>
+                            <button type="submit" class="btn-primary mt-3">この学習結果をTaskへ反映</button>
+                        </form>
+                    @endif
+                @endif
+            </section>
+        @endif
+
+        @if (($recentAttempts ?? collect())->isNotEmpty())
+            <section class="page-card p-5 sm:p-6">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-300">LEARNING HISTORY</p>
+                    <h2 class="mt-1 text-lg font-black text-slate-100">このTaskのAI演習履歴</h2>
+                    <p class="mt-1 text-xs text-slate-500">ここで見つかった弱点は、次回の問題生成Promptへ自動で引き継がれます。</p>
+                </div>
+                <div class="mt-4 space-y-3">
+                    @foreach ($recentAttempts as $attempt)
+                        <article class="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <strong class="text-slate-100">{{ $attempt->exercise_title ?: 'AI演習' }}</strong>
+                                    <p class="mt-1 text-xs text-slate-500">{{ $attempt->created_at?->format('Y-m-d H:i') }}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="badge badge-slate">score {{ $attempt->score_percent }}%</span>
+                                    <span class="badge {{ $attempt->applied_at ? 'badge-green' : 'badge-slate' }}">{{ $attempt->applied_at ? '反映済み' : '未反映' }}</span>
+                                </div>
+                            </div>
+                            @if (collect($attempt->weaknesses ?? [])->isNotEmpty())
+                                <p class="mt-3 text-xs leading-5 text-amber-100">弱点：{{ collect($attempt->weaknesses)->implode(' / ') }}</p>
+                            @endif
+                            @if ($attempt->next_action)
+                                <p class="mt-2 text-xs leading-5 text-cyan-100">次：{{ $attempt->next_action }}</p>
+                            @endif
+                        </article>
+                    @endforeach
+                </div>
             </section>
         @endif
     </div>

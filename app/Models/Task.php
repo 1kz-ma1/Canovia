@@ -59,6 +59,11 @@ class Task extends Model
         return $this->hasMany(WorkLog::class);
     }
 
+    public function studyPracticeAttempts()
+    {
+        return $this->hasMany(StudyPracticeAttempt::class);
+    }
+
     public function continuationOf()
     {
         return $this->belongsTo(self::class, 'continuation_of_task_id');
