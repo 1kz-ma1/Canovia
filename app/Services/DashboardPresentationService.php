@@ -83,13 +83,10 @@ class DashboardPresentationService
         $totalDailyRequired = (int) $planTabs->sum(fn ($item) => $item['progress']['daily_required_minutes']);
         $todayMinutes = (int) $planTabs->sum('today_minutes');
         $remainingMinutes = (int) $planTabs->sum(fn ($item) => $item['progress']['remaining_minutes']);
-        $recommendationPlans = $plans->filter(fn ($plan) => $editablePlanIds->has((int) $plan->id))->values();
-        $recommendation = $this->recommendationService->recommend(
-            $recommendationPlans,
-            $state,
-            excludedTaskIds: $excludedTaskIds,
-            actorToken: $actorToken,
-        );
+        // Compatibility alias: consumers that still read dashboard['recommendation']
+        // receive the adaptive advice for the objective first Guidance Task.
+        // Home no longer lets behavioral scoring replace the selected Task.
+        $recommendation = data_get($guidanceDeck->first(), 'adaptive');
         $attentionPlans = $planTabs
             ->filter(fn ($item) => in_array($item['progress']['status'], ['遅れ気味', '期限切れ', '作業時間不足'], true))
             ->sortByDesc(fn ($item) => $item['progress']['daily_required_minutes'])
