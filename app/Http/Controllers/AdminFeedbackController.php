@@ -4,19 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Models\ReleaseNote;
+use App\Services\AdminAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class AdminFeedbackController extends Controller
 {
+    public function __construct(private readonly AdminAccessService $adminAccess)
+    {
+    }
+
     public function login(Request $request)
     {
         if ($this->authorized($request)) {
-            return redirect()->route('admin.feedback.index');
+            return redirect()->route('admin.dashboard');
         }
 
         return view('admin.feedback.login', [
-            'passwordConfigured' => filled(config('canovia.feedback_admin_password')),
+            'passwordConfigured' => $this->adminAccess->passwordConfigured(),
         ]);
     }
 
@@ -26,17 +31,15 @@ class AdminFeedbackController extends Controller
             'password' => ['required', 'string', 'max:255'],
         ]);
 
-        $expected = (string) config('canovia.feedback_admin_password', '');
-        if ($expected === '' || ! hash_equals($expected, (string) $validated['password'])) {
+        if (! $this->adminAccess->passwordMatches((string) $validated['password'])) {
             return back()->withErrors([
                 'password' => '管理用パスワードが正しくありません。',
             ]);
         }
 
-        $request->session()->put('feedback_admin_authenticated', true);
-        $request->session()->regenerate();
+        $this->adminAccess->markAuthenticated($request);
 
-        return redirect()->route('admin.feedback.index');
+        return redirect()->route('admin.dashboard');
     }
 
     public function index(Request $request)
@@ -200,15 +203,6 @@ class AdminFeedbackController extends Controller
 
     private function authorized(Request $request): bool
     {
-        if ((bool) $request->session()->get('feedback_admin_authenticated', false)) {
-            return true;
-        }
-
-        $adminEmail = trim((string) config('canovia.admin_email', ''));
-        $userEmail = trim((string) ($request->user()?->email ?? ''));
-
-        return $adminEmail !== ''
-            && $userEmail !== ''
-            && mb_strtolower($adminEmail) === mb_strtolower($userEmail);
+        return $this->adminAccess->authorized($request);
     }
 }
