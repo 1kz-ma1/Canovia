@@ -10,6 +10,7 @@ use App\Services\PlanCollaborationService;
 use App\Services\PlanActivityService;
 use App\Services\PlanProgressService;
 use App\Services\PlanTimelineService;
+use App\Services\PlanToolService;
 use App\Services\RecommendationService;
 use App\Services\RoadmapService;
 use App\Services\UserBehaviorService;
@@ -123,6 +124,7 @@ class PlanController extends Controller
         RecommendationService $recommendationService,
         RoadmapService $roadmapService,
         ContinuityService $continuityService,
+        PlanToolService $toolService,
     ) {
         $canView = $ownership->canView($request, $plan);
         $canEdit = $ownership->canEdit($request, $plan);
@@ -176,7 +178,30 @@ class PlanController extends Controller
             ? $plan->activityLogs()->with('user')->limit(8)->get()
             : collect();
 
-        return view('plans.show', compact('plan', 'progress', 'timeline', 'canEdit', 'canManage', 'collaborationRole', 'recommendation', 'continuity', 'roadmap', 'recentActivities'));
+        $taskTools = $plan->tasks
+            ->mapWithKeys(fn ($task) => [(int) $task->id => $toolService->forTask($plan, $task, $canEdit)])
+            ->all();
+        $toolFocusTask = $recommendation?->task
+            ?? $plan->tasks->first(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true));
+        $planTools = $toolFocusTask
+            ? ($taskTools[(int) $toolFocusTask->id] ?? [])
+            : [];
+
+        return view('plans.show', compact(
+            'plan',
+            'progress',
+            'timeline',
+            'canEdit',
+            'canManage',
+            'collaborationRole',
+            'recommendation',
+            'continuity',
+            'roadmap',
+            'recentActivities',
+            'taskTools',
+            'toolFocusTask',
+            'planTools',
+        ));
     }
 
     public function edit(Request $request, Plan $plan, PlanOwnershipService $ownership)
