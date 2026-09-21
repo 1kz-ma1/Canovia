@@ -9,6 +9,7 @@ class PlanAdjustment extends Model
     protected $fillable = [
         'plan_id',
         'flow',
+        'request_hash',
         'summary',
         'user_input',
         'prompt',
