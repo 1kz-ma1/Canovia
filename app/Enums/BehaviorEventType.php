@@ -19,12 +19,31 @@ enum BehaviorEventType: string
     case NavigationStarted = 'navigation_started';
     case NavigationCompleted = 'navigation_completed';
 
+    // AI-assisted plan funnel. These events intentionally contain no prompt or
+    // pasted JSON body; they exist to diagnose where users stop or fail.
+    case PlanGenerationOpened = 'plan_generation_opened';
+    case PlanGenerationPromptCopyClicked = 'plan_generation_prompt_copy_clicked';
+    case PlanGenerationImportAttempted = 'plan_generation_import_attempted';
+    case PlanGenerationImportFailed = 'plan_generation_import_failed';
+    case PlanGenerationImportSucceeded = 'plan_generation_import_succeeded';
+    case PlanUpdateOpened = 'plan_update_opened';
+    case PlanUpdatePromptGenerated = 'plan_update_prompt_generated';
+    case PlanUpdatePromptCopyClicked = 'plan_update_prompt_copy_clicked';
+    case PlanUpdatePreviewAttempted = 'plan_update_preview_attempted';
+    case PlanUpdatePreviewFailed = 'plan_update_preview_failed';
+    case PlanUpdatePreviewSucceeded = 'plan_update_preview_succeeded';
+    case PlanUpdateApplyAttempted = 'plan_update_apply_attempted';
+    case PlanUpdateApplyFailed = 'plan_update_apply_failed';
+    case PlanUpdateApplied = 'plan_update_applied';
+
     public static function clientRecordable(): array
     {
         return [
             self::DashboardIdle->value,
             self::PlanTabViewed->value,
             self::TaskViewed->value,
+            self::PlanGenerationPromptCopyClicked->value,
+            self::PlanUpdatePromptCopyClicked->value,
         ];
     }
 }
