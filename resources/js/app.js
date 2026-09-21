@@ -55,40 +55,48 @@ function canoviaClientDevice() {
     return /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
 }
 
-function mountAiPlanFunnelTelemetry() {
-    const surface = canoviaClientSurface();
-    const device = canoviaClientDevice();
-
-    document.querySelectorAll(
-        'form[data-ai-plan-generation-import], form[data-async-plan-review], form[data-review-json-preview], form#review-apply-form'
-    ).forEach((form) => {
-        if (!(form instanceof HTMLFormElement)) return;
-        let input = form.querySelector('input[name="_client_surface"]');
-        if (!input) {
-            input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = '_client_surface';
-            form.appendChild(input);
-        }
-        input.value = surface;
-    });
-
-    document.querySelectorAll('[data-funnel-event]').forEach((trigger) => {
-        trigger.addEventListener('click', () => {
-            const root = trigger.closest('[data-funnel-root]');
-            const planId = Number(root?.dataset.planId || 0);
-            recordBehavior(root, trigger.dataset.funnelEvent, {
-                ...(planId > 0 ? { plan_id: planId } : {}),
-                metadata: {
-                    surface,
-                    device,
-                },
-            });
-        });
-    });
+function isAiPlanFunnelForm(form) {
+    return form instanceof HTMLFormElement && (
+        form.matches('[data-ai-plan-generation-import]')
+        || form.matches('[data-async-plan-review]')
+        || form.matches('[data-review-json-preview]')
+        || form.matches('#review-apply-form')
+    );
 }
 
-document.addEventListener('DOMContentLoaded', mountAiPlanFunnelTelemetry);
+function ensureAiPlanFunnelSurface(form) {
+    if (!isAiPlanFunnelForm(form)) return;
+
+    let input = form.querySelector('input[name="_client_surface"]');
+    if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = '_client_surface';
+        form.appendChild(input);
+    }
+    input.value = canoviaClientSurface();
+}
+
+// Use delegated handlers because the review conversation root can be replaced
+// after prompt generation. Newly-rendered forms/buttons must be tracked too.
+document.addEventListener('submit', (event) => {
+    ensureAiPlanFunnelSurface(event.target);
+}, true);
+
+document.addEventListener('click', (event) => {
+    const trigger = event.target.closest?.('[data-funnel-event]');
+    if (!trigger) return;
+
+    const root = trigger.closest('[data-funnel-root]');
+    const planId = Number(root?.dataset.planId || 0);
+    recordBehavior(root, trigger.dataset.funnelEvent, {
+        ...(planId > 0 ? { plan_id: planId } : {}),
+        metadata: {
+            surface: canoviaClientSurface(),
+            device: canoviaClientDevice(),
+        },
+    });
+});
 
 function formatTimer(totalSeconds) {
     const hours = Math.floor(totalSeconds / 3600);
