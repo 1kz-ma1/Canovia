@@ -67,7 +67,7 @@
                         type="text"
                         name="title"
                         value="{{ old('title', data_get($prefill ?? [], 'title')) }}"
-                        placeholder="例：応用情報技術者試験に合格する"
+                        placeholder="例：応用情報技術者試験 合格"
                         required
                         autofocus
                         class="form-control mt-2 min-h-12 text-base font-semibold sm:text-lg"
