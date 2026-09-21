@@ -64,6 +64,9 @@ task_id: {$task->id}
 
 【出力ルール】
 説明文やMarkdownを付けず、JSONだけを返してください。
+返答直前にJSONとして構文解析できることを確認してください。
+JSONのキーと文字列を囲む引用符には半角ダブルクォート（"）を使い、文字列内で"を使う場合は\"としてエスケープしてください。
+末尾カンマ、コメント、スマートクォート（“ ”）は使わないでください。
 flow、plan_id、task_idは下記から変更しないでください。
 typeは single_choice / multiple_choice / text / number のいずれかです。
 single_choice / multiple_choice では choices を2〜6件付け、各choiceにidとlabelを付けてください。
@@ -131,7 +134,11 @@ task_id: {$task->id}
 - evidence_summaryには正答状況や判断根拠を簡潔に残す
 - 推測でplan_idやtask_idを変更しない
 
+【出力ルール】
 説明文やMarkdownを付けず、JSONだけを返してください。
+返答直前にJSONとして構文解析できることを確認してください。
+JSONのキーと文字列を囲む引用符には半角ダブルクォート（"）を使い、文字列内で"を使う場合は\"としてエスケープしてください。
+末尾カンマ、コメント、スマートクォート（“ ”）は使わないでください。
 
 {
   "schema_version": "1.0",
