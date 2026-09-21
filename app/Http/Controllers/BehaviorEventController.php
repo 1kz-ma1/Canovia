@@ -82,15 +82,44 @@ class BehaviorEventController extends Controller
             }
         }
 
-        $logger->recordOnce(
-            $actorToken,
-            $type,
-            $request,
-            $plan,
-            $task,
-            $metadata,
-            withinMinutes: $type === BehaviorEventType::DashboardIdle ? 15 : 5,
-        );
+        $funnelClientTypes = [
+            BehaviorEventType::PlanGenerationPromptCopyClicked,
+            BehaviorEventType::PlanUpdatePromptCopyClicked,
+        ];
+
+        if (in_array($type, $funnelClientTypes, true)) {
+            // Funnel client events only retain the environment flags required
+            // for Web/PWA diagnosis. Ignore arbitrary client metadata so user
+            // text can never leak into structured Render logs.
+            $safeMetadata = [
+                'surface' => in_array(($metadata['surface'] ?? null), ['web', 'pwa'], true)
+                    ? $metadata['surface']
+                    : 'unknown',
+                'device' => in_array(($metadata['device'] ?? null), ['mobile', 'desktop'], true)
+                    ? $metadata['device']
+                    : 'unknown',
+            ];
+
+            $logger->recordOnceSafely(
+                $actorToken,
+                $type,
+                $request,
+                $plan,
+                $task,
+                $safeMetadata,
+                withinMinutes: 5,
+            );
+        } else {
+            $logger->recordOnce(
+                $actorToken,
+                $type,
+                $request,
+                $plan,
+                $task,
+                $metadata,
+                withinMinutes: $type === BehaviorEventType::DashboardIdle ? 15 : 5,
+            );
+        }
 
         return response()->noContent();
     }

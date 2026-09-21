@@ -3,7 +3,12 @@
 @section('title', 'AIと初期計画をつくる | Canovia')
 
 @section('content')
-    <div class="initial-plan-page mx-auto max-w-5xl space-y-5 pb-32 sm:space-y-6 md:space-y-8 md:pb-10">
+    <div
+        class="initial-plan-page mx-auto max-w-5xl space-y-5 pb-32 sm:space-y-6 md:space-y-8 md:pb-10"
+        data-funnel-root
+        data-event-url="{{ route('behavior_events.store') }}"
+        data-plan-id="{{ $plan->id }}"
+    >
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                 <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 font-heading sm:text-3xl">
@@ -70,7 +75,7 @@
             >{{ $prompt }}</textarea>
 
             <div class="flex flex-wrap items-center gap-3">
-                <button type="button" class="btn-primary" data-ai-copy-prompt data-onboarding-target="ai-copy">
+                <button type="button" class="btn-primary" data-ai-copy-prompt data-onboarding-target="ai-copy" data-funnel-event="plan_generation_prompt_copy_clicked">
                     相談用の文章をコピー
                 </button>
                 <p class="text-sm text-emerald-500" data-ai-copy-status aria-live="polite"></p>
