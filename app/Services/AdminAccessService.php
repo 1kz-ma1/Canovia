@@ -28,14 +28,23 @@ class AdminAccessService
 
     public function passwordConfigured(): bool
     {
-        return filled(config('canovia.admin_password'));
+        return $this->configuredPassword() !== '';
     }
 
     public function passwordMatches(string $password): bool
     {
-        $expected = (string) config('canovia.admin_password', '');
+        $expected = $this->configuredPassword();
 
         return $expected !== '' && hash_equals($expected, $password);
+    }
+
+    private function configuredPassword(): string
+    {
+        return trim((string) (
+            config('canovia.admin_password')
+            ?: config('canovia.feedback_admin_password')
+            ?: config('pacekeeper.feedback_admin_password', '')
+        ));
     }
 
     public function markAuthenticated(Request $request): void
