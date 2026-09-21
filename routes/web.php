@@ -46,9 +46,9 @@ Route::post('/future-memos/organize/ai/preview', [FutureMemoController::class, '
 Route::post('/future-memos/goal-candidates/memo', [FutureMemoController::class, 'candidateToMemo'])->name('future_memos.candidate.memo');
 Route::post('/future-memos/goal-candidates/plan', [FutureMemoController::class, 'candidateToPlan'])->name('future_memos.candidate.plan');
 
-// PWA identity bridge. Safari and an iOS Home Screen app may use separate
-// cookie stores, so the manifest/start flow carries a short-lived one-time
-// handoff instead of assuming browser cookies will magically be shared.
+// PWA identity bridge. The normal manifest has a stable Home start URL.
+// Only the explicit install guide receives a short-lived first-launch handoff,
+// because Safari and an iOS Home Screen app may use separate cookie stores.
 Route::get('/app.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
 Route::get('/pwa/install', [PwaController::class, 'prepareInstall'])->name('pwa.install.prepare');
 Route::get('/pwa/install/{token}', [PwaController::class, 'installGuide'])->name('pwa.install.guide');
