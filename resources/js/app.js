@@ -684,12 +684,92 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 380);
     };
 
+    const uuidForMutation = () => {
+        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+
+        const bytes = new Uint8Array(16);
+        window.crypto?.getRandomValues?.(bytes);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = [...bytes].map((value) => value.toString(16).padStart(2, '0')).join('');
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    };
+
+    const mutationPath = (form) => {
+        try {
+            return new URL(form.action, window.location.href).pathname;
+        } catch (_) {
+            return '';
+        }
+    };
+
+    const ensureWorkStartRequestId = (form) => {
+        if (mutationPath(form) !== '/work-sessions' || form.method.toUpperCase() !== 'POST') return;
+        if (form.querySelector('input[name="start_request_id"]')) return;
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'start_request_id';
+        input.value = uuidForMutation();
+        form.appendChild(input);
+    };
+
+    const isCriticalMutation = (form) => {
+        if (form.hasAttribute('data-mutation-once') || form.matches('[data-ai-plan-generation-import], #review-apply-form')) return true;
+        const path = mutationPath(form);
+        return path === '/work-sessions'
+            || /^\/work-sessions\/\d+\/(pause|resume|complete|interrupt)$/.test(path)
+            || /^\/plans\/\d+\/review-assistant\/apply$/.test(path);
+    };
+
+    const lockMutationForm = (form, event) => {
+        if (!isCriticalMutation(form)) return true;
+
+        if (form.dataset.mutationBusy === '1') {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return false;
+        }
+
+        form.dataset.mutationBusy = '1';
+        form.setAttribute('aria-busy', 'true');
+        form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+            button.setAttribute('aria-disabled', 'true');
+            button.classList.add('pointer-events-none', 'opacity-70');
+            const pending = button.dataset.processingLabel;
+            if (pending && button instanceof HTMLButtonElement) {
+                button.dataset.mutationOriginalLabel = button.textContent || '';
+                button.textContent = pending;
+            }
+        });
+        return true;
+    };
+
     document.addEventListener('submit', (event) => {
         const form = event.target;
         if (!(form instanceof HTMLFormElement) || form.target === '_blank') return;
+
+        ensureWorkStartRequestId(form);
+        if (!lockMutationForm(form, event)) return;
+
         if (form.hasAttribute('data-loading-skip')) return;
         showLoading();
     });
+
+    const resetMutationLocks = () => {
+        document.querySelectorAll('form[data-mutation-busy="1"]').forEach((form) => {
+            form.dataset.mutationBusy = '0';
+            form.removeAttribute('aria-busy');
+            form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+                button.removeAttribute('aria-disabled');
+                button.classList.remove('pointer-events-none', 'opacity-70');
+                if (button instanceof HTMLButtonElement && button.dataset.mutationOriginalLabel !== undefined) {
+                    button.textContent = button.dataset.mutationOriginalLabel;
+                    delete button.dataset.mutationOriginalLabel;
+                }
+            });
+        });
+    };
 
     document.addEventListener('click', (event) => {
         const link = event.target.closest('a[href]');
@@ -706,6 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.clearTimeout(loadingTimer);
         loadingOverlay?.classList.remove('is-visible');
         loadingOverlay?.setAttribute('aria-hidden', 'true');
+        resetMutationLocks();
     });
 
     // Plan review uses one delegated async submit pipeline. The page also
