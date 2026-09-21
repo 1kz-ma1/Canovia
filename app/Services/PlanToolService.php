@@ -73,6 +73,20 @@ class PlanToolService
             ->all();
     }
 
+    public function looksLikeStudyPlan(Plan $plan): bool
+    {
+        if ($this->isStudyPlan($plan)) {
+            return true;
+        }
+
+        $text = mb_strtolower(trim($plan->title.' '.($plan->description ?? '')));
+
+        return preg_match(
+            '/応用情報|基本情報|情報処理|itパスポート|資格|試験|検定|toeic|簿記|学習|勉強|ap対策|ap試験|ap学習/u',
+            $text
+        ) === 1;
+    }
+
     private function isStudyPlan(Plan $plan): bool
     {
         return trim((string) $plan->category) === '資格学習';

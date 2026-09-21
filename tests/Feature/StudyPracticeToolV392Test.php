@@ -40,6 +40,31 @@ class StudyPracticeToolV392Test extends TestCase
         $this->assertTrue($tools->contains(fn ($tool) => $tool['id'] === 'artifacts'));
     }
 
+    public function test_plan_header_exposes_direct_ai_practice_entry_for_study_plan(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+
+        $this->actingAs($user)
+            ->get(route('plans.show', $plan))
+            ->assertOk()
+            ->assertSee('✦ AI演習')
+            ->assertSee(route('plans.tasks.study_practice.show', [$plan, $task]), false);
+    }
+
+    public function test_likely_study_plan_explains_category_mismatch_instead_of_hiding_tool_reason(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan($user, 'その他');
+        $plan->update(['title' => '応用情報技術者試験 AP 対策']);
+        $this->task($plan, 'ネットワークを復習する');
+
+        $this->actingAs($user)
+            ->get(route('plans.show', $plan))
+            ->assertOk()
+            ->assertSee('AI演習を使えそうですが、Planカテゴリが一致していません')
+            ->assertSee('カテゴリを「資格学習」に変更すると');
+    }
+
     public function test_question_json_can_be_imported_and_rendered_as_canovia_form(): void
     {
         [$user, $plan, $task] = $this->studyPlan();
