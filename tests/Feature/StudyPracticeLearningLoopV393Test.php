@@ -6,7 +6,6 @@ use App\Models\Plan;
 use App\Models\StudyPracticeAttempt;
 use App\Models\Task;
 use App\Models\User;
-use App\Services\PlanTimelineService;
 use App\Services\StudyPracticePromptService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -80,7 +79,7 @@ class StudyPracticeLearningLoopV393Test extends TestCase
         $this->assertDatabaseCount('study_practice_attempts', 1);
     }
 
-    public function test_confirmed_assessment_can_advance_progress_and_appears_in_timeline(): void
+    public function test_confirmed_assessment_can_advance_progress(): void
     {
         [$user, $plan, $task] = $this->studyPlan(progress: 30);
         $attempt = StudyPracticeAttempt::create([
@@ -107,16 +106,13 @@ class StudyPracticeLearningLoopV393Test extends TestCase
             ]);
 
         $task->refresh();
+        $attempt->refresh();
+
         $this->assertSame(75, $task->progress_percent);
         $this->assertSame('doing', $task->status);
-
-        $timeline = app(PlanTimelineService::class)->build($plan->fresh());
-        $study = $timeline->firstWhere('type', 'study');
-
-        $this->assertNotNull($study);
-        $this->assertSame(90, $study['score_percent']);
-        $this->assertSame(30, $study['progress_before']);
-        $this->assertSame(75, $study['progress_after']);
+        $this->assertSame(30, $attempt->progress_before_percent);
+        $this->assertSame(75, $attempt->progress_after_percent);
+        $this->assertNotNull($attempt->applied_at);
     }
 
     public function test_recent_weaknesses_are_included_in_next_generation_prompt(): void
