@@ -186,6 +186,30 @@ class MutationIdempotencyV390Test extends TestCase
         $this->assertDatabaseCount('pwa_handoffs', 0);
     }
 
+    public function test_install_manifest_uses_only_the_explicit_bootstrap_token(): void
+    {
+        $user = User::factory()->create();
+
+        $prepare = $this->actingAs($user)->get(route('pwa.install.prepare'));
+        $location = (string) $prepare->headers->get('Location');
+        $path = (string) parse_url($location, PHP_URL_PATH);
+        $token = basename($path);
+
+        $this->assertDatabaseCount('pwa_handoffs', 1);
+
+        $this->actingAs($user)
+            ->getJson(route('pwa.manifest', ['handoff' => $token]))
+            ->assertOk()
+            ->assertJsonPath(
+                'start_url',
+                route('pwa.handoff', ['token' => $token, 'launch' => 1], false)
+            );
+
+        // Fetching the install-scoped manifest must reuse the prepared token,
+        // not allocate a fresh PwaHandoff row behind the scenes.
+        $this->assertDatabaseCount('pwa_handoffs', 1);
+    }
+
     public function test_head_probe_does_not_consume_pwa_handoff_and_relaunch_is_quiet(): void
     {
         $user = User::factory()->create();
