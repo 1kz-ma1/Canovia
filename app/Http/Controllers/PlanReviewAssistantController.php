@@ -355,6 +355,20 @@ class PlanReviewAssistantController extends Controller
             'return_to' => ['nullable', 'in:dashboard,plan'],
         ]);
 
+        $requestHash = hash('sha256', 'plan_review_apply|'.$plan->id.'|'.$validated['proposal_token']);
+
+        // A retry after a successful apply may arrive after the proposal has
+        // already been removed from the session. Check the durable adjustment
+        // first so that retry converges on the previous success.
+        if (PlanAdjustment::query()
+            ->where('plan_id', $plan->id)
+            ->where('request_hash', $requestHash)
+            ->exists()) {
+            return ($validated['return_to'] ?? null) === 'dashboard'
+                ? redirect()->route('home')->with('success', "#{$plan->id} {$plan->title} はすでに更新済みです。")
+                : redirect()->route('plans.show', $plan)->with('success', 'この変更はすでに反映済みです。重複更新はしていません。');
+        }
+
         $draft = $request->session()->get($this->draftSessionKey($plan));
         $proposal = $request->session()->get($this->proposalSessionKey($plan));
 
@@ -406,7 +420,16 @@ class PlanReviewAssistantController extends Controller
         $plan->loadMissing(['tasks', 'workLogs']);
         $metricsBefore = $progressService->calculate($plan);
 
-        DB::transaction(function () use ($plan, $draft, $proposal, $selectedOperations, $metricsBefore, $progressService) {
+        $appliedNow = DB::transaction(function () use ($plan, $draft, $proposal, $selectedOperations, $metricsBefore, $progressService, $requestHash) {
+            Plan::query()->whereKey($plan->id)->lockForUpdate()->firstOrFail();
+
+            if (PlanAdjustment::query()
+                ->where('plan_id', $plan->id)
+                ->where('request_hash', $requestHash)
+                ->exists()) {
+                return false;
+            }
+
             $createdTaskMap = [];
             $appliedOperations = [];
             $currentMaxSortOrder = (int) $plan->tasks()->max('sort_order');
@@ -631,6 +654,7 @@ class PlanReviewAssistantController extends Controller
             PlanAdjustment::create([
                 'plan_id' => $plan->id,
                 'flow' => $proposal['flow'] ?? 'plan_update',
+                'request_hash' => $requestHash,
                 'summary' => $proposal['summary'],
                 'user_input' => Arr::except($draft, ['prompt']),
                 'prompt' => $draft['prompt'],
@@ -640,7 +664,20 @@ class PlanReviewAssistantController extends Controller
                 'metrics_after' => $metricsAfter,
                 'applied_at' => now(),
             ]);
+
+            return true;
         });
+
+        if (! $appliedNow) {
+            $request->session()->forget([
+                $this->draftSessionKey($plan),
+                $this->proposalSessionKey($plan),
+            ]);
+
+            return ($validated['return_to'] ?? null) === 'dashboard'
+                ? redirect()->route('home')->with('success', "#{$plan->id} {$plan->title} はすでに更新済みです。")
+                : redirect()->route('plans.show', $plan)->with('success', 'この変更はすでに反映済みです。重複更新はしていません。');
+        }
 
         if (! empty($draft['work_session_id'])) {
             WorkSession::query()
