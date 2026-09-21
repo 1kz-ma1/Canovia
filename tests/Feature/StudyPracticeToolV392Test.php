@@ -124,6 +124,70 @@ class StudyPracticeToolV392Test extends TestCase
             ->assertSessionHasErrors('questions_json');
     }
 
+    public function test_invalid_question_json_shows_a_repair_prompt_with_exact_target_context(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $show = route('plans.tasks.study_practice.show', [$plan, $task]);
+
+        $this->actingAs($user)
+            ->from($show)
+            ->post(route('plans.tasks.study_practice.import', [$plan, $task]), [
+                'questions_json' => '{"schema_version":"1.0","flow":"study_practice",',
+            ])
+            ->assertRedirect($show)
+            ->assertSessionHasErrors('questions_json');
+
+        $this->actingAs($user)
+            ->get($show)
+            ->assertOk()
+            ->assertSee('修正依頼を作りました')
+            ->assertSee('修正依頼をコピー')
+            ->assertSee('target_plan.idは '.$plan->id)
+            ->assertSee('target_task.idは '.$task->id)
+            ->assertSee('flowは&quot;study_practice&quot;', false)
+            ->assertSee('元のCanovia問題作成プロンプト');
+    }
+
+    public function test_invalid_assessment_json_shows_a_repair_prompt_with_evaluation_context(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $show = route('plans.tasks.study_practice.show', [$plan, $task]);
+        $session = [
+            "study_practice.{$plan->id}.{$task->id}" => [
+                'title' => '確認',
+                'questions' => [[
+                    'id' => 'q1',
+                    'type' => 'text',
+                    'prompt' => 'DNSを説明してください。',
+                    'choices' => [],
+                ]],
+                'answers' => [['question_id' => 'q1', 'answer' => '名前解決']],
+                'evaluation_prompt' => 'ORIGINAL EVALUATION PROMPT',
+                'assessment' => null,
+                'attempt_id' => null,
+                'attempt_token' => (string) Str::uuid(),
+            ],
+        ];
+
+        $this->actingAs($user)
+            ->withSession($session)
+            ->from($show)
+            ->post(route('plans.tasks.study_practice.assessment', [$plan, $task]), [
+                'assessment_json' => '{"flow":"study_assessment",',
+            ])
+            ->assertRedirect($show)
+            ->assertSessionHasErrors('assessment_json');
+
+        $this->actingAs($user)
+            ->get($show)
+            ->assertOk()
+            ->assertSee('評価JSONの修正依頼を作りました')
+            ->assertSee('修正依頼をコピー')
+            ->assertSee('target_plan.idは '.$plan->id)
+            ->assertSee('target_task.idは '.$task->id)
+            ->assertSee('ORIGINAL EVALUATION PROMPT');
+    }
+
     public function test_answers_create_evaluation_prompt_and_assessment_preview(): void
     {
         [$user, $plan, $task] = $this->studyPlan();

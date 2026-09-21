@@ -13,6 +13,7 @@ class AiJsonInputNormalizer
     public function normalize(string $value): string
     {
         $text = trim($this->stripBom($value));
+        $hasStructuralSmartQuotes = preg_match('/(?:[{,:]\s*[“”]|[“”]\s*:)/u', $text) === 1;
 
         if ($text === '') {
             throw new InvalidArgumentException('AIの最後の回答を貼り付けてください。');
@@ -55,7 +56,9 @@ class AiJsonInputNormalizer
             }
         }
 
-        $detail = $this->humanizeDecodeError($lastError);
+        $detail = $hasStructuralSmartQuotes
+            ? 'JSONのキーや文字列を囲む引用符にスマートクォート（“ ”）が使われています。半角ダブルクォート（"）へ修正してください'
+            : $this->humanizeDecodeError($lastError);
 
         throw new InvalidArgumentException(
             'JSONの構文を読み取れませんでした。' . $detail . '。下の修正依頼をコピーしてAIへ送ってください。'

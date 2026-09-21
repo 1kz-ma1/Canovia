@@ -52,6 +52,20 @@ JSON);
         $this->assertSame('a } b { c', json_decode($json, true)['text']);
     }
 
+    public function test_reports_structural_smart_quotes_without_rewriting_semantic_content(): void
+    {
+        try {
+            $this->normalizer->normalize('{“schema_version”:“1.0”,“flow”:“study_practice”}');
+            $this->fail('Expected invalid smart-quote JSON to be rejected.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertStringContainsString('スマートクォート', $exception->getMessage());
+            $this->assertStringContainsString('半角ダブルクォート', $exception->getMessage());
+        }
+
+        $json = $this->normalizer->normalize('{"text":"He said “yes”","operations":[]}');
+        $this->assertSame('He said “yes”', json_decode($json, true)['text']);
+    }
+
     public function test_throws_actionable_error_for_unclosed_json(): void
     {
         $this->expectException(InvalidArgumentException::class);
