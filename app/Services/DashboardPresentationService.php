@@ -16,6 +16,7 @@ class DashboardPresentationService
     public function __construct(
         private readonly PlanProgressService $progressService,
         private readonly RecommendationService $recommendationService,
+        private readonly DashboardGuidanceService $guidanceService,
         private readonly RoadmapService $roadmapService,
     ) {}
 
@@ -70,6 +71,13 @@ class DashboardPresentationService
                 'can_edit' => $canEdit,
             ];
         })->values();
+
+        $guidanceDeck = $this->guidanceService->build(
+            $plans,
+            $state,
+            $actorToken,
+            $editablePlanIds->keys()->all(),
+        );
 
         $recentActivity = $planTabs
             ->flatMap(fn (array $item) => $item['recent_logs']->map(fn ($log) => ['plan' => $item['plan'], 'log' => $log]))
@@ -136,6 +144,7 @@ class DashboardPresentationService
             'today_minutes' => $todayMinutes,
             'remaining_minutes' => $remainingMinutes,
             'recommendation' => $recommendation,
+            'guidance_deck' => $guidanceDeck,
             'attention_plans' => $attentionPlans,
             'baseline' => $baseline,
             'state' => $state,
