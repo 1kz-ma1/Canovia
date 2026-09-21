@@ -82,7 +82,7 @@ class BehaviorEventController extends Controller
             }
         }
 
-        $logger->recordOnce(
+        $logger->recordOnceSafely(
             $actorToken,
             $type,
             $request,
