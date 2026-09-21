@@ -4,14 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Enums\BehaviorEventType;
 use App\Models\BehaviorEvent;
+use App\Services\AdminAccessService;
 use Illuminate\Http\Request;
 
 class AdminTelemetryController extends Controller
 {
+    public function __construct(private readonly AdminAccessService $adminAccess)
+    {
+    }
+
     public function index(Request $request)
     {
-        if (! $this->authorized($request)) {
-            return redirect()->route('admin.feedback.login');
+        if (! $this->adminAccess->authorized($request)) {
+            return redirect()->route('admin.login');
         }
 
         $days = in_array((int) $request->query('days', 7), [7, 30], true)
@@ -172,17 +177,4 @@ class AdminTelemetryController extends Controller
         return round(($successActors->count() / $attemptActors->count()) * 100, 1);
     }
 
-    private function authorized(Request $request): bool
-    {
-        if ((bool) $request->session()->get('feedback_admin_authenticated', false)) {
-            return true;
-        }
-
-        $adminEmail = trim((string) config('canovia.admin_email', ''));
-        $userEmail = trim((string) ($request->user()?->email ?? ''));
-
-        return $adminEmail !== ''
-            && $userEmail !== ''
-            && mb_strtolower($adminEmail) === mb_strtolower($userEmail);
-    }
 }

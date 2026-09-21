@@ -20,6 +20,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OfflineWorkSessionController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\AdminFeedbackController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminTelemetryController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\RoadmapController;
@@ -75,7 +76,11 @@ Route::post('/offline/work-sessions/sync', [OfflineWorkSessionController::class,
 Route::post('/feedback', [FeedbackController::class, 'store'])->middleware('throttle:12,1')->name('feedback.store');
 Route::post('/onboarding/complete', [OnboardingController::class, 'complete'])->middleware('throttle:30,1')->name('onboarding.complete');
 Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->middleware('throttle:30,1')->name('onboarding.skip');
-Route::get('/admin/feedback/login', [AdminFeedbackController::class, 'login'])->name('admin.feedback.login');
+Route::get('/admin/login', [AdminFeedbackController::class, 'login'])->name('admin.login');
+Route::post('/admin/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.authenticate');
+Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+// Legacy Feedback Admin login URLs stay valid for existing bookmarks.
+Route::get('/admin/feedback/login', fn () => redirect()->route('admin.login'))->name('admin.feedback.login');
 Route::post('/admin/feedback/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.feedback.authenticate');
 Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
 Route::get('/admin/telemetry', [AdminTelemetryController::class, 'index'])->name('admin.telemetry.index');

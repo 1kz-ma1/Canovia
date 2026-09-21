@@ -127,18 +127,32 @@ class RoadmapFeedbackV13Test extends TestCase
         $this->assertSame($user->id, $feedback->user_id);
     }
 
-    public function test_feedback_admin_url_redirects_to_login_until_authorized(): void
+    public function test_canovia_admin_login_opens_a_hub_for_feedback_and_telemetry(): void
     {
-        config(['pacekeeper.feedback_admin_password' => 'test-secret']);
+        config(['canovia.admin_password' => 'test-secret']);
 
         $this->get(route('admin.feedback.index'))
-            ->assertRedirect(route('admin.feedback.login'));
+            ->assertRedirect(route('admin.login'));
 
-        $this->post(route('admin.feedback.authenticate'), [
+        $this->get(route('admin.feedback.login'))
+            ->assertRedirect(route('admin.login'));
+
+        $this->post(route('admin.authenticate'), [
             'password' => 'test-secret',
-        ])->assertRedirect(route('admin.feedback.index'));
+        ])->assertRedirect(route('admin.dashboard'));
 
-        $this->get(route('admin.feedback.index'))->assertOk();
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('フィードバック管理')
+            ->assertSee('計画作成・更新の診断');
+
+        $this->get(route('admin.feedback.index'))
+            ->assertOk()
+            ->assertSee('概要');
+
+        $this->get(route('admin.telemetry.index'))
+            ->assertOk()
+            ->assertSee('概要');
     }
 
     private function createPlan(?User $user = null): Plan
