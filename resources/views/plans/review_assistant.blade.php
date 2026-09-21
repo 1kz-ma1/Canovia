@@ -16,7 +16,13 @@
         ];
     @endphp
 
-    <div id="plan-review-root" class="mx-auto max-w-6xl space-y-6">
+    <div
+        id="plan-review-root"
+        class="mx-auto max-w-6xl space-y-6"
+        data-funnel-root
+        data-event-url="{{ route('behavior_events.store') }}"
+        data-plan-id="{{ $plan->id }}"
+    >
         <header class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                                 <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 font-heading">計画を更新</h1>
@@ -182,7 +188,7 @@
                         <textarea id="reviewPrompt" class="form-control mt-4 min-h-[420px] font-mono text-xs" readonly>{{ $draft['prompt'] }}</textarea>
 
                         <div class="mt-4 flex flex-wrap gap-3">
-                            <button type="button" class="btn-primary" onclick="copyReviewPrompt()">プロンプトをコピー</button>
+                            <button type="button" class="btn-primary" onclick="copyReviewPrompt()" data-funnel-event="plan_update_prompt_copy_clicked">プロンプトをコピー</button>
                         </div>
                     </div>
                 </div>
