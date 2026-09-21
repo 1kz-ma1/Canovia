@@ -4,13 +4,14 @@
 
 @section('content')
     <div class="space-y-6">
+        @include('admin.partials.nav')
+
         <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <p class="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Feedback Dashboard</p>
                 <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-50">ユーザーの声</h1>
                 <p class="mt-2 text-sm text-slate-400">総合評価と、改善に使える具体的なフィードバックを同じ場所で確認します。</p>
             </div>
-            <a href="{{ route('admin.telemetry.index') }}" class="btn-secondary">計画作成・更新の診断</a>
         </header>
 
         @if ($errors->any())
