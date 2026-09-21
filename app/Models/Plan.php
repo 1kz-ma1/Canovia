@@ -19,7 +19,7 @@ class Plan extends Model
 
     public const ROADMAP_WORLDS = ['default', 'study', 'sweet', 'halloween', 'space', 'forest'];
 
-    protected $hidden = ['owner_token', 'collaboration_share_token', 'collaboration_join_code'];
+    protected $hidden = ['owner_token', 'creation_request_id', 'collaboration_share_token', 'collaboration_join_code'];
 
     protected $fillable = [
         'user_id',
