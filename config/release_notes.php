@@ -2,6 +2,20 @@
 
 return [
     [
+        'version' => 'v39.1',
+        'date' => '2026-09-21',
+        'title' => 'Instant Startを安全に復活',
+        'summary' => 'V39で安定化したオンライン操作を変えず、Renderの起動待ち中だけ端末内のホーム・今日・ロードマップを先に表示できるようにしました。',
+        'highlights' => [
+            'Service WorkerはGETナビゲーションだけを扱い、POST・PUT・PATCH・DELETEなどの更新操作には介入しません。',
+            'Instant Start対象をホーム・今日・ロードマップの3画面に限定し、AI JSON・計画更新・認証・管理画面は従来どおり通常通信で処理します。',
+            'PWA初回起動のhandoffはService Worker対象外とし、V39で安定化したログイン・Guest計画の引き継ぎを維持します。',
+            'サーバーが休止している可能性が高い場合はoffline shellを即表示し、裏ではGETリクエストと/health確認だけで復帰を待ちます。',
+            'サーバー復帰後は_canovia_network付きのnetwork-only遷移で本画面へ戻し、offline shellへのループを防ぎます。',
+        ],
+        'tip' => 'ホーム画面版Canoviaをしばらく使っていなかった後でも、前回同期した状態を先に確認できます。更新操作は接続後の通常画面で行われます。',
+    ],
+    [
         'version' => 'v39.0',
         'date' => '2026-09-21',
         'title' => '多重実行とPWA起動を安定化',

@@ -1,4 +1,5 @@
 import { normalizeAiJsonText, buildAiJsonRepairPrompt } from './ai-json.mjs';
+import { mountInstantStartServiceWorker } from './instant-start.mjs';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
@@ -1142,39 +1143,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target === feedbackDialog && typeof feedbackDialog.close === 'function') feedbackDialog.close();
     });
 
-    // V38.4 stability rollback: temporarily disable Service Worker / Instant
-    // Start. The core app must behave like a normal online web app while the
-    // navigation and plan-update flows are verified again.
-    if ('serviceWorker' in navigator && window.isSecureContext) {
-        const cleanupKey = 'canovia.sw-stability-cleanup.v38-4';
-
-        const clearCanoviaShellCaches = async () => {
-            if (!('caches' in window)) return;
-            const keys = await caches.keys().catch(() => []);
-            await Promise.all(keys
-                .filter((key) => key.startsWith('canovia-shell-') || key.startsWith('pacekeeper-shell-'))
-                .map((key) => caches.delete(key).catch(() => false)));
-        };
-
-        const disableLegacyWorkers = async () => {
-            const hadController = Boolean(navigator.serviceWorker.controller);
-            const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
-            await Promise.all(registrations.map((registration) => registration.unregister().catch(() => false)));
-            await clearCanoviaShellCaches();
-
-            // One network navigation releases pages that were still controlled
-            // by the old worker. Limit it to once per tab to avoid reload loops.
-            if ((hadController || registrations.length > 0) && sessionStorage.getItem(cleanupKey) !== '1') {
-                sessionStorage.setItem(cleanupKey, '1');
-                const url = new URL(window.location.href);
-                url.searchParams.set('_canovia_network', '1');
-                url.searchParams.set('_canovia_stable', '1');
-                window.location.replace(url.pathname + url.search + url.hash);
-            }
-        };
-
-        void disableLegacyWorkers();
-    }
+    // V39.1: restore Instant Start with a deliberately narrow Service Worker.
+    // Mutations and sensitive flows stay on the browser/Laravel network path.
+    void mountInstantStartServiceWorker();
 });
 
 // -----------------------------------------------------------------------------
