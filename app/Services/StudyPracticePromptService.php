@@ -164,6 +164,8 @@ task_id: {$task->id}
 {$answersJson}
 
 【評価方針】
+- 出題内容にgrading_contextがある場合、そのgrading_rule・explanationをCanovia Question Bankの正として採点し、別の正解を推測しない
+- grading_contextがないAI生成問題だけ、問題文の条件から正答を判断する
 - 各回答を問題文の条件に照らして評価する
 - response_fieldsにreasoning・計算過程・説明が含まれる場合は、最終回答とは分けて思考過程も評価する
 - question_feedbackには各questionごとの評価を入れ、question_idは出題内容のIDを変更せず使う

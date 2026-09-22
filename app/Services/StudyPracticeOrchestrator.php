@@ -54,11 +54,18 @@ class StudyPracticeOrchestrator
         ?int $userId,
         ?string $actorToken,
         string $prepareRequestId,
+        ?string $providerKey = null,
     ): StudyPracticeSession {
         $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
 
-        $provider = $this->providerRouter->questionProvider($plan, $task, $strategy);
+        $provider = $providerKey !== null
+            ? $this->providerRouter->questionProviderByKey($providerKey)
+            : $this->providerRouter->questionProvider($plan, $task, $strategy);
         $prepared = $provider->prepare($plan, $task, $recentAttempts, $strategy);
+
+        $isDirect = (string) ($prepared['mode'] ?? 'handoff') === 'direct'
+            && is_array($prepared['questions'] ?? null)
+            && ($prepared['questions'] ?? []) !== [];
 
         $session = StudyPracticeSession::query()->createOrFirst(
             ['prepare_request_id' => $prepareRequestId],
@@ -68,7 +75,9 @@ class StudyPracticeOrchestrator
                 'user_id' => $userId,
                 'actor_token' => $userId ? null : $actorToken,
                 'session_token' => (string) Str::uuid(),
-                'status' => StudyPracticeSession::STATUS_AWAITING_PROVIDER,
+                'status' => $isDirect
+                    ? StudyPracticeSession::STATUS_READY
+                    : StudyPracticeSession::STATUS_AWAITING_PROVIDER,
                 'strategy' => (string) $strategy['key'],
                 'strategy_version' => (string) ($strategy['version'] ?? 'v1'),
                 'selector_type' => (string) ($prepared['selector_type'] ?? 'external_ai'),
@@ -82,7 +91,9 @@ class StudyPracticeOrchestrator
                     'recent_attempt_ids' => $recentAttempts->pluck('id')->map(fn ($id) => (int) $id)->all(),
                 ],
                 'provider_payload' => is_array($prepared['payload'] ?? null) ? $prepared['payload'] : [],
-                'selected_questions' => null,
+                'selected_questions' => is_array($prepared['selected_questions'] ?? null)
+                    ? $prepared['selected_questions']
+                    : null,
                 'started_at' => now(),
             ]
         );
@@ -92,6 +103,7 @@ class StudyPracticeOrchestrator
             || (int) $session->task_id !== (int) $task->id
             || ($userId !== null && (int) $session->user_id !== $userId)
             || ($userId === null && (string) $session->actor_token !== (string) $actorToken)
+            || ($providerKey !== null && (string) $session->question_provider !== $providerKey)
         ) {
             throw new RuntimeException('この演習準備リクエストは別の対象で使用済みです。');
         }
@@ -111,7 +123,7 @@ class StudyPracticeOrchestrator
         array $questions,
         array $answers,
     ): array {
-        $provider = $this->providerRouter->assessmentProvider($plan, $task);
+        $provider = $this->providerRouter->assessmentProvider($plan, $task, $questions, $answers);
         $prepared = $provider->prepare($plan, $task, $questions, $answers);
 
         $session->update([

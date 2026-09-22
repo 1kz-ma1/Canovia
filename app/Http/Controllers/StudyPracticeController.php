@@ -85,6 +85,76 @@ class StudyPracticeController extends Controller
         ]);
     }
 
+    public function prepare(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+        StudyPracticeOrchestrator $orchestrator,
+        BehaviorIdentityService $identity,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership);
+        abort_unless(trim((string) $plan->category) === '資格学習', 404);
+
+        $validated = $request->validate([
+            'prepare_request_id' => ['required', 'uuid'],
+        ]);
+
+        $actorToken = $identity->resolve($request);
+        $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
+        $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
+
+        try {
+            $practiceSession = $orchestrator->prepare(
+                $plan,
+                $task,
+                $recentAttempts,
+                $request->user()?->id,
+                $request->user() ? null : $actorToken,
+                (string) $validated['prepare_request_id'],
+                'question_bank',
+            );
+        } catch (\RuntimeException $exception) {
+            throw ValidationException::withMessages([
+                'prepare_request_id' => $exception->getMessage(),
+            ]);
+        }
+
+        if ($practiceSession->question_provider_mode !== 'direct') {
+            throw ValidationException::withMessages([
+                'prepare_request_id' => 'Question Bankの準備状態が変わりました。画面を再読み込みして演習方法を確認してください。',
+            ]);
+        }
+
+        $questions = data_get($practiceSession->provider_payload, 'questions', []);
+        if (! is_array($questions) || $questions === []) {
+            throw ValidationException::withMessages([
+                'prepare_request_id' => 'Question Bankから問題を準備できませんでした。',
+            ]);
+        }
+
+        $title = trim((string) data_get(
+            $practiceSession->provider_payload,
+            'title',
+            'Canovia Question Bank演習',
+        ));
+
+        $request->session()->put($this->sessionKey($plan, $task), [
+            'title' => $title !== '' ? mb_substr($title, 0, 120) : 'Canovia Question Bank演習',
+            'questions' => $questions,
+            'answers' => [],
+            'evaluation_prompt' => null,
+            'assessment' => null,
+            'attempt_id' => null,
+            'attempt_token' => (string) Str::uuid(),
+            'practice_session_id' => $practiceSession->id,
+        ]);
+
+        return redirect()
+            ->route('plans.tasks.study_practice.show', [$plan, $task])
+            ->with('success', count($questions).'問をCanovia Question Bankから準備しました。');
+    }
+
     public function import(
         Request $request,
         Plan $plan,
@@ -124,6 +194,7 @@ class StudyPracticeController extends Controller
             $request->user()?->id,
             $request->user() ? null : $actorToken,
             (string) ($validated['prepare_request_id'] ?? Str::uuid()),
+            'external_ai',
         );
 
         $practiceSession->update([
@@ -279,6 +350,35 @@ class StudyPracticeController extends Controller
                 $questions,
                 $answers,
             );
+
+            if ((string) ($assessmentHandoff['mode'] ?? '') === 'direct') {
+                $assessment = data_get($assessmentHandoff, 'payload.assessment');
+
+                if (! is_array($assessment)) {
+                    throw ValidationException::withMessages([
+                        'answers' => 'Canoviaの機械採点結果を作成できませんでした。',
+                    ]);
+                }
+
+                $state['evaluation_prompt'] = null;
+                $state['assessment'] = $assessment;
+                $attempt = $this->persistAssessment(
+                    $request,
+                    $plan,
+                    $task,
+                    $state,
+                    $assessment,
+                    $actorToken,
+                );
+                $state['attempt_id'] = $attempt->id;
+                $practiceSession->update(['status' => StudyPracticeSession::STATUS_ASSESSED]);
+                $request->session()->put($key, $state);
+
+                return redirect()
+                    ->route('plans.tasks.study_practice.show', [$plan, $task])
+                    ->with('success', 'Canovia Question Bankの採点ルールで評価しました。結果を確認できます。');
+            }
+
             $state['evaluation_prompt'] = (string) data_get(
                 $assessmentHandoff,
                 'payload.evaluation_prompt',
@@ -356,42 +456,14 @@ class StudyPracticeController extends Controller
         ];
 
         $actorToken = $identity->resolve($request);
-        $identityScope = $request->user() ? 'user:'.(int) $request->user()->id : 'actor:'.$actorToken;
-        $attemptToken = (string) ($state['attempt_token'] ?? Str::uuid());
-        $state['attempt_token'] = $attemptToken;
-        $requestHash = hash('sha256', json_encode([
-            'identity' => $identityScope,
-            'attempt_token' => $attemptToken,
-            'plan_id' => (int) $plan->id,
-            'task_id' => (int) $task->id,
-            'questions' => $state['questions'] ?? [],
-            'answers' => $state['answers'] ?? [],
-            'assessment' => $assessment,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-
-        $attempt = StudyPracticeAttempt::query()->createOrFirst(
-            ['request_hash' => $requestHash],
-            [
-                'study_practice_session_id' => ! empty($state['practice_session_id'])
-                    ? (int) $state['practice_session_id']
-                    : null,
-                'plan_id' => $plan->id,
-                'task_id' => $task->id,
-                'user_id' => $request->user()?->id,
-                'actor_token' => $request->user() ? null : $actorToken,
-                'exercise_title' => mb_substr((string) ($state['title'] ?? 'AI演習'), 0, 120),
-                'questions' => $state['questions'] ?? [],
-                'answers' => $state['answers'] ?? [],
-                'assessment' => $assessment,
-                'score_percent' => $assessment['score_percent'],
-                'strengths' => $assessment['strengths'],
-                'weaknesses' => $assessment['weaknesses'],
-                'recommended_task_progress_percent' => $assessment['recommended_task_progress_percent'],
-                'evidence_summary' => $assessment['evidence_summary'] ?: null,
-                'next_action' => $assessment['next_action'] ?: null,
-            ]
+        $attempt = $this->persistAssessment(
+            $request,
+            $plan,
+            $task,
+            $state,
+            $assessment,
+            $actorToken,
         );
-
         $state['assessment'] = $assessment;
         $state['attempt_id'] = $attempt->id;
         $request->session()->put($key, $state);
@@ -797,6 +869,62 @@ class StudyPracticeController extends Controller
             ->take(12)
             ->values()
             ->all();
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @param array<string, mixed> $assessment
+     */
+    private function persistAssessment(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        array &$state,
+        array $assessment,
+        string $actorToken,
+    ): StudyPracticeAttempt {
+        $identityScope = $request->user()
+            ? 'user:'.(int) $request->user()->id
+            : 'actor:'.$actorToken;
+        $attemptToken = (string) ($state['attempt_token'] ?? Str::uuid());
+        $state['attempt_token'] = $attemptToken;
+
+        $requestHash = hash('sha256', json_encode([
+            'identity' => $identityScope,
+            'attempt_token' => $attemptToken,
+            'plan_id' => (int) $plan->id,
+            'task_id' => (int) $task->id,
+            'questions' => $state['questions'] ?? [],
+            'answers' => $state['answers'] ?? [],
+            'assessment' => $assessment,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+        return StudyPracticeAttempt::query()->createOrFirst(
+            ['request_hash' => $requestHash],
+            [
+                'study_practice_session_id' => ! empty($state['practice_session_id'])
+                    ? (int) $state['practice_session_id']
+                    : null,
+                'plan_id' => $plan->id,
+                'task_id' => $task->id,
+                'user_id' => $request->user()?->id,
+                'actor_token' => $request->user() ? null : $actorToken,
+                'exercise_title' => mb_substr((string) ($state['title'] ?? 'AI演習'), 0, 120),
+                'questions' => $state['questions'] ?? [],
+                'answers' => $state['answers'] ?? [],
+                'assessment' => $assessment,
+                'score_percent' => (int) ($assessment['score_percent'] ?? 0),
+                'strengths' => $assessment['strengths'] ?? [],
+                'weaknesses' => $assessment['weaknesses'] ?? [],
+                'recommended_task_progress_percent' => (int) ($assessment['recommended_task_progress_percent'] ?? $task->progress_percent),
+                'evidence_summary' => filled($assessment['evidence_summary'] ?? null)
+                    ? (string) $assessment['evidence_summary']
+                    : null,
+                'next_action' => filled($assessment['next_action'] ?? null)
+                    ? (string) $assessment['next_action']
+                    : null,
+            ]
+        );
     }
 
     private function attemptQuery(Request $request, Plan $plan, Task $task, string $actorToken)
