@@ -144,6 +144,58 @@ class QuestionBankV402Test extends TestCase
             ->assertSee('評価プロンプトをコピー');
     }
 
+    public function test_generic_subject_match_cannot_select_another_qualification_pack(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+
+        $pack = QuestionPack::create([
+            'slug' => 'fe-a-wrong-pack',
+            'title' => '基本情報技術者試験 科目A',
+            'exam_code' => 'FE',
+            'subject' => '科目A',
+            'version' => '1',
+            'status' => 'published',
+            'downloadable' => true,
+            'metadata' => [
+                'match_terms' => ['FE', '基本情報', '基本情報技術者試験'],
+            ],
+        ]);
+
+        foreach (range(1, 10) as $index) {
+            Question::create([
+                'question_pack_id' => $pack->id,
+                'external_key' => 'fe-'.$index,
+                'source_type' => 'canovia_original',
+                'prompt' => "FE 科目A {$index}",
+                'response_schema' => [[
+                    'id' => 'answer',
+                    'type' => 'single_choice',
+                    'label' => '回答',
+                    'required' => true,
+                    'choices' => [
+                        ['id' => 'A', 'label' => 'A'],
+                        ['id' => 'B', 'label' => 'B'],
+                    ],
+                ]],
+                'grading_rule' => [
+                    'type' => 'exact_choice',
+                    'field_id' => 'answer',
+                    'answer' => 'A',
+                ],
+                'learning_metadata' => ['concepts' => ['科目A']],
+                'difficulty' => 3,
+                'sort_order' => $index,
+                'is_active' => true,
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get(route('plans.tasks.study_practice.show', [$plan, $task]))
+            ->assertOk()
+            ->assertSee('外部AI')
+            ->assertDontSee('Canovia問題集から演習を始める');
+    }
+
     public function test_admin_can_import_draft_publish_it_and_cannot_overwrite_published_pack(): void
     {
         $payload = $this->importPayload();
@@ -163,6 +215,13 @@ class QuestionBankV402Test extends TestCase
         $this->withSession([AdminAccessService::SESSION_KEY => true])
             ->patch(route('admin.question_packs.status', $pack), ['status' => 'published'])
             ->assertSessionHasNoErrors();
+
+        $this->assertSame('published', $pack->fresh()->status);
+
+        $this->withSession([AdminAccessService::SESSION_KEY => true])
+            ->from(route('admin.question_packs.index'))
+            ->patch(route('admin.question_packs.status', $pack), ['status' => 'draft'])
+            ->assertSessionHasErrors('status');
 
         $this->assertSame('published', $pack->fresh()->status);
 
