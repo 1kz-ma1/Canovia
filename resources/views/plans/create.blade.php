@@ -134,7 +134,16 @@
                             </div>
 
                             <div>
-                                <label for="priority" class="form-label">計画優先度</label>
+                                <label for="priority_mode" class="form-label">優先度の決め方</label>
+                                <select id="priority_mode" name="priority_mode" class="form-control mt-2">
+                                    <option value="auto" @selected(old('priority_mode', 'auto') === 'auto')>Canoviaに自動で任せる</option>
+                                    <option value="manual" @selected(old('priority_mode') === 'manual')>手動で固定する</option>
+                                </select>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-500">自動では期限・進捗差・残作業量・利用可能時間などから判定します。</p>
+                            </div>
+
+                            <div>
+                                <label for="priority" class="form-label">手動優先度</label>
                                 <select id="priority" name="priority" class="form-control mt-2">
                                     @for ($priority = 1; $priority <= 5; $priority++)
                                         <option value="{{ $priority }}" @selected((int) old('priority', 3) === $priority)>
@@ -142,7 +151,7 @@
                                         </option>
                                     @endfor
                                 </select>
-                                <p class="mt-1 text-[11px] leading-4 text-slate-500">Homeの「今日やること」は、この優先度を最初に見ます。</p>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-500">「手動で固定する」を選んだ場合だけHomeの並び順に使います。</p>
                             </div>
 
                             <div>
