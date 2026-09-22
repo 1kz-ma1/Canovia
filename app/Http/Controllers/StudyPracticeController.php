@@ -157,6 +157,7 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         StudyPracticePromptService $promptService,
+        StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
@@ -263,17 +264,36 @@ class StudyPracticeController extends Controller
         }
 
         $state['answers'] = $answers;
-        $state['evaluation_prompt'] = $promptService->evaluationPrompt($plan, $task, $questions, $answers);
+        $actorToken = $identity->resolve($request);
+        $practiceSession = ! empty($state['practice_session_id'])
+            ? $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+                ->whereKey((int) $state['practice_session_id'])
+                ->first()
+            : null;
+
+        if ($practiceSession) {
+            $assessmentHandoff = $orchestrator->prepareAssessment(
+                $practiceSession,
+                $plan,
+                $task,
+                $questions,
+                $answers,
+            );
+            $state['evaluation_prompt'] = (string) data_get(
+                $assessmentHandoff,
+                'payload.evaluation_prompt',
+                ''
+            );
+            $practiceSession->update(['status' => StudyPracticeSession::STATUS_ANSWERED]);
+        } else {
+            // V40 compatibility for an in-progress browser session created
+            // before StudyPracticeSession existed.
+            $state['evaluation_prompt'] = $promptService->evaluationPrompt($plan, $task, $questions, $answers);
+        }
+
         $state['assessment'] = null;
         $state['attempt_id'] = null;
         $request->session()->put($key, $state);
-
-        if (! empty($state['practice_session_id'])) {
-            $actorToken = $identity->resolve($request);
-            $this->practiceSessionQuery($request, $plan, $task, $actorToken)
-                ->whereKey((int) $state['practice_session_id'])
-                ->update(['status' => StudyPracticeSession::STATUS_ANSWERED]);
-        }
 
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
