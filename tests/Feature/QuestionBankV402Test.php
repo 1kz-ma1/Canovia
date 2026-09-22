@@ -334,6 +334,46 @@ class QuestionBankV402Test extends TestCase
             ->assertSessionHasErrors('pack_json');
     }
 
+    public function test_pack_with_missing_grading_rule_cannot_be_published(): void
+    {
+        $pack = QuestionPack::create([
+            'slug' => 'incomplete-pack',
+            'title' => '未完成Pack',
+            'exam_code' => 'AP',
+            'subject' => '科目A',
+            'version' => '1',
+            'status' => 'draft',
+            'downloadable' => true,
+            'metadata' => ['match_terms' => ['AP']],
+        ]);
+
+        Question::create([
+            'question_pack_id' => $pack->id,
+            'external_key' => 'missing-rule',
+            'source_type' => 'canovia_original',
+            'prompt' => '未完成問題',
+            'response_schema' => [[
+                'id' => 'answer',
+                'type' => 'short_text',
+                'label' => '回答',
+                'required' => true,
+                'choices' => [],
+            ]],
+            'grading_rule' => null,
+            'learning_metadata' => ['concepts' => ['確認']],
+            'difficulty' => 3,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+
+        $this->withSession([AdminAccessService::SESSION_KEY => true])
+            ->from(route('admin.question_packs.index'))
+            ->patch(route('admin.question_packs.status', $pack), ['status' => 'published'])
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame('draft', $pack->fresh()->status);
+    }
+
     public function test_reimporting_draft_deactivates_questions_omitted_from_authoritative_json(): void
     {
         $payload = $this->importPayload();
