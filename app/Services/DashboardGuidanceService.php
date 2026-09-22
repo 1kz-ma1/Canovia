@@ -19,7 +19,7 @@ class DashboardGuidanceService
      * Home-specific objective guidance.
      *
      * Selection is intentionally independent from behavioral personalization:
-     * Plan priority -> deadline -> Plan id, and inside a Plan
+     * effective Plan priority (Auto/Manual) -> deadline -> Plan id, and inside a Plan
      * Task priority -> doing first -> sort order -> Task id.
      *
      * RecommendationService is used only after selection to suggest a workable
