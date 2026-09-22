@@ -36,7 +36,7 @@
             $questionJsonRepairPrompt = $questionJsonError ? implode("\n", [
                 'CanoviaのAI演習・問題JSONでエラーが発生しました。',
                 '下の「元のCanovia問題作成プロンプト」を仕様と対象Plan・Taskの唯一の正として扱ってください。',
-                'エラー解消に必要な箇所だけ修正し、問題文・選択肢・難易度・出題意図など正しい内容はできるだけ保持してください。',
+                'エラー解消に必要な箇所だけ修正し、問題文・response_fields・選択肢・難易度・出題意図など正しい内容はできるだけ保持してください。',
                 'schema_versionは"1.0"、flowは"study_practice"のままにしてください。',
                 'target_plan.idは '.$plan->id.'、target_task.idは '.$task->id.' のままにし、別のIDを推測・生成しないでください。',
                 '修正後はJSONとして構文解析できることを確認してください。',
@@ -56,7 +56,7 @@
             $assessmentJsonRepairPrompt = $assessmentJsonError ? implode("\n", [
                 'CanoviaのAI演習・評価JSONでエラーが発生しました。',
                 '下の「元のCanovia評価プロンプト」を仕様と対象Plan・Taskの唯一の正として扱ってください。',
-                'エラー解消に必要な箇所だけ修正し、採点結果・強み・弱点・評価根拠・次のActionなど正しい内容はできるだけ保持してください。',
+                'エラー解消に必要な箇所だけ修正し、採点結果・question_feedback・思考過程フィードバック・強み・弱点・評価根拠・次のActionなど正しい内容はできるだけ保持してください。',
                 'schema_versionは"1.0"、flowは"study_assessment"のままにしてください。',
                 'target_plan.idは '.$plan->id.'、target_task.idは '.$task->id.' のままにし、別のIDを推測・生成しないでください。',
                 'score_percentとrecommended_task_progress_percentは0〜100の整数にしてください。',
