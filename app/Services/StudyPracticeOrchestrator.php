@@ -6,6 +6,7 @@ use App\Models\Plan;
 use App\Models\StudyPracticeSession;
 use App\Models\Task;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class StudyPracticeOrchestrator
@@ -21,6 +22,24 @@ class StudyPracticeOrchestrator
     public function preview(Plan $plan, Task $task, Collection $recentAttempts): array
     {
         return $this->strategyService->build($plan, $task, $recentAttempts);
+    }
+
+    /**
+     * Build the same provider handoff that will later be persisted, without
+     * mutating the database. This keeps the current external-AI UX zero-cost
+     * while allowing an embedded provider to replace it later.
+     *
+     * @param Collection<int, mixed> $recentAttempts
+     * @return array{strategy:array<string,mixed>,provider:array<string,mixed>}
+     */
+    public function previewHandoff(Plan $plan, Task $task, Collection $recentAttempts): array
+    {
+        $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
+
+        return [
+            'strategy' => $strategy,
+            'provider' => $this->externalAiProvider->prepare($plan, $task, $recentAttempts, $strategy),
+        ];
     }
 
     /**
@@ -47,7 +66,7 @@ class StudyPracticeOrchestrator
                 'task_id' => $task->id,
                 'user_id' => $userId,
                 'actor_token' => $userId ? null : $actorToken,
-                'session_token' => (string) Illuminate\Support\Str::uuid(),
+                'session_token' => (string) Str::uuid(),
                 'status' => StudyPracticeSession::STATUS_AWAITING_PROVIDER,
                 'strategy' => (string) $strategy['key'],
                 'strategy_version' => (string) ($strategy['version'] ?? 'v1'),
