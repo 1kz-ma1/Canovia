@@ -2,6 +2,20 @@
 
 return [
     [
+        'version' => 'v40.1',
+        'date' => '2026-09-22',
+        'title' => 'AI演習の選定と評価をCanoviaが統括',
+        'summary' => '外部AIを使う現在の操作は増やさず、Canoviaが演習方針・問題Provider・評価Provider・演習Sessionを一貫して管理する構造へ進化しました。',
+        'highlights' => [
+            'Taskと過去の学習履歴から、初回理解度確認・弱点補強・定着応用・Task定着確認の演習方針をCanoviaが決めます。',
+            '現在は外部AIへ問題準備と評価を引き継ぎますが、Question Bankや内蔵AIへ切り替えるProvider Routerを追加しました。',
+            '外部AIへ渡すPromptにCanoviaが決めた演習方針・重点分野・問題数目安を含め、AI側で別方針へ置き換えないようにしました。',
+            '1回の演習をStudyPracticeSessionとして追跡し、ready・answered・assessed・completed・abandonedの状態を保存します。',
+            '問題選定時の学習Context、Provider、選ばれた問題参照、評価Providerを保存し、将来の選定精度検証に使える土台を作りました。',
+        ],
+        'tip' => '今まで通りAI演習を開いて使えます。現在の外部AIとの受け渡しは、将来Canovia内で自動化できる構造になっています。',
+    ],
+    [
         'version' => 'v40.0',
         'date' => '2026-09-22',
         'title' => 'AI演習を学習基盤へ',
