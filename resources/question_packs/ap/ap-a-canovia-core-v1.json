@@ -1,0 +1,1689 @@
+{
+  "schema_version": "1.0",
+  "pack": {
+    "slug": "ap-a-canovia-core-v1",
+    "title": "応用情報技術者試験 科目A Canovia Core v1",
+    "exam_code": "AP",
+    "subject": "科目A",
+    "version": "1.0.0",
+    "downloadable": true,
+    "metadata": {
+      "match_terms": [
+        "AP",
+        "応用情報",
+        "応用情報技術者試験",
+        "科目A"
+      ],
+      "locale": "ja-JP",
+      "source_period": "令和7年度 秋期 応用情報技術者試験 午前を主な参考にしたCanoviaオリジナル類題",
+      "source_problem_url": "https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07a_ap_am_qs.pdf",
+      "source_answer_url": "https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07a_ap_am_ans.pdf",
+      "license_note": "IPA公表過去問の利用上の留意点に従い、参考にした問題は出典を明記し、Canoviaオリジナル類題として再構成しています。",
+      "content_kind": "derived_and_canovia_original",
+      "focus_coverage": [
+        "ネットワーク",
+        "DB",
+        "データベース",
+        "計算",
+        "OS",
+        "セキュリティ"
+      ]
+    }
+  },
+  "questions": [
+    {
+      "external_key": "net-mtu-001",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "IPv4で、MTUが1,500バイトのネットワークを通してIPパケットを送る。IPヘッダーが20バイトでオプションなしのとき、フラグメントせずに1個のIPパケットへ格納できるデータ部の最大サイズはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "1,460バイト"
+            },
+            {
+              "id": "イ",
+              "label": "1,480バイト"
+            },
+            {
+              "id": "ウ",
+              "label": "1,500バイト"
+            },
+            {
+              "id": "エ",
+              "label": "1,520バイト"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "IPv4",
+          "MTU"
+        ],
+        "weakness_targets": [
+          "MTU計算",
+          "ネットワーク",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク",
+          "計算"
+        ],
+        "keywords": [
+          "フラグメンテーション",
+          "IPヘッダー"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "MTUにはIPヘッダーも含まれるので、データ部の最大は1,500−20=1,480バイトです。",
+      "difficulty": 2,
+      "sort_order": 1,
+      "is_active": true
+    },
+    {
+      "external_key": "net-dns-002",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "DNSで、あるドメイン宛ての電子メールを受け取るメールサーバを指定するために用いるレコードはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "A"
+            },
+            {
+              "id": "イ",
+              "label": "CNAME"
+            },
+            {
+              "id": "ウ",
+              "label": "MX"
+            },
+            {
+              "id": "エ",
+              "label": "PTR"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "DNS"
+        ],
+        "weakness_targets": [
+          "DNSレコード",
+          "ネットワーク"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク"
+        ],
+        "keywords": [
+          "名前解決",
+          "メール"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "MXレコードは、そのドメイン宛てメールを配送するメールサーバを指定します。",
+      "difficulty": 2,
+      "sort_order": 2,
+      "is_active": true
+    },
+    {
+      "external_key": "net-napt-003",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "NAPTの説明として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "複数のプライベートIPアドレスを、IPアドレスとポート番号の組合せを変換して一つ又は少数のグローバルIPアドレスへ対応付ける。"
+            },
+            {
+              "id": "イ",
+              "label": "ドメイン名をIPアドレスへ変換する。"
+            },
+            {
+              "id": "ウ",
+              "label": "IPパケットの経路を最短経路へ固定する。"
+            },
+            {
+              "id": "エ",
+              "label": "暗号化トンネルを用いて拠点間を接続する。"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "NAPT"
+        ],
+        "weakness_targets": [
+          "NAPT",
+          "ネットワーク"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク"
+        ],
+        "keywords": [
+          "NAT",
+          "ポート変換"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "NAPTはIPアドレスに加えてポート番号も変換し、多数の内部端末でグローバルIPアドレスを共有できます。",
+      "difficulty": 2,
+      "sort_order": 3,
+      "is_active": true
+    },
+    {
+      "external_key": "net-cidr-004",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問32（Canoviaオリジナル類題）",
+      "prompt": "IPv4アドレスをクラスA〜Cの区分に固定せず、プレフィックス長を用いてネットワーク部とホスト部を任意のビット境界で指定する方式はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "CIDR"
+            },
+            {
+              "id": "イ",
+              "label": "DHCP"
+            },
+            {
+              "id": "ウ",
+              "label": "DNS"
+            },
+            {
+              "id": "エ",
+              "label": "NAPT"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "IPv4",
+          "CIDR"
+        ],
+        "weakness_targets": [
+          "ネットワーク",
+          "サブネット"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク"
+        ],
+        "keywords": [
+          "プレフィックス長",
+          "サブネット"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "CIDRはプレフィックス長でネットワーク部を表し、クラスに依存しないアドレス割当てを可能にします。",
+      "difficulty": 2,
+      "sort_order": 4,
+      "is_active": true
+    },
+    {
+      "external_key": "net-tcp-005",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問33（Canoviaオリジナル類題）",
+      "prompt": "TCPヘッダーに含まれ、UDPヘッダーには含まれない情報はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "宛先ポート番号"
+            },
+            {
+              "id": "イ",
+              "label": "シーケンス番号"
+            },
+            {
+              "id": "ウ",
+              "label": "送信元ポート番号"
+            },
+            {
+              "id": "エ",
+              "label": "チェックサム"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "TCP",
+          "UDP"
+        ],
+        "weakness_targets": [
+          "TCP",
+          "ネットワーク"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク"
+        ],
+        "keywords": [
+          "シーケンス番号",
+          "トランスポート層"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "TCPは順序制御・再送制御のためシーケンス番号を持ちます。ポート番号とチェックサムはUDPにもあります。",
+      "difficulty": 2,
+      "sort_order": 5,
+      "is_active": true
+    },
+    {
+      "external_key": "net-reverse-proxy-006",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問31（Canoviaオリジナル類題）",
+      "prompt": "リバースプロキシの利用例として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "インターネットから内部ネットワーク上の公開Webサーバへの通信を中継する。"
+            },
+            {
+              "id": "イ",
+              "label": "内部PCからインターネットへのWebアクセスだけを中継する。"
+            },
+            {
+              "id": "ウ",
+              "label": "仮想専用ネットワークを確立する。"
+            },
+            {
+              "id": "エ",
+              "label": "DNSの名前解決結果をキャッシュするだけの装置として動作する。"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "リバースプロキシ",
+          "Web"
+        ],
+        "weakness_targets": [
+          "ネットワーク",
+          "プロキシ"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク"
+        ],
+        "keywords": [
+          "Webサーバ",
+          "プロキシ"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "リバースプロキシは外部から公開Webサービスへの要求を受け、背後のWebサーバへ中継します。",
+      "difficulty": 2,
+      "sort_order": 6,
+      "is_active": true
+    },
+    {
+      "external_key": "net-stp-007",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問34（Canoviaオリジナル類題）",
+      "prompt": "複数のレイヤ2スイッチを冗長に接続したネットワークで、イーサネットフレームのループを防止するために用いるプロトコルはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "IGMP"
+            },
+            {
+              "id": "イ",
+              "label": "RIP"
+            },
+            {
+              "id": "ウ",
+              "label": "SIP"
+            },
+            {
+              "id": "エ",
+              "label": "スパニングツリープロトコル"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "レイヤ2",
+          "STP"
+        ],
+        "weakness_targets": [
+          "ネットワーク",
+          "スイッチ"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク"
+        ],
+        "keywords": [
+          "Ethernet",
+          "ループ"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "スパニングツリープロトコルは冗長経路の一部を論理的にブロックし、レイヤ2ループを防ぎます。",
+      "difficulty": 2,
+      "sort_order": 7,
+      "is_active": true
+    },
+    {
+      "external_key": "net-ber-008",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問35（Canoviaオリジナル類題）",
+      "prompt": "ビット誤り率が0.0001%の回線で、1,500バイトのパケットを10,000個送信する。1ビットでも誤りがあればそのパケットを誤りありとみなし、誤りは十分まれで独立と近似するとき、誤りを含むパケット数の期待値に最も近いものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "10"
+            },
+            {
+              "id": "イ",
+              "label": "15"
+            },
+            {
+              "id": "ウ",
+              "label": "80"
+            },
+            {
+              "id": "エ",
+              "label": "120"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "ビット誤り率",
+          "確率"
+        ],
+        "weakness_targets": [
+          "ネットワーク",
+          "計算",
+          "確率"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク",
+          "計算"
+        ],
+        "keywords": [
+          "通信品質",
+          "期待値"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "1パケットは12,000ビット。誤り率10^-6なので1パケット当たりの期待誤りは約0.012、10,000パケットでは約120です。",
+      "difficulty": 4,
+      "sort_order": 8,
+      "is_active": true
+    },
+    {
+      "external_key": "db-view-009",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問28（Canoviaオリジナル類題）",
+      "prompt": "関係データベースのビューに関する説明として適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "ビューの列名は、基の表と異なる名前として定義できる。"
+            },
+            {
+              "id": "イ",
+              "label": "ビューは列だけを絞り込めるが、行を条件で絞り込むことはできない。"
+            },
+            {
+              "id": "ウ",
+              "label": "複数表を結合したビューは、どのDBMSでも常に更新可能である。"
+            },
+            {
+              "id": "エ",
+              "label": "和集合を用いたビューは定義できない。"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "ビュー"
+        ],
+        "weakness_targets": [
+          "DB",
+          "ビュー更新可否",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "ビュー",
+          "更新可能ビュー"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "ビューでは列の別名を定義できます。行の絞込みや集合演算も可能で、更新可能性はビュー定義やDBMSの条件に依存します。",
+      "difficulty": 3,
+      "sort_order": 9,
+      "is_active": true
+    },
+    {
+      "external_key": "db-mvcc-010",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問29（Canoviaオリジナル類題）",
+      "prompt": "RDBMSで、同じデータ項目の複数バージョンを保持し、読取りと更新の競合を減らしてトランザクションの同時実行性を高める仕組みはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "2相ロッキング"
+            },
+            {
+              "id": "イ",
+              "label": "MVCC"
+            },
+            {
+              "id": "ウ",
+              "label": "WAL"
+            },
+            {
+              "id": "エ",
+              "label": "共有ロック"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "トランザクション",
+          "MVCC"
+        ],
+        "weakness_targets": [
+          "DB",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "同時実行制御",
+          "トランザクション"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "MVCCは複数バージョンを利用して、読取り処理が更新処理を待つ場面を減らします。",
+      "difficulty": 2,
+      "sort_order": 10,
+      "is_active": true
+    },
+    {
+      "external_key": "db-index-011",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問27（Canoviaオリジナル類題）",
+      "prompt": "B+木インデックスよりハッシュインデックスが特に適している検索はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "売上金額が1万円以上の行を範囲検索する。"
+            },
+            {
+              "id": "イ",
+              "label": "売上年月日が今月の行を範囲検索する。"
+            },
+            {
+              "id": "ウ",
+              "label": "商品名が特定の接頭辞で始まる行を検索する。"
+            },
+            {
+              "id": "エ",
+              "label": "利用者IDが'1001'と完全一致する行を検索する。"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "インデックス",
+          "ハッシュ"
+        ],
+        "weakness_targets": [
+          "DB",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "B+木",
+          "等価検索"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "ハッシュインデックスは等価検索に強く、範囲検索や前方一致検索には一般にB+木が適しています。",
+      "difficulty": 3,
+      "sort_order": 11,
+      "is_active": true
+    },
+    {
+      "external_key": "db-nosql-012",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問26（Canoviaオリジナル類題）",
+      "prompt": "BASE特性を採用する分散NoSQLデータベースで、結果整合性（eventual consistency）を表す説明として適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "全ノードへの更新反映が完了するまでクライアントへ成功を返さない。"
+            },
+            {
+              "id": "イ",
+              "label": "障害がなければ、更新結果は時間の経過とともに全ノードへ反映される。"
+            },
+            {
+              "id": "ウ",
+              "label": "同じキーの同時参照は常に全ノードで同一結果を返す。"
+            },
+            {
+              "id": "エ",
+              "label": "ネットワーク分断時は全ノードが処理要求を拒否する。"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "NoSQL",
+          "BASE"
+        ],
+        "weakness_targets": [
+          "DB",
+          "NoSQL",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "結果整合性",
+          "分散DB"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "結果整合性では、更新直後に一時的な不一致を許容しつつ、最終的には各ノードの状態が収束します。",
+      "difficulty": 3,
+      "sort_order": 12,
+      "is_active": true
+    },
+    {
+      "external_key": "db-normalization-013",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "受注明細表に「受注番号、商品番号、商品名、数量」があり、商品番号が決まれば商品名が一意に決まる。商品名の更新不整合を避けるための設計として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "商品名を受注明細表の各行にそのまま保持する。"
+            },
+            {
+              "id": "イ",
+              "label": "商品番号と商品名を商品表へ分離し、受注明細表は商品番号を参照する。"
+            },
+            {
+              "id": "ウ",
+              "label": "商品番号を削除して商品名だけをキーにする。"
+            },
+            {
+              "id": "エ",
+              "label": "受注番号と商品名を連結した文字列を主キーにする。"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "正規化",
+          "関数従属性"
+        ],
+        "weakness_targets": [
+          "DB",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "第3正規形",
+          "更新異常"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "商品番号→商品名という関数従属性を商品表へ分離することで、商品名の重複と更新不整合を抑えられます。",
+      "difficulty": 3,
+      "sort_order": 13,
+      "is_active": true
+    },
+    {
+      "external_key": "db-isolation-014",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "あるトランザクションが、別のトランザクションによってまだコミットされていない更新値を読み取る現象を何というか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "ダーティリード"
+            },
+            {
+              "id": "イ",
+              "label": "ファントムリード"
+            },
+            {
+              "id": "ウ",
+              "label": "ロストアップデート"
+            },
+            {
+              "id": "エ",
+              "label": "デッドロック"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "トランザクション",
+          "分離レベル"
+        ],
+        "weakness_targets": [
+          "DB",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "ACID",
+          "同時実行"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "未コミットの値を読み取る現象はダーティリードです。分離レベルを上げることで防止できます。",
+      "difficulty": 2,
+      "sort_order": 14,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-mm1-015",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問2（Canoviaオリジナル類題）",
+      "prompt": "M/M/1待ち行列で、平均サービス時間をT秒、利用率をρとすると平均待ち時間は ρT/(1−ρ) で表される。平均待ち時間がT秒以上となる利用率の最小値はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "33%"
+            },
+            {
+              "id": "イ",
+              "label": "50%"
+            },
+            {
+              "id": "ウ",
+              "label": "67%"
+            },
+            {
+              "id": "エ",
+              "label": "80%"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "待ち行列",
+          "M/M/1",
+          "性能"
+        ],
+        "weakness_targets": [
+          "計算",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "計算"
+        ],
+        "keywords": [
+          "待ち時間",
+          "利用率"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "ρT/(1−ρ)≧Tより、ρ/(1−ρ)≧1、したがってρ≧0.5です。",
+      "difficulty": 4,
+      "sort_order": 15,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-availability-016",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問13（Canoviaオリジナル類題）",
+      "prompt": "平均故障間隔MTBFと平均修復時間MTTRから定常可用性を求める式はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "MTBF / (MTBF + MTTR)"
+            },
+            {
+              "id": "イ",
+              "label": "MTTR / (MTBF + MTTR)"
+            },
+            {
+              "id": "ウ",
+              "label": "(MTBF − MTTR) / MTBF"
+            },
+            {
+              "id": "エ",
+              "label": "MTBF / MTTR"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "信頼性",
+          "可用性",
+          "MTBF",
+          "MTTR"
+        ],
+        "weakness_targets": [
+          "計算",
+          "可用性",
+          "信頼性"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "信頼性"
+        ],
+        "keywords": [
+          "稼働率"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "定常可用性は、平均稼働時間を1サイクルの平均時間で割った MTBF/(MTBF+MTTR) です。",
+      "difficulty": 3,
+      "sort_order": 16,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-sjf-017",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問15（Canoviaオリジナル類題）",
+      "prompt": "非プリエンプティブな最短処理時間順（SJF）で実行する。ジョブA〜Eの到着時刻/処理時間が A:0/2, B:1/4, C:2/3, D:3/2, E:4/1 のとき、ジョブBのターンアラウンドタイムは何秒か。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "8"
+            },
+            {
+              "id": "イ",
+              "label": "9"
+            },
+            {
+              "id": "ウ",
+              "label": "10"
+            },
+            {
+              "id": "エ",
+              "label": "11"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "SJF"
+        ],
+        "weakness_targets": [
+          "計算",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "OS"
+        ],
+        "keywords": [
+          "ターンアラウンドタイム"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "A(0-2)→C(2-5)→E(5-6)→D(6-8)→B(8-12)となり、Bは到着1秒から完了12秒までなので11秒です。",
+      "difficulty": 4,
+      "sort_order": 17,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-sampling-018",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問25（Canoviaオリジナル類題）",
+      "prompt": "0〜20kHzの周波数成分を含むアナログ信号を標本化定理に従ってデジタル化する。必要な最大サンプリング周期はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "2.5μs"
+            },
+            {
+              "id": "イ",
+              "label": "5μs"
+            },
+            {
+              "id": "ウ",
+              "label": "25μs"
+            },
+            {
+              "id": "エ",
+              "label": "50μs"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "信号処理",
+          "標本化定理"
+        ],
+        "weakness_targets": [
+          "計算",
+          "D/A変換",
+          "A/D変換"
+        ],
+        "tags": [
+          "科目A",
+          "計算"
+        ],
+        "keywords": [
+          "サンプリング"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "最高周波数20kHzの2倍以上、40kHz以上で標本化する必要があります。周期は1/40kHz=25μs以下です。",
+      "difficulty": 3,
+      "sort_order": 18,
+      "is_active": true
+    },
+    {
+      "external_key": "sys-cache-019",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問19（Canoviaオリジナル類題）",
+      "prompt": "4ブロックのキャッシュC0〜C3の最終参照時刻が C0=0:08, C1=0:06, C2=0:05, C3=0:10 である。新しいブロックをロードするときC2が置換対象になる方式はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "FIFO"
+            },
+            {
+              "id": "イ",
+              "label": "LFU"
+            },
+            {
+              "id": "ウ",
+              "label": "LIFO"
+            },
+            {
+              "id": "エ",
+              "label": "LRU"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "コンピュータ構成",
+          "キャッシュ",
+          "LRU"
+        ],
+        "weakness_targets": [
+          "計算",
+          "キャッシュ"
+        ],
+        "tags": [
+          "科目A",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "置換アルゴリズム"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "LRUは最も長く参照されていないブロックを置換します。最終参照が最も古いC2が対象です。",
+      "difficulty": 3,
+      "sort_order": 19,
+      "is_active": true
+    },
+    {
+      "external_key": "sys-semaphore-020",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問16（Canoviaオリジナル類題）",
+      "prompt": "二つのタスクが同じI2Cバス上のセンサーへアクセスする。バスを同時利用しないよう排他的に制御するため、リアルタイムOSの機能として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "キュー"
+            },
+            {
+              "id": "イ",
+              "label": "セマフォ"
+            },
+            {
+              "id": "ウ",
+              "label": "マルチスレッド"
+            },
+            {
+              "id": "エ",
+              "label": "メモリプール"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "排他制御",
+          "セマフォ"
+        ],
+        "weakness_targets": [
+          "排他制御",
+          "OS"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "リアルタイムOS"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "共有資源の排他制御にはセマフォやミューテックスを用います。",
+      "difficulty": 2,
+      "sort_order": 20,
+      "is_active": true
+    },
+    {
+      "external_key": "sys-deadlock-021",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問18（Canoviaオリジナル類題）",
+      "prompt": "二つのタスクが二つの資源を排他的に利用する。デッドロックを防止する方法として適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "一方のタスクだけ優先度を高くする。"
+            },
+            {
+              "id": "イ",
+              "label": "両タスクで資源を獲得する順序を同じにする。"
+            },
+            {
+              "id": "ウ",
+              "label": "両タスクで資源を獲得する順序を逆にする。"
+            },
+            {
+              "id": "エ",
+              "label": "両タスクの優先度を同じにする。"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "デッドロック",
+          "排他制御"
+        ],
+        "weakness_targets": [
+          "OS",
+          "排他制御"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "循環待ち"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "全タスクで資源獲得順序を統一すると循環待ちを防げるため、デッドロックの成立条件を崩せます。",
+      "difficulty": 3,
+      "sort_order": 21,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-hpc-022",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問11（Canoviaオリジナル類題）",
+      "prompt": "HPCシステムが1,000ノード、各ノード8コア、1コア10GFLOPSで構成される。更新後は1コア性能を2倍、各ノードのコア数を2倍、総コア数を4倍にする。更新後のノード数と総理論ピーク性能の組合せはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "2,000ノード / 320TFLOPS"
+            },
+            {
+              "id": "イ",
+              "label": "2,000ノード / 640TFLOPS"
+            },
+            {
+              "id": "ウ",
+              "label": "4,000ノード / 320TFLOPS"
+            },
+            {
+              "id": "エ",
+              "label": "4,000ノード / 640TFLOPS"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "コンピュータ構成",
+          "HPC",
+          "性能計算"
+        ],
+        "weakness_targets": [
+          "計算",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "GFLOPS",
+          "TFLOPS"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "元は8,000コア。総コア数4倍で32,000コア、1ノード16コアなので2,000ノード。1コア20GFLOPSなので640TFLOPSです。",
+      "difficulty": 4,
+      "sort_order": 22,
+      "is_active": true
+    },
+    {
+      "external_key": "sec-dkim-023",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問45（Canoviaオリジナル類題）",
+      "prompt": "送信側メールサーバが電子メールヘッダーへデジタル署名を付与し、受信側が公開鍵で検証することで、送信元ドメインのなりすましやメール改ざんの検知に利用できる技術はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "DKIM"
+            },
+            {
+              "id": "イ",
+              "label": "OP25B"
+            },
+            {
+              "id": "ウ",
+              "label": "S/MIME"
+            },
+            {
+              "id": "エ",
+              "label": "SPF"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "セキュリティ",
+          "電子メール",
+          "DKIM"
+        ],
+        "weakness_targets": [
+          "セキュリティ"
+        ],
+        "tags": [
+          "科目A",
+          "セキュリティ"
+        ],
+        "keywords": [
+          "メール認証"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "DKIMは送信ドメイン側がメールへ署名し、DNSで公開される公開鍵を使って受信側が署名を検証します。",
+      "difficulty": 2,
+      "sort_order": 23,
+      "is_active": true
+    },
+    {
+      "external_key": "sec-sidechannel-024",
+      "source_type": "derived",
+      "source_reference": "参考：令和7年度 秋期 応用情報技術者試験 午前 問38（Canoviaオリジナル類題）",
+      "prompt": "暗号処理中の装置について、消費電力や処理時間などの物理的な情報を測定・統計解析し、内部の秘密情報を推定する攻撃はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "サイドチャネル攻撃"
+            },
+            {
+              "id": "イ",
+              "label": "既知平文攻撃"
+            },
+            {
+              "id": "ウ",
+              "label": "ショルダーハッキング"
+            },
+            {
+              "id": "エ",
+              "label": "ジャミング"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "セキュリティ",
+          "暗号",
+          "サイドチャネル攻撃"
+        ],
+        "weakness_targets": [
+          "セキュリティ"
+        ],
+        "tags": [
+          "科目A",
+          "セキュリティ"
+        ],
+        "keywords": [
+          "暗号実装"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "サイドチャネル攻撃は、暗号アルゴリズムそのものではなく、実装時に漏れる消費電力や時間などの情報を利用します。",
+      "difficulty": 3,
+      "sort_order": 24,
+      "is_active": true
+    }
+  ]
+}
