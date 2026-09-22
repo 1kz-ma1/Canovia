@@ -38,13 +38,15 @@ class StudyPracticeProviderRouter
 
     /**
      * @param array<int, array<string, mixed>> $questions
+     * @param array<int, array<string, mixed>> $answers
      */
     public function assessmentProvider(
         Plan $plan,
         Task $task,
         array $questions = [],
+        array $answers = [],
     ): StudyPracticeAssessmentProvider {
-        if ($this->questionBankGrader->canGrade($questions)) {
+        if ($this->questionBankGrader->canGrade($questions, $answers)) {
             return $this->questionBankAssessmentProvider;
         }
 
