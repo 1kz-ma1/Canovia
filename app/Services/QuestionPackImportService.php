@@ -11,7 +11,7 @@ class QuestionPackImportService
 {
     /**
      * @param array<string, mixed> $payload
-     * @return array{pack:QuestionPack,created:int,updated:int,total:int}
+     * @return array{pack:QuestionPack,created:int,updated:int,deactivated:int,total:int}
      */
     public function import(array $payload): array
     {
@@ -121,10 +121,18 @@ class QuestionPackImportService
                 }
             }
 
+            $importedKeys = collect($normalizedQuestions)->pluck('external_key')->all();
+            $deactivated = Question::query()
+                ->where('question_pack_id', $pack->id)
+                ->whereNotIn('external_key', $importedKeys)
+                ->where('is_active', true)
+                ->update(['is_active' => false]);
+
             return [
                 'pack' => $pack->fresh(),
                 'created' => $created,
                 'updated' => $updated,
+                'deactivated' => $deactivated,
                 'total' => count($normalizedQuestions),
             ];
         });
