@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v40.0',
+        'date' => '2026-09-22',
+        'title' => 'AI演習を学習基盤へ',
+        'summary' => 'AIが問題を作るだけの演習から、回答形式・問題単位の学習分析・自動Plan優先度・Question Bankを分離して扱えるLearning Coreへ拡張しました。',
+        'highlights' => [
+            '1問に選択肢・数値・短文・記述・思考過程など複数の回答欄を組み合わせられるresponse_fieldsを追加しました。',
+            '旧type / choices形式はCanovia側で新形式へ自動変換し、既存AI演習との互換性を維持します。',
+            '評価JSONで問題ごとの正誤・フィードバック・思考過程フィードバック・誤解ポイントを保存・表示できるようにしました。',
+            'Plan優先度をAuto / Manualへ分離し、Autoでは期限・進捗差・残作業量・利用可能時間・停滞からCanoviaが内部評価します。',
+            'Resource ToolでTask資料をPlan資料と二重カウントしていた問題を修正し、Task関連件数とPlan全体件数を分けて表示します。',
+            '資格別Question Packを将来配信できるよう、問題ソース・回答Schema・採点Rule・学習Metadataを分離したQuestion Bank基盤を追加しました。',
+        ],
+        'tip' => 'Plan優先度はCanoviaに任せることも、重要な計画だけ手動で固定することもできます。',
+    ],
+    [
         'version' => 'v39.7',
         'date' => '2026-09-21',
         'title' => 'AI JSONの崩れをCanovia側で吸収',
