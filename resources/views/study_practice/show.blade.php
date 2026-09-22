@@ -294,7 +294,10 @@
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">ASSESSMENT PREVIEW</p>
                 <div class="mt-3 flex flex-wrap items-end gap-4">
                     <div><p class="text-xs text-slate-500">今回の評価</p><strong class="text-4xl text-slate-50">{{ $assessment['score_percent'] }}%</strong></div>
-                    <div><p class="text-xs text-slate-500">AI提案のTask進捗</p><strong class="text-2xl text-cyan-200">{{ $assessment['recommended_task_progress_percent'] }}%</strong></div>
+                    <div>
+                        <p class="text-xs text-slate-500">{{ ($currentPracticeSession?->assessment_provider ?? '') === 'question_bank_grader' ? 'Task進捗（自動変更なし）' : '評価提案のTask進捗' }}</p>
+                        <strong class="text-2xl text-cyan-200">{{ $assessment['recommended_task_progress_percent'] }}%</strong>
+                    </div>
                     @if ($currentAttempt?->applied_at)
                         <span class="badge badge-green">Taskへ反映済み</span>
                     @else
@@ -370,7 +373,7 @@
                             <input type="hidden" name="attempt_id" value="{{ $currentAttempt->id }}">
                             <input type="hidden" name="request_hash" value="{{ $currentAttempt->request_hash }}">
                             <p class="text-sm font-bold text-cyan-100">この結果をCanoviaへ反映しますか？</p>
-                            <p class="mt-1 text-xs leading-5 text-slate-400">Task進捗は現在値とAI提案の高い方を使うため、演習結果だけで進捗が後退することはありません。評価根拠と次のActionもTaskへ残します。</p>
+                            <p class="mt-1 text-xs leading-5 text-slate-400">Task進捗は現在値と評価提案の高い方を使うため、演習結果だけで進捗が後退することはありません。評価根拠と次のActionもTaskへ残します。</p>
                             <button type="submit" class="btn-primary mt-3">この学習結果をTaskへ反映</button>
                         </form>
                     @endif
