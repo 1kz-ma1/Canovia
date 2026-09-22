@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('assessment_provider_mode', 24)->default('handoff');
             $table->json('selection_context')->nullable();
             $table->json('provider_payload')->nullable();
+            $table->json('assessment_payload')->nullable();
             $table->json('selected_questions')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable()->index();
