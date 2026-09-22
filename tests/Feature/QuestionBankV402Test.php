@@ -10,6 +10,7 @@ use App\Models\StudyPracticeSession;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\AdminAccessService;
+use App\Services\QuestionBankGrader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -194,6 +195,105 @@ class QuestionBankV402Test extends TestCase
             ->assertOk()
             ->assertSee('外部AI')
             ->assertDontSee('Canovia問題集から演習を始める');
+    }
+
+    public function test_deterministic_grader_supports_multiple_choice_and_numeric_tolerance(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+
+        $pack = QuestionPack::create([
+            'slug' => 'grader-rules-v402',
+            'title' => '採点ルール確認',
+            'exam_code' => 'AP',
+            'subject' => '科目A',
+            'version' => '1',
+            'status' => 'published',
+            'downloadable' => true,
+            'metadata' => ['match_terms' => ['AP']],
+        ]);
+
+        $multiple = Question::create([
+            'question_pack_id' => $pack->id,
+            'external_key' => 'multi',
+            'source_type' => 'canovia_original',
+            'prompt' => '複数選択',
+            'response_schema' => [[
+                'id' => 'answer',
+                'type' => 'multiple_choice',
+                'label' => '回答',
+                'required' => true,
+                'choices' => [
+                    ['id' => 'A', 'label' => 'A'],
+                    ['id' => 'B', 'label' => 'B'],
+                    ['id' => 'C', 'label' => 'C'],
+                ],
+            ]],
+            'grading_rule' => [
+                'type' => 'exact_multiple',
+                'field_id' => 'answer',
+                'answers' => ['A', 'C'],
+            ],
+            'learning_metadata' => ['concepts' => ['複数選択']],
+            'difficulty' => 3,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+
+        $numeric = Question::create([
+            'question_pack_id' => $pack->id,
+            'external_key' => 'numeric',
+            'source_type' => 'canovia_original',
+            'prompt' => '数値',
+            'response_schema' => [[
+                'id' => 'answer',
+                'type' => 'number',
+                'label' => '回答',
+                'required' => true,
+                'choices' => [],
+            ]],
+            'grading_rule' => [
+                'type' => 'numeric_tolerance',
+                'field_id' => 'answer',
+                'answer' => 10,
+                'tolerance' => 0.5,
+            ],
+            'learning_metadata' => ['concepts' => ['数値計算']],
+            'difficulty' => 3,
+            'sort_order' => 2,
+            'is_active' => true,
+        ]);
+
+        $questions = [
+            ['id' => 'bank_'.$multiple->id, 'source_question_id' => $multiple->id],
+            ['id' => 'bank_'.$numeric->id, 'source_question_id' => $numeric->id],
+        ];
+        $answers = [
+            [
+                'question_id' => 'bank_'.$multiple->id,
+                'fields' => [[
+                    'field_id' => 'answer',
+                    'type' => 'multiple_choice',
+                    'label' => '回答',
+                    'value' => ['C', 'A'],
+                ]],
+            ],
+            [
+                'question_id' => 'bank_'.$numeric->id,
+                'fields' => [[
+                    'field_id' => 'answer',
+                    'type' => 'number',
+                    'label' => '回答',
+                    'value' => '10.4',
+                ]],
+            ],
+        ];
+
+        $grader = app(QuestionBankGrader::class);
+
+        $this->assertTrue($grader->canGrade($questions, $answers));
+        $assessment = $grader->grade($task, $questions, $answers);
+        $this->assertSame(100, $assessment['score_percent']);
+        $this->assertSame([], $assessment['weaknesses']);
     }
 
     public function test_admin_can_import_draft_publish_it_and_cannot_overwrite_published_pack(): void
