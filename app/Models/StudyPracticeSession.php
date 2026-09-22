@@ -32,6 +32,7 @@ class StudyPracticeSession extends Model
         'assessment_provider_mode',
         'selection_context',
         'provider_payload',
+        'assessment_payload',
         'selected_questions',
         'started_at',
         'completed_at',
@@ -42,6 +43,7 @@ class StudyPracticeSession extends Model
         return [
             'selection_context' => 'array',
             'provider_payload' => 'array',
+            'assessment_payload' => 'array',
             'selected_questions' => 'array',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
