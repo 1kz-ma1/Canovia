@@ -86,7 +86,7 @@
                     </select>
                     <p class="mt-3 text-xs leading-5 text-slate-400">
                         現在の自動判定は <strong class="text-cyan-200">優先度 {{ (int) ($priorityEvaluation['auto_priority'] ?? 3) }}</strong>。
-                        {{ collect($priorityEvaluation['reasons'] ?? [])->implode(' / ') }}
+                        {{ collect($priorityEvaluation['auto_reasons'] ?? $priorityEvaluation['reasons'] ?? [])->implode(' / ') }}
                     </p>
 
                     <label for="priority" class="mt-4 mb-2 block text-sm font-medium text-slate-200">手動優先度</label>
