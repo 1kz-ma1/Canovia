@@ -92,7 +92,9 @@ class DashboardGuidanceV395Test extends TestCase
             'is_public' => false,
         ]);
 
-        $this->assertSame(3, (int) $plan->fresh()->priority);
+        $fresh = $plan->fresh();
+        $this->assertSame(3, (int) $fresh->priority);
+        $this->assertSame('auto', $fresh->priority_mode);
     }
 
     public function test_study_task_surfaces_ai_practice_as_the_specialized_tool(): void
@@ -131,6 +133,7 @@ class DashboardGuidanceV395Test extends TestCase
             'title' => $title,
             'category' => $category,
             'priority' => $priority,
+            'priority_mode' => 'manual',
             'start_date' => today(),
             'deadline' => today()->addDays($deadlineDays),
             'is_public' => false,

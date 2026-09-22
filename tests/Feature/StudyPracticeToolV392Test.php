@@ -120,6 +120,71 @@ class StudyPracticeToolV392Test extends TestCase
             ->assertSee('いわゆる“ゼロトラスト”を説明せよ');
     }
 
+    public function test_question_can_combine_choice_and_reasoning_fields(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $payload = [
+            'schema_version' => '1.0',
+            'flow' => 'study_practice',
+            'target_plan' => ['id' => $plan->id],
+            'target_task' => ['id' => $task->id],
+            'title' => '選択＋思考過程',
+            'questions' => [[
+                'id' => 'q1',
+                'prompt' => 'DNSの役割として最も適切なものを選び、理由も説明してください。',
+                'response_fields' => [
+                    [
+                        'id' => 'answer',
+                        'type' => 'single_choice',
+                        'label' => '回答',
+                        'required' => true,
+                        'choices' => [
+                            ['id' => 'A', 'label' => '名前解決'],
+                            ['id' => 'B', 'label' => '暗号化'],
+                        ],
+                    ],
+                    [
+                        'id' => 'reasoning',
+                        'type' => 'textarea',
+                        'label' => '考え方・判断理由',
+                        'required' => false,
+                    ],
+                ],
+            ]],
+        ];
+
+        $this->actingAs($user)
+            ->post(route('plans.tasks.study_practice.import', [$plan, $task]), [
+                'questions_json' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($user)
+            ->get(route('plans.tasks.study_practice.show', [$plan, $task]))
+            ->assertOk()
+            ->assertSee('選択＋思考過程')
+            ->assertSee('考え方・判断理由')
+            ->assertSee('answers[q1][answer]', false)
+            ->assertSee('answers[q1][reasoning]', false);
+
+        $this->actingAs($user)
+            ->post(route('plans.tasks.study_practice.answers', [$plan, $task]), [
+                'answers' => [
+                    'q1' => [
+                        'answer' => 'A',
+                        'reasoning' => 'DNSはドメイン名とIPアドレスの対応を扱うため。',
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('plans.tasks.study_practice.show', [$plan, $task]))
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($user)
+            ->get(route('plans.tasks.study_practice.show', [$plan, $task]))
+            ->assertOk()
+            ->assertSee('DNSはドメイン名とIPアドレスの対応を扱うため。');
+    }
+
     public function test_wrong_task_target_is_rejected(): void
     {
         [$user, $plan, $task] = $this->studyPlan();
@@ -232,6 +297,13 @@ class StudyPracticeToolV392Test extends TestCase
             'target_plan' => ['id' => $plan->id],
             'target_task' => ['id' => $task->id],
             'score_percent' => 90,
+            'question_feedback' => [[
+                'question_id' => 'q1',
+                'correctness' => 'correct',
+                'feedback' => '最終回答は正しいです。',
+                'reasoning_feedback' => '名前解決という役割を根拠にできています。',
+                'misconceptions' => [],
+            ]],
             'strengths' => ['名前解決を理解'],
             'weaknesses' => ['レコード種別'],
             'recommended_task_progress_percent' => 75,
@@ -250,7 +322,9 @@ class StudyPracticeToolV392Test extends TestCase
             ->assertOk()
             ->assertSee('90%')
             ->assertSee('75%')
-            ->assertSee('DNSレコードの類題を3問解く');
+            ->assertSee('DNSレコードの類題を3問解く')
+            ->assertSee('問題ごとのフィードバック')
+            ->assertSee('名前解決という役割を根拠にできています。');
     }
 
     private function studyPlan(): array

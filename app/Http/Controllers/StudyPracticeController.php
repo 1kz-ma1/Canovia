@@ -28,7 +28,15 @@ class StudyPracticeController extends Controller
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
 
-        $state = $request->session()->get($this->sessionKey($plan, $task), []);
+        $key = $this->sessionKey($plan, $task);
+        $state = $request->session()->get($key, []);
+        if (! empty($state['questions']) && collect($state['questions'])->contains(
+            fn ($question) => is_array($question) && empty($question['response_fields'])
+        )) {
+            $state['questions'] = $this->normalizeQuestions($state['questions']);
+            $request->session()->put($key, $state);
+        }
+
         $actorToken = $identity->resolve($request);
         $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
         $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
@@ -115,26 +123,90 @@ class StudyPracticeController extends Controller
         $answers = [];
 
         foreach ($questions as $question) {
-            $id = (string) $question['id'];
-            $value = $rawAnswers[$id] ?? null;
+            $questionId = (string) $question['id'];
+            $questionInput = $rawAnswers[$questionId] ?? [];
 
-            if ($question['type'] === 'multiple_choice') {
-                $value = is_array($value)
-                    ? array_values(array_unique(array_map('strval', $value)))
-                    : [];
-                if ($value === []) {
-                    throw ValidationException::withMessages(["answers.{$id}" => 'この問題に回答してください。']);
+            // Backward compatibility for old forms/tests that posted
+            // answers[q1]=value instead of answers[q1][answer]=value.
+            if (! is_array($questionInput)) {
+                $questionInput = ['answer' => $questionInput];
+            }
+
+            $responseFields = $question['response_fields'] ?? [];
+            if (! is_array($responseFields) || $responseFields === []) {
+                $legacyType = (string) ($question['type'] ?? 'text');
+                $responseFields = [[
+                    'id' => 'answer',
+                    'type' => match ($legacyType) {
+                        'single_choice' => 'single_choice',
+                        'multiple_choice' => 'multiple_choice',
+                        'number' => 'number',
+                        default => 'textarea',
+                    },
+                    'label' => '回答',
+                    'required' => true,
+                    'choices' => $question['choices'] ?? [],
+                ]];
+            }
+
+            $fields = [];
+            foreach ($responseFields as $field) {
+                $fieldId = (string) $field['id'];
+                $type = (string) $field['type'];
+                $required = (bool) ($field['required'] ?? true);
+                $value = $questionInput[$fieldId] ?? null;
+
+                if ($type === 'multiple_choice') {
+                    $value = is_array($value)
+                        ? array_values(array_unique(array_map('strval', $value)))
+                        : [];
+
+                    $allowed = collect($field['choices'] ?? [])->pluck('id')->map('strval')->all();
+                    $value = array_values(array_filter($value, fn ($item) => in_array($item, $allowed, true)));
+
+                    if ($required && $value === []) {
+                        throw ValidationException::withMessages([
+                            "answers.{$questionId}.{$fieldId}" => ($field['label'] ?? '回答').'を入力してください。',
+                        ]);
+                    }
+                } else {
+                    $value = is_scalar($value) ? trim((string) $value) : '';
+
+                    if ($required && $value === '') {
+                        throw ValidationException::withMessages([
+                            "answers.{$questionId}.{$fieldId}" => ($field['label'] ?? '回答').'を入力してください。',
+                        ]);
+                    }
+
+                    if ($type === 'single_choice' && $value !== '') {
+                        $allowed = collect($field['choices'] ?? [])->pluck('id')->map('strval')->all();
+                        if (! in_array($value, $allowed, true)) {
+                            throw ValidationException::withMessages([
+                                "answers.{$questionId}.{$fieldId}" => '選択肢をもう一度選んでください。',
+                            ]);
+                        }
+                    }
+
+                    if ($type === 'number' && $value !== '' && ! is_numeric($value)) {
+                        throw ValidationException::withMessages([
+                            "answers.{$questionId}.{$fieldId}" => '数値で回答してください。',
+                        ]);
+                    }
+
+                    $value = mb_substr($value, 0, $type === 'textarea' ? 12000 : 3000);
                 }
-            } else {
-                $value = is_scalar($value) ? trim((string) $value) : '';
-                if ($value === '') {
-                    throw ValidationException::withMessages(["answers.{$id}" => 'この問題に回答してください。']);
-                }
+
+                $fields[] = [
+                    'field_id' => $fieldId,
+                    'type' => $type,
+                    'label' => $field['label'] ?? $fieldId,
+                    'value' => $value,
+                ];
             }
 
             $answers[] = [
-                'question_id' => $id,
-                'answer' => $value,
+                'question_id' => $questionId,
+                'fields' => $fields,
             ];
         }
 
@@ -193,6 +265,10 @@ class StudyPracticeController extends Controller
 
         $assessment = [
             'score_percent' => $score,
+            'question_feedback' => $this->normalizeQuestionFeedback(
+                $decoded['question_feedback'] ?? [],
+                $state['questions'] ?? [],
+            ),
             'strengths' => $this->stringList($decoded['strengths'] ?? []),
             'weaknesses' => $this->stringList($decoded['weaknesses'] ?? []),
             'recommended_task_progress_percent' => $recommendedProgress,
@@ -368,7 +444,6 @@ class StudyPracticeController extends Controller
             throw ValidationException::withMessages(['questions_json' => 'questionsは1〜20問で返してください。']);
         }
 
-        $allowedTypes = ['single_choice', 'multiple_choice', 'text', 'number'];
         $questions = [];
         $seen = [];
 
@@ -378,7 +453,6 @@ class StudyPracticeController extends Controller
             }
 
             $id = trim((string) ($question['id'] ?? 'q'.($index + 1)));
-            $type = trim((string) ($question['type'] ?? ''));
             $prompt = trim((string) ($question['prompt'] ?? ''));
 
             if ($id === '' || preg_match('/^[A-Za-z0-9_-]{1,64}$/', $id) !== 1 || isset($seen[$id])) {
@@ -386,52 +460,199 @@ class StudyPracticeController extends Controller
                     'questions_json' => 'question.idは英数字・_・-だけを使い、重複しない64文字以内の値にしてください。',
                 ]);
             }
-            if (! in_array($type, $allowedTypes, true)) {
-                throw ValidationException::withMessages(['questions_json' => 'question.typeがCanoviaの対応形式ではありません。']);
-            }
             if ($prompt === '') {
                 throw ValidationException::withMessages(['questions_json' => '問題文が空のquestionがあります。']);
             }
 
-            $choices = [];
-            if (in_array($type, ['single_choice', 'multiple_choice'], true)) {
-                $rawChoices = $question['choices'] ?? [];
-                if (! is_array($rawChoices) || count($rawChoices) < 2 || count($rawChoices) > 6) {
-                    throw ValidationException::withMessages(['questions_json' => '選択式問題のchoicesは2〜6件にしてください。']);
+            $rawFields = $question['response_fields'] ?? null;
+
+            if (! is_array($rawFields) || $rawFields === []) {
+                // V39 compatibility: convert type + choices into one response field.
+                $legacyType = trim((string) ($question['type'] ?? ''));
+                $legacyMap = [
+                    'single_choice' => 'single_choice',
+                    'multiple_choice' => 'multiple_choice',
+                    'number' => 'number',
+                    'text' => 'textarea',
+                ];
+
+                if (! isset($legacyMap[$legacyType])) {
+                    throw ValidationException::withMessages([
+                        'questions_json' => 'response_fieldsを指定するか、互換形式のquestion.typeを使用してください。',
+                    ]);
                 }
 
-                $seenChoiceIds = [];
-                foreach (array_values($rawChoices) as $choiceIndex => $choice) {
-                    if (! is_array($choice)) {
-                        throw ValidationException::withMessages(['questions_json' => 'choiceはidとlabelを持つJSONオブジェクトにしてください。']);
-                    }
-                    $choiceId = trim((string) ($choice['id'] ?? chr(65 + $choiceIndex)));
-                    $label = trim((string) ($choice['label'] ?? ''));
-                    if (
-                        $choiceId === ''
-                        || preg_match('/^[A-Za-z0-9_-]{1,20}$/', $choiceId) !== 1
-                        || isset($seenChoiceIds[$choiceId])
-                        || $label === ''
-                    ) {
-                        throw ValidationException::withMessages([
-                            'questions_json' => 'choice.idは英数字・_・-だけの重複しない20文字以内の値にし、labelも入力してください。',
-                        ]);
-                    }
-                    $seenChoiceIds[$choiceId] = true;
-                    $choices[] = ['id' => $choiceId, 'label' => mb_substr($label, 0, 1000)];
-                }
+                $rawFields = [[
+                    'id' => 'answer',
+                    'type' => $legacyMap[$legacyType],
+                    'label' => '回答',
+                    'required' => true,
+                    'choices' => $question['choices'] ?? [],
+                ]];
+            }
+
+            if (count($rawFields) < 1 || count($rawFields) > 4) {
+                throw ValidationException::withMessages([
+                    'questions_json' => '各questionのresponse_fieldsは1〜4件にしてください。',
+                ]);
+            }
+
+            $fields = [];
+            $seenFields = [];
+            foreach (array_values($rawFields) as $fieldIndex => $field) {
+                $fields[] = $this->normalizeResponseField($field, $fieldIndex, $seenFields);
+            }
+
+            if (! collect($fields)->contains(fn ($field) => (bool) ($field['required'] ?? false))) {
+                throw ValidationException::withMessages([
+                    'questions_json' => '各questionには最低1つrequired=trueのresponse_fieldが必要です。',
+                ]);
             }
 
             $seen[$id] = true;
+            $first = $fields[0];
+            $legacyType = match ($first['type']) {
+                'short_text', 'textarea' => 'text',
+                default => $first['type'],
+            };
+
             $questions[] = [
                 'id' => mb_substr($id, 0, 64),
-                'type' => $type,
                 'prompt' => mb_substr($prompt, 0, 4000),
-                'choices' => $choices,
+                'response_fields' => $fields,
+                // Compatibility keys remain while old attempts and consumers exist.
+                'type' => $legacyType,
+                'choices' => $first['choices'] ?? [],
             ];
         }
 
         return $questions;
+    }
+
+    /**
+     * @param array<string, bool> $seenFields
+     * @return array<string, mixed>
+     */
+    private function normalizeResponseField(mixed $raw, int $index, array &$seenFields): array
+    {
+        if (! is_array($raw)) {
+            throw ValidationException::withMessages([
+                'questions_json' => 'response_fieldはJSONオブジェクトで返してください。',
+            ]);
+        }
+
+        $allowed = ['single_choice', 'multiple_choice', 'number', 'short_text', 'textarea'];
+        $id = trim((string) ($raw['id'] ?? 'field'.($index + 1)));
+        $type = trim((string) ($raw['type'] ?? ''));
+        $label = trim((string) ($raw['label'] ?? '回答'));
+        $requiredRaw = $raw['required'] ?? true;
+        $required = is_bool($requiredRaw)
+            ? $requiredRaw
+            : ! in_array(mb_strtolower(trim((string) $requiredRaw)), ['false', '0', 'no'], true);
+
+        if ($id === '' || preg_match('/^[A-Za-z0-9_-]{1,64}$/', $id) !== 1 || isset($seenFields[$id])) {
+            throw ValidationException::withMessages([
+                'questions_json' => 'response_field.idは英数字・_・-だけを使い、question内で重複しない64文字以内の値にしてください。',
+            ]);
+        }
+        if (! in_array($type, $allowed, true)) {
+            throw ValidationException::withMessages([
+                'questions_json' => 'response_field.typeがCanoviaの対応形式ではありません。',
+            ]);
+        }
+        if ($label === '') {
+            $label = '回答';
+        }
+
+        $choices = [];
+        if (in_array($type, ['single_choice', 'multiple_choice'], true)) {
+            $rawChoices = $raw['choices'] ?? [];
+            if (! is_array($rawChoices) || count($rawChoices) < 2 || count($rawChoices) > 6) {
+                throw ValidationException::withMessages([
+                    'questions_json' => '選択式response_fieldのchoicesは2〜6件にしてください。',
+                ]);
+            }
+
+            $seenChoiceIds = [];
+            foreach (array_values($rawChoices) as $choiceIndex => $choice) {
+                if (! is_array($choice)) {
+                    throw ValidationException::withMessages([
+                        'questions_json' => 'choiceはidとlabelを持つJSONオブジェクトにしてください。',
+                    ]);
+                }
+
+                $choiceId = trim((string) ($choice['id'] ?? chr(65 + $choiceIndex)));
+                $choiceLabel = trim((string) ($choice['label'] ?? ''));
+
+                if (
+                    $choiceId === ''
+                    || preg_match('/^[A-Za-z0-9_-]{1,20}$/', $choiceId) !== 1
+                    || isset($seenChoiceIds[$choiceId])
+                    || $choiceLabel === ''
+                ) {
+                    throw ValidationException::withMessages([
+                        'questions_json' => 'choice.idは英数字・_・-だけの重複しない20文字以内の値にし、labelも入力してください。',
+                    ]);
+                }
+
+                $seenChoiceIds[$choiceId] = true;
+                $choices[] = ['id' => $choiceId, 'label' => mb_substr($choiceLabel, 0, 1000)];
+            }
+        }
+
+        $seenFields[$id] = true;
+
+        return [
+            'id' => $id,
+            'type' => $type,
+            'label' => mb_substr($label, 0, 120),
+            'required' => $required,
+            'placeholder' => mb_substr(trim((string) ($raw['placeholder'] ?? '')), 0, 240),
+            'choices' => $choices,
+        ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $questions
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeQuestionFeedback(mixed $raw, array $questions): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $questionIds = collect($questions)->pluck('id')->map('strval')->all();
+        $allowedCorrectness = ['correct', 'partial', 'incorrect', 'ungraded'];
+        $result = [];
+        $seen = [];
+
+        foreach (array_values($raw) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $questionId = trim((string) ($item['question_id'] ?? ''));
+            if ($questionId === '' || ! in_array($questionId, $questionIds, true) || isset($seen[$questionId])) {
+                continue;
+            }
+
+            $correctness = trim((string) ($item['correctness'] ?? 'ungraded'));
+            if (! in_array($correctness, $allowedCorrectness, true)) {
+                $correctness = 'ungraded';
+            }
+
+            $seen[$questionId] = true;
+            $result[] = [
+                'question_id' => $questionId,
+                'correctness' => $correctness,
+                'feedback' => mb_substr(trim((string) ($item['feedback'] ?? '')), 0, 2000),
+                'reasoning_feedback' => mb_substr(trim((string) ($item['reasoning_feedback'] ?? '')), 0, 2000),
+                'misconceptions' => array_slice($this->stringList($item['misconceptions'] ?? []), 0, 8),
+            ];
+        }
+
+        return $result;
     }
 
     /**

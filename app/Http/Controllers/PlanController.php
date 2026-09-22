@@ -9,6 +9,7 @@ use App\Services\PlanOwnershipService;
 use App\Services\PlanCollaborationService;
 use App\Services\PlanActivityService;
 use App\Services\PlanProgressService;
+use App\Services\PlanPriorityService;
 use App\Services\PlanTimelineService;
 use App\Services\PlanToolService;
 use App\Services\RecommendationService;
@@ -38,6 +39,7 @@ class PlanController extends Controller
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
             'priority' => ['nullable', 'integer', 'between:1,5'],
+            'priority_mode' => ['nullable', Rule::in(['auto', 'manual'])],
             'visual_icon' => ['nullable', 'string', 'max:16'],
             'accent_key' => ['nullable', Rule::in(Plan::ACCENT_KEYS)],
             'roadmap_world' => ['nullable', Rule::in(Plan::ROADMAP_WORLDS)],
@@ -75,6 +77,7 @@ class PlanController extends Controller
                 'description' => $validated['description'] ?? null,
                 'category' => $validated['category'] ?? null,
                 'priority' => $validated['priority'] ?? 3,
+                'priority_mode' => $validated['priority_mode'] ?? 'auto',
                 'visual_icon' => $validated['visual_icon'] ?? null,
                 'accent_key' => $validated['accent_key'] ?? 'sky',
                 'roadmap_world' => $validated['roadmap_world'] ?? 'default',
@@ -127,6 +130,7 @@ class PlanController extends Controller
         RoadmapService $roadmapService,
         ContinuityService $continuityService,
         PlanToolService $toolService,
+        PlanPriorityService $priorityService,
     ) {
         $canView = $ownership->canView($request, $plan);
         $canEdit = $ownership->canEdit($request, $plan);
@@ -152,6 +156,7 @@ class PlanController extends Controller
         ]);
 
         $progress = $progressService->calculate($plan);
+        $priorityEvaluation = $priorityService->evaluate($plan);
         $timeline = $timelineService->build($plan);
         $recommendation = null;
         $continuity = null;
@@ -212,14 +217,20 @@ class PlanController extends Controller
             'planTools',
             'aiPracticeTask',
             'studyToolCategoryMismatch',
+            'priorityEvaluation',
         ));
     }
 
-    public function edit(Request $request, Plan $plan, PlanOwnershipService $ownership)
-    {
+    public function edit(
+        Request $request,
+        Plan $plan,
+        PlanOwnershipService $ownership,
+        PlanPriorityService $priorityService,
+    ) {
         $ownership->authorizePlan($request, $plan);
+        $priorityEvaluation = $priorityService->evaluate($plan);
 
-        return view('plans.edit', compact('plan'));
+        return view('plans.edit', compact('plan', 'priorityEvaluation'));
     }
 
     public function update(Request $request, Plan $plan, PlanOwnershipService $ownership, PlanActivityService $activity)
@@ -231,6 +242,7 @@ class PlanController extends Controller
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
             'priority' => ['nullable', 'integer', 'between:1,5'],
+            'priority_mode' => ['nullable', Rule::in(['auto', 'manual'])],
             'visual_icon' => ['nullable', 'string', 'max:16'],
             'accent_key' => ['nullable', Rule::in(Plan::ACCENT_KEYS)],
             'roadmap_world' => ['nullable', Rule::in(Plan::ROADMAP_WORLDS)],
@@ -249,13 +261,14 @@ class PlanController extends Controller
             return back()->withErrors(['deadline' => '期限は開始日以降にしてください。'])->withInput();
         }
 
-        $before = $plan->only(['title', 'description', 'category', 'priority', 'start_date', 'deadline', 'is_public']);
+        $before = $plan->only(['title', 'description', 'category', 'priority', 'priority_mode', 'start_date', 'deadline', 'is_public']);
 
         $plan->update([
             'title' => $validated['title'],
             'description' => array_key_exists('description', $validated) ? $validated['description'] : $plan->description,
             'category' => array_key_exists('category', $validated) ? $validated['category'] : $plan->category,
             'priority' => $validated['priority'] ?? (int) ($plan->priority ?? 3),
+            'priority_mode' => $validated['priority_mode'] ?? ($plan->priority_mode ?: 'auto'),
             'visual_icon' => array_key_exists('visual_icon', $validated) ? $validated['visual_icon'] : $plan->visual_icon,
             'accent_key' => $validated['accent_key'] ?? $plan->accentKey(),
             'roadmap_world' => $validated['roadmap_world'] ?? $plan->roadmapWorld(),

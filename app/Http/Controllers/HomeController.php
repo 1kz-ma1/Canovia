@@ -35,6 +35,8 @@ class HomeController extends Controller
         $plans = $ownership->ownedPlans($request, [
             'tasks' => fn ($query) => $query->with(['prerequisite', 'resources', 'artifacts'])->orderBy('sort_order')->orderBy('id'),
             'resources',
+            'availabilityRules',
+            'availabilityOverrides',
             'workLogs' => fn ($query) => $query->with('task')->latest('worked_on')->latest('id'),
             'memberships',
         ]);
@@ -83,7 +85,8 @@ class HomeController extends Controller
                 [
                     'source' => 'dashboard_guidance',
                     'selection' => 'objective_priority',
-                    'plan_priority' => (int) ($primaryGuidance['plan']->priority ?? 3),
+                    'plan_priority' => (int) data_get($primaryGuidance, 'priority_evaluation.priority', 3),
+                    'plan_priority_mode' => (string) data_get($primaryGuidance, 'priority_evaluation.mode', 'auto'),
                     'task_priority' => (int) $primaryGuidance['task']->priority,
                     'priority_score' => $adaptive?->priorityScore,
                 ],

@@ -12,13 +12,14 @@ class DashboardGuidanceService
     public function __construct(
         private readonly RecommendationService $recommendationService,
         private readonly PlanToolService $toolService,
+        private readonly PlanPriorityService $priorityService,
     ) {}
 
     /**
      * Home-specific objective guidance.
      *
      * Selection is intentionally independent from behavioral personalization:
-     * Plan priority -> deadline -> Plan id, and inside a Plan
+     * effective Plan priority (Auto/Manual) -> deadline -> Plan id, and inside a Plan
      * Task priority -> doing first -> sort order -> Task id.
      *
      * RecommendationService is used only after selection to suggest a workable
@@ -60,11 +61,13 @@ class DashboardGuidanceService
                     'task' => $task,
                     'adaptive' => $adaptive,
                     'recommended_tool' => $recommendedTool,
+                    'priority_evaluation' => $this->priorityService->evaluate($plan),
                 ];
             })
             ->filter()
             ->sort(function (array $left, array $right) {
-                $priority = (int) ($left['plan']->priority ?? 3) <=> (int) ($right['plan']->priority ?? 3);
+                $priority = (int) data_get($left, 'priority_evaluation.priority', 3)
+                    <=> (int) data_get($right, 'priority_evaluation.priority', 3);
 
                 if ($priority !== 0) {
                     return $priority;
