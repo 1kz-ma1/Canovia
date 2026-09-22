@@ -21,6 +21,8 @@
       "license_note": "IPA公表過去問の利用上の留意点に従い、参考にした問題は出典を明記し、Canoviaオリジナル類題として再構成しています。",
       "content_kind": "derived_and_canovia_original",
       "focus_coverage": [
+        "MTU計算",
+        "DNSレコード",
         "ネットワーク",
         "DB",
         "データベース",
@@ -103,6 +105,150 @@
       "is_active": true
     },
     {
+      "external_key": "net-mtu-002",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "IPv4でMTUが1,500バイト、IPヘッダー20バイト、TCPヘッダー20バイトでオプションがない。IPフラグメントを避けるため、TCPのMSSとして設定する代表的な最大値はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "1,440バイト"
+            },
+            {
+              "id": "イ",
+              "label": "1,460バイト"
+            },
+            {
+              "id": "ウ",
+              "label": "1,480バイト"
+            },
+            {
+              "id": "エ",
+              "label": "1,500バイト"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "IPv4",
+          "TCP",
+          "MTU",
+          "MSS"
+        ],
+        "weakness_targets": [
+          "MTU計算",
+          "ネットワーク",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク",
+          "計算"
+        ],
+        "keywords": [
+          "フラグメンテーション",
+          "TCP MSS"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "MSSはTCPデータ部の最大長なので、MTUからIPヘッダー20バイトとTCPヘッダー20バイトを引き、1,460バイトです。",
+      "difficulty": 3,
+      "sort_order": 2,
+      "is_active": true
+    },
+    {
+      "external_key": "net-mtu-003",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "IPv4でMTUが1,500バイト、IPヘッダーが20バイトの経路に、データ部4,000バイトのIPパケットを送る。各フラグメントのデータ部は8バイト単位の制約を満たすものとして、必要なフラグメント数は幾つか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "2"
+            },
+            {
+              "id": "イ",
+              "label": "3"
+            },
+            {
+              "id": "ウ",
+              "label": "4"
+            },
+            {
+              "id": "エ",
+              "label": "5"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "IPv4",
+          "MTU",
+          "フラグメンテーション"
+        ],
+        "weakness_targets": [
+          "MTU計算",
+          "ネットワーク",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク",
+          "計算"
+        ],
+        "keywords": [
+          "フラグメント数"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "各フラグメントの最大データ部は1,480バイトで8の倍数です。4,000=1,480+1,480+1,040なので3個に分割されます。",
+      "difficulty": 4,
+      "sort_order": 3,
+      "is_active": true
+    },
+    {
       "external_key": "net-dns-002",
       "source_type": "canovia_original",
       "source_reference": null,
@@ -167,7 +313,145 @@
       },
       "explanation": "MXレコードは、そのドメイン宛てメールを配送するメールサーバを指定します。",
       "difficulty": 2,
-      "sort_order": 2,
+      "sort_order": 4,
+      "is_active": true
+    },
+    {
+      "external_key": "net-dns-003",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "DNSで、別名として定義したホスト名を正規のホスト名へ対応付けるために用いるレコードはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "A"
+            },
+            {
+              "id": "イ",
+              "label": "CNAME"
+            },
+            {
+              "id": "ウ",
+              "label": "MX"
+            },
+            {
+              "id": "エ",
+              "label": "PTR"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "DNS"
+        ],
+        "weakness_targets": [
+          "DNSレコード",
+          "ネットワーク"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク",
+          "計算"
+        ],
+        "keywords": [
+          "名前解決",
+          "別名"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "CNAMEレコードは別名（alias）を正規名へ対応付けます。",
+      "difficulty": 2,
+      "sort_order": 5,
+      "is_active": true
+    },
+    {
+      "external_key": "net-dns-004",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "DNSで、IPアドレスからホスト名を調べる逆引きに用いる代表的なレコードはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "A"
+            },
+            {
+              "id": "イ",
+              "label": "CNAME"
+            },
+            {
+              "id": "ウ",
+              "label": "MX"
+            },
+            {
+              "id": "エ",
+              "label": "PTR"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "DNS"
+        ],
+        "weakness_targets": [
+          "DNSレコード",
+          "ネットワーク"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク",
+          "計算"
+        ],
+        "keywords": [
+          "逆引き",
+          "名前解決"
+        ],
+        "explanation_origin": "canovia_original"
+      },
+      "explanation": "PTRレコードは逆引きゾーンでIPアドレスに対応するホスト名を示します。",
+      "difficulty": 2,
+      "sort_order": 6,
       "is_active": true
     },
     {
@@ -235,7 +519,7 @@
       },
       "explanation": "NAPTはIPアドレスに加えてポート番号も変換し、多数の内部端末でグローバルIPアドレスを共有できます。",
       "difficulty": 2,
-      "sort_order": 3,
+      "sort_order": 7,
       "is_active": true
     },
     {
@@ -304,7 +588,7 @@
       },
       "explanation": "CIDRはプレフィックス長でネットワーク部を表し、クラスに依存しないアドレス割当てを可能にします。",
       "difficulty": 2,
-      "sort_order": 4,
+      "sort_order": 8,
       "is_active": true
     },
     {
@@ -373,7 +657,7 @@
       },
       "explanation": "TCPは順序制御・再送制御のためシーケンス番号を持ちます。ポート番号とチェックサムはUDPにもあります。",
       "difficulty": 2,
-      "sort_order": 5,
+      "sort_order": 9,
       "is_active": true
     },
     {
@@ -442,7 +726,7 @@
       },
       "explanation": "リバースプロキシは外部から公開Webサービスへの要求を受け、背後のWebサーバへ中継します。",
       "difficulty": 2,
-      "sort_order": 6,
+      "sort_order": 10,
       "is_active": true
     },
     {
@@ -511,7 +795,7 @@
       },
       "explanation": "スパニングツリープロトコルは冗長経路の一部を論理的にブロックし、レイヤ2ループを防ぎます。",
       "difficulty": 2,
-      "sort_order": 7,
+      "sort_order": 11,
       "is_active": true
     },
     {
@@ -582,7 +866,7 @@
       },
       "explanation": "1パケットは12,000ビット。誤り率10^-6なので1パケット当たりの期待誤りは約0.012、10,000パケットでは約120です。",
       "difficulty": 4,
-      "sort_order": 8,
+      "sort_order": 12,
       "is_active": true
     },
     {
@@ -651,7 +935,7 @@
       },
       "explanation": "ビューでは列の別名を定義できます。行の絞込みや集合演算も可能で、更新可能性はビュー定義やDBMSの条件に依存します。",
       "difficulty": 3,
-      "sort_order": 9,
+      "sort_order": 13,
       "is_active": true
     },
     {
@@ -720,7 +1004,7 @@
       },
       "explanation": "MVCCは複数バージョンを利用して、読取り処理が更新処理を待つ場面を減らします。",
       "difficulty": 2,
-      "sort_order": 10,
+      "sort_order": 14,
       "is_active": true
     },
     {
@@ -789,7 +1073,7 @@
       },
       "explanation": "ハッシュインデックスは等価検索に強く、範囲検索や前方一致検索には一般にB+木が適しています。",
       "difficulty": 3,
-      "sort_order": 11,
+      "sort_order": 15,
       "is_active": true
     },
     {
@@ -859,7 +1143,7 @@
       },
       "explanation": "結果整合性では、更新直後に一時的な不一致を許容しつつ、最終的には各ノードの状態が収束します。",
       "difficulty": 3,
-      "sort_order": 12,
+      "sort_order": 16,
       "is_active": true
     },
     {
@@ -928,7 +1212,7 @@
       },
       "explanation": "商品番号→商品名という関数従属性を商品表へ分離することで、商品名の重複と更新不整合を抑えられます。",
       "difficulty": 3,
-      "sort_order": 13,
+      "sort_order": 17,
       "is_active": true
     },
     {
@@ -997,7 +1281,7 @@
       },
       "explanation": "未コミットの値を読み取る現象はダーティリードです。分離レベルを上げることで防止できます。",
       "difficulty": 2,
-      "sort_order": 14,
+      "sort_order": 18,
       "is_active": true
     },
     {
@@ -1066,7 +1350,7 @@
       },
       "explanation": "ρT/(1−ρ)≧Tより、ρ/(1−ρ)≧1、したがってρ≧0.5です。",
       "difficulty": 4,
-      "sort_order": 15,
+      "sort_order": 19,
       "is_active": true
     },
     {
@@ -1137,7 +1421,7 @@
       },
       "explanation": "定常可用性は、平均稼働時間を1サイクルの平均時間で割った MTBF/(MTBF+MTTR) です。",
       "difficulty": 3,
-      "sort_order": 16,
+      "sort_order": 20,
       "is_active": true
     },
     {
@@ -1206,7 +1490,7 @@
       },
       "explanation": "A(0-2)→C(2-5)→E(5-6)→D(6-8)→B(8-12)となり、Bは到着1秒から完了12秒までなので11秒です。",
       "difficulty": 4,
-      "sort_order": 17,
+      "sort_order": 21,
       "is_active": true
     },
     {
@@ -1274,7 +1558,7 @@
       },
       "explanation": "最高周波数20kHzの2倍以上、40kHz以上で標本化する必要があります。周期は1/40kHz=25μs以下です。",
       "difficulty": 3,
-      "sort_order": 18,
+      "sort_order": 22,
       "is_active": true
     },
     {
@@ -1342,7 +1626,7 @@
       },
       "explanation": "LRUは最も長く参照されていないブロックを置換します。最終参照が最も古いC2が対象です。",
       "difficulty": 3,
-      "sort_order": 19,
+      "sort_order": 23,
       "is_active": true
     },
     {
@@ -1410,7 +1694,7 @@
       },
       "explanation": "共有資源の排他制御にはセマフォやミューテックスを用います。",
       "difficulty": 2,
-      "sort_order": 20,
+      "sort_order": 24,
       "is_active": true
     },
     {
@@ -1478,7 +1762,7 @@
       },
       "explanation": "全タスクで資源獲得順序を統一すると循環待ちを防げるため、デッドロックの成立条件を崩せます。",
       "difficulty": 3,
-      "sort_order": 21,
+      "sort_order": 25,
       "is_active": true
     },
     {
@@ -1548,7 +1832,7 @@
       },
       "explanation": "元は8,000コア。総コア数4倍で32,000コア、1ノード16コアなので2,000ノード。1コア20GFLOPSなので640TFLOPSです。",
       "difficulty": 4,
-      "sort_order": 22,
+      "sort_order": 26,
       "is_active": true
     },
     {
@@ -1615,7 +1899,7 @@
       },
       "explanation": "DKIMは送信ドメイン側がメールへ署名し、DNSで公開される公開鍵を使って受信側が署名を検証します。",
       "difficulty": 2,
-      "sort_order": 23,
+      "sort_order": 27,
       "is_active": true
     },
     {
@@ -1682,7 +1966,7 @@
       },
       "explanation": "サイドチャネル攻撃は、暗号アルゴリズムそのものではなく、実装時に漏れる消費電力や時間などの情報を利用します。",
       "difficulty": 3,
-      "sort_order": 24,
+      "sort_order": 28,
       "is_active": true
     }
   ]
