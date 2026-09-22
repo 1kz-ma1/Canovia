@@ -10,7 +10,7 @@ class PlanPriorityService
     public function __construct(private readonly PlanProgressService $progressService) {}
 
     /**
-     * @return array{priority:int,auto_priority:int,score:float,mode:string,reasons:array<int,string>}
+     * @return array{priority:int,auto_priority:int,score:float,mode:string,reasons:array<int,string>,auto_reasons:array<int,string>}
      */
     public function evaluate(Plan $plan): array
     {
@@ -26,6 +26,7 @@ class PlanPriorityService
                 'score' => $auto['score'],
                 'mode' => 'manual',
                 'reasons' => ['ユーザーが優先度を手動固定しています'],
+                'auto_reasons' => $auto['reasons'],
             ];
         }
 
@@ -33,6 +34,7 @@ class PlanPriorityService
             ...$auto,
             'auto_priority' => $auto['priority'],
             'mode' => 'auto',
+            'auto_reasons' => $auto['reasons'],
         ];
     }
 
