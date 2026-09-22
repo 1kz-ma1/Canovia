@@ -83,7 +83,8 @@ class HomeController extends Controller
                 [
                     'source' => 'dashboard_guidance',
                     'selection' => 'objective_priority',
-                    'plan_priority' => (int) ($primaryGuidance['plan']->priority ?? 3),
+                    'plan_priority' => (int) data_get($primaryGuidance, 'priority_evaluation.priority', 3),
+                    'plan_priority_mode' => (string) data_get($primaryGuidance, 'priority_evaluation.mode', 'auto'),
                     'task_priority' => (int) $primaryGuidance['task']->priority,
                     'priority_score' => $adaptive?->priorityScore,
                 ],
