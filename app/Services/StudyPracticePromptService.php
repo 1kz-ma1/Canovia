@@ -68,9 +68,16 @@ task_id: {$task->id}
 JSONのキーと文字列を囲む引用符には半角ダブルクォート（"）を使い、文字列内で"を使う場合は\\\"としてエスケープしてください。
 末尾カンマ、コメント、スマートクォート（“ ”）は使わないでください。
 flow、plan_id、task_idは下記から変更しないでください。
-typeは single_choice / multiple_choice / text / number のいずれかです。
-single_choice / multiple_choice では choices を2〜6件付け、各choiceにidとlabelを付けてください。
-text / number では choices は空配列にしてください。
+各questionにはresponse_fieldsを1〜4件付けてください。AIは問題に必要な回答欄を自由に組み合わせられます。
+response_fields.typeは single_choice / multiple_choice / number / short_text / textarea のいずれかです。
+- single_choice / multiple_choice: choicesを2〜6件付ける
+- number: 数値回答
+- short_text: 短い記述回答
+- textarea: 記述問題・説明・計算過程・思考過程など長めの入力
+各fieldには英数字・_・-だけの重複しないid、分かりやすいlabel、requiredを付けてください。
+選択式問題でも、学習効果が高い場合はanswerの選択欄に加えてreasoning用textareaを組み合わせて構いません。
+ただし全問に思考過程を強制せず、誤解や判断過程の分析に価値がある問題で使ってください。
+旧type / choices形式もCanoviaは互換読込できますが、新しく生成するJSONではresponse_fieldsを使ってください。
 
 {
   "schema_version": "1.0",
@@ -85,11 +92,24 @@ text / number では choices は空配列にしてください。
   "questions": [
     {
       "id": "q1",
-      "type": "single_choice",
-      "prompt": "問題文",
-      "choices": [
-        {"id": "A", "label": "選択肢A"},
-        {"id": "B", "label": "選択肢B"}
+      "prompt": "最も適切なものを選び、判断理由も説明してください。",
+      "response_fields": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {"id": "A", "label": "選択肢A"},
+            {"id": "B", "label": "選択肢B"}
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false
+        }
       ]
     }
   ]
@@ -127,6 +147,11 @@ task_id: {$task->id}
 
 【評価方針】
 - 各回答を問題文の条件に照らして評価する
+- response_fieldsにreasoning・計算過程・説明が含まれる場合は、最終回答とは分けて思考過程も評価する
+- question_feedbackには各questionごとの評価を入れ、question_idは出題内容のIDを変更せず使う
+- correctnessは correct / partial / incorrect / ungraded のいずれか
+- feedbackはその問題への簡潔なフィードバック、reasoning_feedbackは思考過程がある場合だけ具体的に書く
+- misconceptionsには誤解している概念を短い文字列で入れる
 - score_percentは0〜100の整数
 - strengths / weaknesses は具体的な知識・思考内容を書く
 - recommended_task_progress_percentは、今回の結果だけでなく現在進捗も踏まえた0〜100の整数
@@ -146,6 +171,15 @@ JSONのキーと文字列を囲む引用符には半角ダブルクォート（"
   "target_plan": {"id": {$plan->id}},
   "target_task": {"id": {$task->id}},
   "score_percent": 0,
+  "question_feedback": [
+    {
+      "question_id": "q1",
+      "correctness": "correct",
+      "feedback": "回答へのフィードバック",
+      "reasoning_feedback": "思考過程へのフィードバック。なければ空文字",
+      "misconceptions": []
+    }
+  ],
   "strengths": ["理解できている点"],
   "weaknesses": ["補強すべき点"],
   "recommended_task_progress_percent": {$task->progress_percent},
