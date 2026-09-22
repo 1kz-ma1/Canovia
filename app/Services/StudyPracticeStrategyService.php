@@ -16,28 +16,46 @@ class StudyPracticeStrategyService
     {
         $recentAttempts = $recentAttempts->take(5)->values();
 
-        $weaknesses = $recentAttempts
-            ->flatMap(fn ($attempt) => collect($attempt->weaknesses ?? []))
+        $latest = $recentAttempts->first();
+        $latestScore = $latest ? (int) $latest->score_percent : null;
+
+        $latestWeaknesses = collect($latest?->weaknesses ?? [])
             ->filter(fn ($item) => is_string($item) && trim($item) !== '')
             ->map(fn ($item) => trim($item));
 
-        $misconceptions = $recentAttempts
-            ->flatMap(fn ($attempt) => collect(data_get($attempt->assessment, 'question_feedback', [])))
+        $latestMisconceptions = collect(data_get($latest?->assessment, 'question_feedback', []))
             ->flatMap(fn ($feedback) => collect(is_array($feedback) ? ($feedback['misconceptions'] ?? []) : []))
             ->filter(fn ($item) => is_string($item) && trim($item) !== '')
             ->map(fn ($item) => trim($item));
 
-        $focusTopics = $weaknesses
-            ->merge($misconceptions)
+        $historicalSignals = $recentAttempts
+            ->flatMap(function ($attempt) {
+                $weaknesses = collect($attempt->weaknesses ?? []);
+                $misconceptions = collect(data_get($attempt->assessment, 'question_feedback', []))
+                    ->flatMap(fn ($feedback) => collect(is_array($feedback) ? ($feedback['misconceptions'] ?? []) : []));
+
+                return $weaknesses->merge($misconceptions);
+            })
+            ->filter(fn ($item) => is_string($item) && trim($item) !== '')
+            ->map(fn ($item) => trim($item));
+
+        $repeatedSignals = $historicalSignals
             ->countBy()
+            ->filter(fn ($count) => $count >= 2)
             ->sortDesc()
-            ->keys()
+            ->keys();
+
+        // A weakness stays in focus when it is still present in the latest
+        // attempt, or when it repeatedly appears across recent attempts.
+        // One old mistake should not permanently lock the learner into
+        // weakness_reinforcement after it has been resolved.
+        $focusTopics = $latestWeaknesses
+            ->merge($latestMisconceptions)
+            ->merge($repeatedSignals)
+            ->unique()
             ->take(5)
             ->values()
             ->all();
-
-        $latest = $recentAttempts->first();
-        $latestScore = $latest ? (int) $latest->score_percent : null;
 
         if ($recentAttempts->isEmpty()) {
             $key = 'baseline_assessment';
