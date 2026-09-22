@@ -6,6 +6,8 @@ use App\Models\Plan;
 
 class PlanPriorityService
 {
+    public function __construct(private readonly PlanProgressService $progressService) {}
+
     /**
      * @return array{priority:int,auto_priority:int,score:float,mode:string,reasons:array<int,string>}
      */
@@ -42,7 +44,7 @@ class PlanPriorityService
     private function autoEvaluation(Plan $plan): array
     {
         $plan->loadMissing(['tasks', 'workLogs', 'availabilityRules', 'availabilityOverrides']);
-        $progress = app(PlanProgressService::class)->calculate($plan);
+        $progress = $this->progressService->calculate($plan);
 
         $score = 0.0;
         $reasons = [];
