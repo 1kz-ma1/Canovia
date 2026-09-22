@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class StudyPracticeAttempt extends Model
 {
     protected $fillable = [
+        'study_practice_session_id',
         'plan_id',
         'task_id',
         'user_id',
@@ -41,6 +42,11 @@ class StudyPracticeAttempt extends Model
             'progress_after_percent' => 'integer',
             'applied_at' => 'datetime',
         ];
+    }
+
+    public function practiceSession()
+    {
+        return $this->belongsTo(StudyPracticeSession::class, 'study_practice_session_id');
     }
 
     public function plan()
