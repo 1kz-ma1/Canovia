@@ -129,6 +129,18 @@ class AdminQuestionPackController extends Controller
 
         $status = (string) $validated['status'];
 
+        if ($questionPack->status === 'published' && ! in_array($status, ['published', 'retired'], true)) {
+            throw ValidationException::withMessages([
+                'status' => '公開済みPackはDraft/Reviewへ戻せません。修正版は新しいslug/versionで作成してください。',
+            ]);
+        }
+
+        if ($questionPack->status === 'retired' && $status !== 'retired') {
+            throw ValidationException::withMessages([
+                'status' => 'retired Packは再公開できません。新しいversionを作成してください。',
+            ]);
+        }
+
         if ($status === 'published') {
             $activeCount = $questionPack->questions()->where('is_active', true)->count();
             if ($activeCount === 0) {
