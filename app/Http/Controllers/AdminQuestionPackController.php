@@ -115,7 +115,7 @@ class AdminQuestionPackController extends Controller
             ->route('admin.question_packs.index')
             ->with(
                 'status',
-                "{$result['pack']->title} を取り込みました。新規 {$result['created']}問 / 更新 {$result['updated']}問 / 無効化 {$result['deactivated']}問です."
+                "{$result['pack']->title} を取り込みました。新規 {$result['created']}問 / 更新 {$result['updated']}問 / 無効化 {$result['deactivated']}問です。"
             );
     }
 
