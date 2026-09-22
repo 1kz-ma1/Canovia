@@ -270,11 +270,11 @@ class QuestionPackImportService
 
                     if (
                         $choiceId === ''
-                        || preg_match('/^[A-Za-z0-9_-]{1,20}$/', $choiceId) !== 1
+                        || preg_match('/^[\p{L}\p{N}_-]{1,20}$/u', $choiceId) !== 1
                         || isset($choiceIds[$choiceId])
                         || $choiceLabel === ''
                     ) {
-                        $this->fail('pack_json', 'choice.idは重複しない英数字等にし、labelも指定してください。');
+                        $this->fail('pack_json', 'choice.idは重複しない文字・数字・_・-にし、labelも指定してください。');
                     }
 
                     $choiceIds[$choiceId] = true;
