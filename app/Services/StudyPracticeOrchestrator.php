@@ -103,6 +103,7 @@ class StudyPracticeOrchestrator
             || (int) $session->task_id !== (int) $task->id
             || ($userId !== null && (int) $session->user_id !== $userId)
             || ($userId === null && (string) $session->actor_token !== (string) $actorToken)
+            || ($providerKey !== null && (string) $session->question_provider !== $providerKey)
         ) {
             throw new RuntimeException('この演習準備リクエストは別の対象で使用済みです。');
         }
