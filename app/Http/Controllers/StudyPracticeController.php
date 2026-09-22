@@ -104,15 +104,21 @@ class StudyPracticeController extends Controller
         $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
         $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
 
-        $practiceSession = $orchestrator->prepare(
-            $plan,
-            $task,
-            $recentAttempts,
-            $request->user()?->id,
-            $request->user() ? null : $actorToken,
-            (string) $validated['prepare_request_id'],
-            'question_bank',
-        );
+        try {
+            $practiceSession = $orchestrator->prepare(
+                $plan,
+                $task,
+                $recentAttempts,
+                $request->user()?->id,
+                $request->user() ? null : $actorToken,
+                (string) $validated['prepare_request_id'],
+                'question_bank',
+            );
+        } catch (\RuntimeException $exception) {
+            throw ValidationException::withMessages([
+                'prepare_request_id' => $exception->getMessage(),
+            ]);
+        }
 
         if ($practiceSession->question_provider_mode !== 'direct') {
             throw ValidationException::withMessages([
