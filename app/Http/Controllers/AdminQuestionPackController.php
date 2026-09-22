@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\QuestionPack;
 use App\Services\AdminAccessService;
 use App\Services\AiJsonInputNormalizer;
+use App\Services\QuestionPackCatalogService;
 use App\Services\QuestionPackImportService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,7 +16,7 @@ class AdminQuestionPackController extends Controller
 {
     public function __construct(private readonly AdminAccessService $access) {}
 
-    public function index(Request $request)
+    public function index(Request $request, QuestionPackCatalogService $catalog)
     {
         $this->ensureAuthorized($request);
 
@@ -76,6 +77,7 @@ class AdminQuestionPackController extends Controller
 
         return view('admin.question_packs.index', [
             'packs' => $packs,
+            'bundledPacks' => $catalog->all(),
             'importTemplate' => json_encode(
                 $template,
                 JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT,
@@ -116,6 +118,28 @@ class AdminQuestionPackController extends Controller
             ->with(
                 'status',
                 "{$result['pack']->title} を取り込みました。新規 {$result['created']}問 / 更新 {$result['updated']}問 / 無効化 {$result['deactivated']}問です。"
+            );
+    }
+
+    public function importBundled(
+        Request $request,
+        QuestionPackCatalogService $catalog,
+        QuestionPackImportService $importer,
+    ) {
+        $this->ensureAuthorized($request);
+
+        $validated = $request->validate([
+            'catalog_key' => ['required', 'string', 'max:240'],
+        ]);
+
+        $payload = $catalog->payload((string) $validated['catalog_key']);
+        $result = $importer->import($payload);
+
+        return redirect()
+            ->route('admin.question_packs.index')
+            ->with(
+                'status',
+                "{$result['pack']->title} をBundled PackからDraftへ取り込みました。新規 {$result['created']}問 / 更新 {$result['updated']}問 / 無効化 {$result['deactivated']}問です。"
             );
     }
 
