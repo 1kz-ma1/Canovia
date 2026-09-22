@@ -131,6 +131,7 @@ class DashboardGuidanceV395Test extends TestCase
             'title' => $title,
             'category' => $category,
             'priority' => $priority,
+            'priority_mode' => 'manual',
             'start_date' => today(),
             'deadline' => today()->addDays($deadlineDays),
             'is_public' => false,
