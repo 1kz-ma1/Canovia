@@ -154,16 +154,15 @@ class QuestionBankCoverageService
     private function packMatchScore(QuestionPack $pack, string $normalizedContext): int
     {
         $metadata = collect($pack->metadata ?? []);
-        $terms = collect($metadata->get('match_terms', []))
+        $identityTerms = collect($metadata->get('match_terms', []))
             ->push($pack->exam_code)
-            ->push($pack->subject)
             ->filter(fn ($item) => is_string($item) && trim($item) !== '')
             ->map(fn ($item) => trim((string) $item))
             ->unique();
 
         $score = 0;
 
-        foreach ($terms as $term) {
+        foreach ($identityTerms as $term) {
             $normalizedTerm = $this->normalize($term);
             if ($normalizedTerm === '') {
                 continue;
@@ -186,6 +185,17 @@ class QuestionBankCoverageService
             if (str_contains($normalizedContext, $normalizedTerm)) {
                 $score += 2;
             }
+        }
+
+        // Qualification identity must match first. A generic subject such as
+        // "科目A" must never make an AP pack eligible for another exam.
+        if ($score === 0) {
+            return 0;
+        }
+
+        $subject = $this->normalize((string) ($pack->subject ?? ''));
+        if ($subject !== '' && str_contains($normalizedContext, $subject)) {
+            $score++;
         }
 
         return $score;
