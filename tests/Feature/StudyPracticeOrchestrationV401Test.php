@@ -164,6 +164,53 @@ class StudyPracticeOrchestrationV401Test extends TestCase
             ->assertSee('Canoviaが決めた今回の演習方針');
     }
 
+    public function test_resolved_one_off_weakness_does_not_permanently_lock_strategy(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+
+        StudyPracticeAttempt::create([
+            'plan_id' => $plan->id,
+            'task_id' => $task->id,
+            'user_id' => $user->id,
+            'request_hash' => hash('sha256', 'v401-old-weakness'),
+            'exercise_title' => '古い演習',
+            'questions' => [['id' => 'q1']],
+            'answers' => [['question_id' => 'q1', 'answer' => 'A']],
+            'assessment' => ['question_feedback' => []],
+            'score_percent' => 60,
+            'strengths' => [],
+            'weaknesses' => ['MTU計算'],
+            'recommended_task_progress_percent' => 40,
+            'evidence_summary' => '以前の弱点。',
+            'next_action' => '復習する',
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        StudyPracticeAttempt::create([
+            'plan_id' => $plan->id,
+            'task_id' => $task->id,
+            'user_id' => $user->id,
+            'request_hash' => hash('sha256', 'v401-resolved-weakness'),
+            'exercise_title' => '最新演習',
+            'questions' => [['id' => 'q1']],
+            'answers' => [['question_id' => 'q1', 'answer' => 'A']],
+            'assessment' => ['question_feedback' => []],
+            'score_percent' => 92,
+            'strengths' => ['MTU計算'],
+            'weaknesses' => [],
+            'recommended_task_progress_percent' => 85,
+            'evidence_summary' => '弱点を克服。',
+            'next_action' => '応用問題へ進む',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('plans.tasks.study_practice.show', [$plan, $task]))
+            ->assertOk()
+            ->assertSee('定着・応用確認')
+            ->assertDontSee('弱点補強');
+    }
+
     public function test_reset_marks_incomplete_practice_session_as_abandoned(): void
     {
         [$user, $plan, $task] = $this->studyPlan();
