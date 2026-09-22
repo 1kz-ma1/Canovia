@@ -123,30 +123,50 @@
                             <legend class="px-1 text-sm font-black text-slate-100">Q{{ $index + 1 }}</legend>
                             <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-200">{{ $question['prompt'] }}</p>
 
-                            @if ($question['type'] === 'single_choice')
-                                <div class="mt-3 grid gap-2">
-                                    @foreach ($question['choices'] as $choice)
-                                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
-                                            <input type="radio" name="answers[{{ $question['id'] }}]" value="{{ $choice['id'] }}" class="mt-1">
-                                            <span><strong class="text-slate-100">{{ $choice['id'] }}</strong> {{ $choice['label'] }}</span>
+                            <div class="mt-4 space-y-4">
+                                @foreach (($question['response_fields'] ?? []) as $field)
+                                    @php
+                                        $fieldName = 'answers['.$question['id'].']['.$field['id'].']';
+                                        $fieldError = 'answers.'.$question['id'].'.'.$field['id'];
+                                    @endphp
+                                    <div class="rounded-xl border border-slate-800/80 bg-slate-950/30 p-3">
+                                        <label class="text-xs font-bold text-slate-300">
+                                            {{ $field['label'] }}
+                                            <span class="ml-1 text-[10px] {{ ($field['required'] ?? true) ? 'text-cyan-300' : 'text-slate-600' }}">
+                                                {{ ($field['required'] ?? true) ? '必須' : '任意' }}
+                                            </span>
                                         </label>
-                                    @endforeach
-                                </div>
-                            @elseif ($question['type'] === 'multiple_choice')
-                                <div class="mt-3 grid gap-2">
-                                    @foreach ($question['choices'] as $choice)
-                                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
-                                            <input type="checkbox" name="answers[{{ $question['id'] }}][]" value="{{ $choice['id'] }}" class="mt-1">
-                                            <span><strong class="text-slate-100">{{ $choice['id'] }}</strong> {{ $choice['label'] }}</span>
-                                        </label>
-                                    @endforeach
-                                </div>
-                            @elseif ($question['type'] === 'number')
-                                <input type="number" step="any" name="answers[{{ $question['id'] }}]" class="form-control mt-3" placeholder="数値を入力">
-                            @else
-                                <textarea name="answers[{{ $question['id'] }}]" class="form-control mt-3 min-h-28" placeholder="回答を入力"></textarea>
-                            @endif
-                            @error('answers.'.$question['id'])<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
+
+                                        @if ($field['type'] === 'single_choice')
+                                            <div class="mt-2 grid gap-2">
+                                                @foreach ($field['choices'] as $choice)
+                                                    <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
+                                                        <input type="radio" name="{{ $fieldName }}" value="{{ $choice['id'] }}" class="mt-1">
+                                                        <span><strong class="text-slate-100">{{ $choice['id'] }}</strong> {{ $choice['label'] }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        @elseif ($field['type'] === 'multiple_choice')
+                                            <div class="mt-2 grid gap-2">
+                                                @foreach ($field['choices'] as $choice)
+                                                    <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
+                                                        <input type="checkbox" name="{{ $fieldName }}[]" value="{{ $choice['id'] }}" class="mt-1">
+                                                        <span><strong class="text-slate-100">{{ $choice['id'] }}</strong> {{ $choice['label'] }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        @elseif ($field['type'] === 'number')
+                                            <input type="number" step="any" name="{{ $fieldName }}" class="form-control mt-2" placeholder="{{ $field['placeholder'] ?: '数値を入力' }}">
+                                        @elseif ($field['type'] === 'short_text')
+                                            <input type="text" name="{{ $fieldName }}" class="form-control mt-2" placeholder="{{ $field['placeholder'] ?: '短く回答' }}">
+                                        @else
+                                            <textarea name="{{ $fieldName }}" class="form-control mt-2 min-h-28" placeholder="{{ $field['placeholder'] ?: '回答・考え方を入力' }}"></textarea>
+                                        @endif
+
+                                        @error($fieldError)<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
+                                    </div>
+                                @endforeach
+                            </div>
                         </fieldset>
                     @endforeach
                     <button type="submit" class="btn-primary">回答をまとめて評価へ進む</button>
@@ -206,6 +226,46 @@
                         <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['weaknesses'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
                     </div>
                 </div>
+                @if (collect($assessment['question_feedback'] ?? [])->isNotEmpty())
+                    <div class="mt-5 space-y-3">
+                        <h3 class="text-sm font-black text-slate-100">問題ごとのフィードバック</h3>
+                        @foreach ($assessment['question_feedback'] as $feedback)
+                            @php
+                                $correctnessLabel = match ($feedback['correctness'] ?? 'ungraded') {
+                                    'correct' => '正解',
+                                    'partial' => '一部正解',
+                                    'incorrect' => '要復習',
+                                    default => '評価対象外',
+                                };
+                                $correctnessClass = match ($feedback['correctness'] ?? 'ungraded') {
+                                    'correct' => 'badge-green',
+                                    'partial' => 'badge-slate',
+                                    'incorrect' => 'badge-amber',
+                                    default => 'badge-slate',
+                                };
+                            @endphp
+                            <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <strong class="text-sm text-slate-100">{{ $feedback['question_id'] }}</strong>
+                                    <span class="badge {{ $correctnessClass }}">{{ $correctnessLabel }}</span>
+                                </div>
+                                @if ($feedback['feedback'])
+                                    <p class="mt-2 text-sm leading-6 text-slate-300">{{ $feedback['feedback'] }}</p>
+                                @endif
+                                @if ($feedback['reasoning_feedback'])
+                                    <div class="mt-2 rounded-xl border border-violet-300/15 bg-violet-300/[0.04] p-3">
+                                        <p class="text-[11px] font-bold text-violet-200">思考過程フィードバック</p>
+                                        <p class="mt-1 text-xs leading-5 text-slate-300">{{ $feedback['reasoning_feedback'] }}</p>
+                                    </div>
+                                @endif
+                                @if (collect($feedback['misconceptions'] ?? [])->isNotEmpty())
+                                    <p class="mt-2 text-xs leading-5 text-amber-100">誤解ポイント：{{ collect($feedback['misconceptions'])->implode(' / ') }}</p>
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+                @endif
+
                 @if ($assessment['evidence_summary'])
                     <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-4"><p class="text-xs font-bold text-slate-500">評価根拠</p><p class="mt-1 text-sm leading-6 text-slate-300">{{ $assessment['evidence_summary'] }}</p></div>
                 @endif
