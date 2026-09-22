@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class QuestionPack extends Model
 {
+    public const STATUSES = ['draft', 'review', 'published', 'retired'];
     protected $fillable = [
         'slug', 'title', 'exam_code', 'subject', 'version', 'status',
         'downloadable', 'metadata',
