@@ -162,6 +162,37 @@ class StudyPracticeLearningLoopV393Test extends TestCase
         $this->assertStringContainsString('過去のAI演習でweaknessesがある場合', $prompt);
         $this->assertStringContainsString('返答直前にJSONとして構文解析できることを確認してください', $prompt);
         $this->assertStringContainsString('スマートクォート（“ ”）は使わないでください', $prompt);
+        $this->assertStringContainsString('response_fields', $prompt);
+        $this->assertStringContainsString('reasoning用textarea', $prompt);
+
+        $evaluationPrompt = app(StudyPracticePromptService::class)->evaluationPrompt(
+            $plan,
+            $task,
+            [[
+                'id' => 'q1',
+                'prompt' => '確認',
+                'response_fields' => [[
+                    'id' => 'reasoning',
+                    'type' => 'textarea',
+                    'label' => '考え方',
+                    'required' => true,
+                    'choices' => [],
+                ]],
+            ]],
+            [[
+                'question_id' => 'q1',
+                'fields' => [[
+                    'field_id' => 'reasoning',
+                    'type' => 'textarea',
+                    'label' => '考え方',
+                    'value' => '判断理由',
+                ]],
+            ]],
+        );
+
+        $this->assertStringContainsString('question_feedback', $evaluationPrompt);
+        $this->assertStringContainsString('reasoning_feedback', $evaluationPrompt);
+        $this->assertStringContainsString('misconceptions', $evaluationPrompt);
     }
 
     private function answeredSession(Plan $plan, Task $task): array
