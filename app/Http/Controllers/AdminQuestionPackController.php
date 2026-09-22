@@ -142,10 +142,34 @@ class AdminQuestionPackController extends Controller
         }
 
         if ($status === 'published') {
-            $activeCount = $questionPack->questions()->where('is_active', true)->count();
-            if ($activeCount === 0) {
+            $activeQuestions = $questionPack->questions()->where('is_active', true)->get();
+            if ($activeQuestions->isEmpty()) {
                 throw ValidationException::withMessages([
                     'status' => '公開するには有効な問題が1問以上必要です。',
+                ]);
+            }
+
+            $missingGradingRule = $activeQuestions->first(
+                fn ($question) => ! is_array($question->grading_rule)
+                    || trim((string) ($question->grading_rule['type'] ?? '')) === ''
+            );
+            if ($missingGradingRule) {
+                throw ValidationException::withMessages([
+                    'status' => '公開する全問題にgrading_ruleが必要です。記述問題はai_rubricを設定してください。',
+                ]);
+            }
+
+            $missingLearningMetadata = $activeQuestions->first(function ($question) {
+                $metadata = collect($question->learning_metadata ?? []);
+
+                return collect(['concepts', 'weakness_targets', 'tags', 'keywords'])
+                    ->flatMap(fn ($key) => collect($metadata->get($key, [])))
+                    ->filter(fn ($item) => is_string($item) && trim($item) !== '')
+                    ->isEmpty();
+            });
+            if ($missingLearningMetadata) {
+                throw ValidationException::withMessages([
+                    'status' => '公開する全問題にconcepts・weakness_targets・tags・keywordsのいずれかを設定してください。',
                 ]);
             }
 
