@@ -38,8 +38,9 @@ class StudyPracticeOrchestrator
 
         return [
             'strategy' => $strategy,
-            'provider' => $this->providerRouter->questionProvider($plan, $task, $strategy)
-            ->prepare($plan, $task, $recentAttempts, $strategy),
+            'provider' => $this->providerRouter
+                ->questionProvider($plan, $task, $strategy)
+                ->prepare($plan, $task, $recentAttempts, $strategy),
         ];
     }
 
@@ -56,9 +57,8 @@ class StudyPracticeOrchestrator
     ): StudyPracticeSession {
         $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
 
-        // V40.1 fallback provider. Future versions insert Question Bank / embedded
-        // AI selection ahead of this provider without changing the user entry flow.
-        $prepared = $this->externalAiProvider->prepare($plan, $task, $recentAttempts, $strategy);
+        $provider = $this->providerRouter->questionProvider($plan, $task, $strategy);
+        $prepared = $provider->prepare($plan, $task, $recentAttempts, $strategy);
 
         $session = StudyPracticeSession::query()->createOrFirst(
             ['prepare_request_id' => $prepareRequestId],
