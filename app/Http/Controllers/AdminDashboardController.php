@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BehaviorEventType;
 use App\Models\BehaviorEvent;
 use App\Models\Feedback;
+use App\Models\QuestionPack;
 use App\Services\AdminAccessService;
 use Illuminate\Http\Request;
 
@@ -43,11 +44,16 @@ class AdminDashboardController extends Controller
             ->where('occurred_at', '>=', $since)
             ->count();
 
+        $questionPackCount = QuestionPack::query()->count();
+        $publishedQuestionPackCount = QuestionPack::query()->where('status', 'published')->count();
+
         return view('admin.index', compact(
             'feedbackNew',
             'generationAttempts',
             'generationFailures',
             'updateFailures',
+            'questionPackCount',
+            'publishedQuestionPackCount',
         ));
     }
 }
