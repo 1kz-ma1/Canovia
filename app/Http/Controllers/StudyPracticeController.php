@@ -186,6 +186,14 @@ class StudyPracticeController extends Controller
                             ]);
                         }
                     }
+
+                    if ($type === 'number' && $value !== '' && ! is_numeric($value)) {
+                        throw ValidationException::withMessages([
+                            "answers.{$questionId}.{$fieldId}" => '数値で回答してください。',
+                        ]);
+                    }
+
+                    $value = mb_substr($value, 0, $type === 'textarea' ? 12000 : 3000);
                 }
 
                 $fields[] = [
@@ -495,6 +503,12 @@ class StudyPracticeController extends Controller
                 $fields[] = $this->normalizeResponseField($field, $fieldIndex, $seenFields);
             }
 
+            if (! collect($fields)->contains(fn ($field) => (bool) ($field['required'] ?? false))) {
+                throw ValidationException::withMessages([
+                    'questions_json' => '各questionには最低1つrequired=trueのresponse_fieldが必要です。',
+                ]);
+            }
+
             $seen[$id] = true;
             $first = $fields[0];
             $legacyType = match ($first['type']) {
@@ -531,7 +545,10 @@ class StudyPracticeController extends Controller
         $id = trim((string) ($raw['id'] ?? 'field'.($index + 1)));
         $type = trim((string) ($raw['type'] ?? ''));
         $label = trim((string) ($raw['label'] ?? '回答'));
-        $required = array_key_exists('required', $raw) ? (bool) $raw['required'] : true;
+        $requiredRaw = $raw['required'] ?? true;
+        $required = is_bool($requiredRaw)
+            ? $requiredRaw
+            : ! in_array(mb_strtolower(trim((string) $requiredRaw)), ['false', '0', 'no'], true);
 
         if ($id === '' || preg_match('/^[A-Za-z0-9_-]{1,64}$/', $id) !== 1 || isset($seenFields[$id])) {
             throw ValidationException::withMessages([
