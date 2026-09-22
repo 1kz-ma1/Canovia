@@ -181,7 +181,10 @@
                                 </div>
 
                                 <div class="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
-                                    <span>Plan優先度 {{ (int) ($guidancePlan->priority ?? 3) }}</span>
+                                    <span>
+                                        Plan優先度 {{ (int) data_get($guidance, 'priority_evaluation.priority', 3) }}
+                                        · {{ data_get($guidance, 'priority_evaluation.mode') === 'manual' ? '手動' : '自動' }}
+                                    </span>
                                     <span>Task優先度 {{ (int) $guidanceTask->priority }}</span>
                                     <span>{{ $guidanceTask->status === 'doing' ? '進行中' : '未着手' }}</span>
                                 </div>
