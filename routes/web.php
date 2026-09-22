@@ -22,6 +22,7 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\AdminFeedbackController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminTelemetryController;
+use App\Http\Controllers\AdminQuestionPackController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\RoadmapController;
 use App\Http\Controllers\TimelineController;
@@ -85,6 +86,9 @@ Route::get('/admin/feedback/login', fn () => redirect()->route('admin.login'))->
 Route::post('/admin/feedback/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.feedback.authenticate');
 Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
 Route::get('/admin/telemetry', [AdminTelemetryController::class, 'index'])->name('admin.telemetry.index');
+Route::get('/admin/question-packs', [AdminQuestionPackController::class, 'index'])->name('admin.question_packs.index');
+Route::post('/admin/question-packs/import', [AdminQuestionPackController::class, 'import'])->name('admin.question_packs.import');
+Route::patch('/admin/question-packs/{questionPack}/status', [AdminQuestionPackController::class, 'updateStatus'])->name('admin.question_packs.status');
 Route::patch('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('admin.feedback.status');
 Route::patch('/admin/feedback/{feedback}/archive', [AdminFeedbackController::class, 'archive'])->name('admin.feedback.archive');
 Route::patch('/admin/feedback/{feedback}/restore', [AdminFeedbackController::class, 'restore'])->name('admin.feedback.restore');
@@ -175,6 +179,7 @@ Route::delete('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::cla
 // Canovia Tools: 資格学習向けAI演習。外部AIとの受け渡しはJSONで行い、
 // Canovia側は問題UI・回答・評価プレビューを担当する。
 Route::get('/plans/{plan}/tasks/{task}/study-practice', [StudyPracticeController::class, 'show'])->name('plans.tasks.study_practice.show');
+Route::post('/plans/{plan}/tasks/{task}/study-practice/prepare', [StudyPracticeController::class, 'prepare'])->name('plans.tasks.study_practice.prepare');
 Route::post('/plans/{plan}/tasks/{task}/study-practice/import', [StudyPracticeController::class, 'import'])->name('plans.tasks.study_practice.import');
 Route::post('/plans/{plan}/tasks/{task}/study-practice/answers', [StudyPracticeController::class, 'submitAnswers'])->name('plans.tasks.study_practice.answers');
 Route::post('/plans/{plan}/tasks/{task}/study-practice/assessment', [StudyPracticeController::class, 'previewAssessment'])->name('plans.tasks.study_practice.assessment');
