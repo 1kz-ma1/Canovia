@@ -78,16 +78,26 @@
                     </select>
                 </div>
 
-                <div>
-                    <label for="priority" class="mb-2 block text-sm font-medium text-slate-700">計画優先度</label>
-                    <select id="priority" name="priority" class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200">
+                <div class="rounded-xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4">
+                    <label for="priority_mode" class="mb-2 block text-sm font-medium text-slate-200">優先度の決め方</label>
+                    <select id="priority_mode" name="priority_mode" class="form-control">
+                        <option value="auto" @selected(old('priority_mode', $plan->priority_mode ?? 'auto') === 'auto')>Canoviaに自動で任せる</option>
+                        <option value="manual" @selected(old('priority_mode', $plan->priority_mode ?? 'auto') === 'manual')>手動で固定する</option>
+                    </select>
+                    <p class="mt-3 text-xs leading-5 text-slate-400">
+                        現在の自動判定は <strong class="text-cyan-200">優先度 {{ (int) ($priorityEvaluation['auto_priority'] ?? 3) }}</strong>。
+                        {{ collect($priorityEvaluation['reasons'] ?? [])->implode(' / ') }}
+                    </p>
+
+                    <label for="priority" class="mt-4 mb-2 block text-sm font-medium text-slate-200">手動優先度</label>
+                    <select id="priority" name="priority" class="form-control">
                         @for ($priority = 1; $priority <= 5; $priority++)
                             <option value="{{ $priority }}" @selected((int) old('priority', $plan->priority ?? 3) === $priority)>
                                 {{ $priority }}{{ $priority === 1 ? '（最優先）' : ($priority === 5 ? '（低）' : '') }}
                             </option>
                         @endfor
                     </select>
-                    <p class="mt-2 text-xs leading-5 text-slate-500">1が最優先です。HomeではPlan優先度をTask選定より先に使います。</p>
+                    <p class="mt-2 text-xs leading-5 text-slate-500">手動モードのときだけこの値で固定します。「自動」に戻せばCanoviaが再評価します。</p>
                 </div>
 
                 <section id="plan-design" class="scroll-mt-28">
