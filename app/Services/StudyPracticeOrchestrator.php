@@ -1,0 +1,125 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Plan;
+use App\Models\StudyPracticeSession;
+use App\Models\Task;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use RuntimeException;
+
+class StudyPracticeOrchestrator
+{
+    public function __construct(
+        private readonly StudyPracticeStrategyService $strategyService,
+        private readonly StudyPracticeProviderRouter $providerRouter,
+    ) {}
+
+    /**
+     * @param Collection<int, mixed> $recentAttempts
+     */
+    public function preview(Plan $plan, Task $task, Collection $recentAttempts): array
+    {
+        return $this->strategyService->build($plan, $task, $recentAttempts);
+    }
+
+    /**
+     * Build the same provider handoff that will later be persisted, without
+     * mutating the database. This keeps the current external-AI UX zero-cost
+     * while allowing an embedded provider to replace it later.
+     *
+     * @param Collection<int, mixed> $recentAttempts
+     * @return array{strategy:array<string,mixed>,provider:array<string,mixed>}
+     */
+    public function previewHandoff(Plan $plan, Task $task, Collection $recentAttempts): array
+    {
+        $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
+
+        return [
+            'strategy' => $strategy,
+            'provider' => $this->providerRouter
+                ->questionProvider($plan, $task, $strategy)
+                ->prepare($plan, $task, $recentAttempts, $strategy),
+        ];
+    }
+
+    /**
+     * @param Collection<int, mixed> $recentAttempts
+     */
+    public function prepare(
+        Plan $plan,
+        Task $task,
+        Collection $recentAttempts,
+        ?int $userId,
+        ?string $actorToken,
+        string $prepareRequestId,
+    ): StudyPracticeSession {
+        $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
+
+        $provider = $this->providerRouter->questionProvider($plan, $task, $strategy);
+        $prepared = $provider->prepare($plan, $task, $recentAttempts, $strategy);
+
+        $session = StudyPracticeSession::query()->createOrFirst(
+            ['prepare_request_id' => $prepareRequestId],
+            [
+                'plan_id' => $plan->id,
+                'task_id' => $task->id,
+                'user_id' => $userId,
+                'actor_token' => $userId ? null : $actorToken,
+                'session_token' => (string) Str::uuid(),
+                'status' => StudyPracticeSession::STATUS_AWAITING_PROVIDER,
+                'strategy' => (string) $strategy['key'],
+                'strategy_version' => (string) ($strategy['version'] ?? 'v1'),
+                'selector_type' => (string) ($prepared['selector_type'] ?? 'external_ai'),
+                'selector_version' => (string) ($prepared['selector_version'] ?? 'v1'),
+                'question_provider' => (string) ($prepared['provider'] ?? 'external_ai'),
+                'question_provider_mode' => (string) ($prepared['mode'] ?? 'handoff'),
+                'assessment_provider' => 'external_ai',
+                'assessment_provider_mode' => 'handoff',
+                'selection_context' => [
+                    'strategy' => $strategy,
+                    'recent_attempt_ids' => $recentAttempts->pluck('id')->map(fn ($id) => (int) $id)->all(),
+                ],
+                'provider_payload' => is_array($prepared['payload'] ?? null) ? $prepared['payload'] : [],
+                'selected_questions' => null,
+                'started_at' => now(),
+            ]
+        );
+
+        if (
+            (int) $session->plan_id !== (int) $plan->id
+            || (int) $session->task_id !== (int) $task->id
+            || ($userId !== null && (int) $session->user_id !== $userId)
+            || ($userId === null && (string) $session->actor_token !== (string) $actorToken)
+        ) {
+            throw new RuntimeException('この演習準備リクエストは別の対象で使用済みです。');
+        }
+
+        return $session;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $questions
+     * @param array<int, array<string, mixed>> $answers
+     * @return array<string, mixed>
+     */
+    public function prepareAssessment(
+        StudyPracticeSession $session,
+        Plan $plan,
+        Task $task,
+        array $questions,
+        array $answers,
+    ): array {
+        $provider = $this->providerRouter->assessmentProvider($plan, $task);
+        $prepared = $provider->prepare($plan, $task, $questions, $answers);
+
+        $session->update([
+            'assessment_provider' => (string) ($prepared['provider'] ?? $provider->key()),
+            'assessment_provider_mode' => (string) ($prepared['mode'] ?? $provider->mode()),
+            'assessment_payload' => is_array($prepared['payload'] ?? null) ? $prepared['payload'] : [],
+        ]);
+
+        return $prepared;
+    }
+}

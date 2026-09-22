@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\StudyPracticeAttempt;
+use App\Models\StudyPracticeSession;
 use App\Models\Task;
 use App\Services\AiJsonInputNormalizer;
 use App\Services\BehaviorIdentityService;
 use App\Services\PlanOwnershipService;
+use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +24,7 @@ class StudyPracticeController extends Controller
         Plan $plan,
         Task $task,
         PlanOwnershipService $ownership,
-        StudyPracticePromptService $promptService,
+        StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
@@ -43,12 +45,36 @@ class StudyPracticeController extends Controller
         $currentAttempt = ! empty($state['attempt_id'])
             ? (clone $attemptQuery)->whereKey((int) $state['attempt_id'])->first()
             : null;
-        $generationPrompt = $promptService->generationPrompt($plan, $task, $recentAttempts);
+        $currentPracticeSession = ! empty($state['practice_session_id'])
+            ? $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+                ->whereKey((int) $state['practice_session_id'])
+                ->first()
+            : null;
+
+        $orchestration = $orchestrator->previewHandoff($plan, $task, $recentAttempts);
+        $practiceStrategy = $currentPracticeSession
+            ? (array) data_get($currentPracticeSession->selection_context, 'strategy', $orchestration['strategy'])
+            : $orchestration['strategy'];
+        $practiceProvider = $currentPracticeSession
+            ? [
+                'provider' => $currentPracticeSession->question_provider,
+                'mode' => $currentPracticeSession->question_provider_mode,
+            ]
+            : $orchestration['provider'];
+        $generationPrompt = $currentPracticeSession
+            ? (string) data_get($currentPracticeSession->provider_payload, 'generation_prompt', data_get($orchestration, 'provider.payload.generation_prompt', ''))
+            : (string) data_get($orchestration, 'provider.payload.generation_prompt', '');
+        $prepareRequestId = old('prepare_request_id')
+            ?: ($currentPracticeSession?->prepare_request_id ?? (string) Str::uuid());
 
         return view('study_practice.show', [
             'plan' => $plan,
             'task' => $task,
             'generationPrompt' => $generationPrompt,
+            'practiceStrategy' => $practiceStrategy,
+            'practiceProvider' => $practiceProvider,
+            'currentPracticeSession' => $currentPracticeSession,
+            'prepareRequestId' => $prepareRequestId,
             'exerciseTitle' => $state['title'] ?? null,
             'questions' => $state['questions'] ?? [],
             'answers' => $state['answers'] ?? [],
@@ -65,12 +91,15 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         AiJsonInputNormalizer $normalizer,
+        StudyPracticeOrchestrator $orchestrator,
+        BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
 
         $validated = $request->validate([
             'questions_json' => ['required', 'string', 'max:120000'],
+            'prepare_request_id' => ['nullable', 'uuid'],
         ]);
 
         try {
@@ -85,6 +114,27 @@ class StudyPracticeController extends Controller
         $questions = $this->normalizeQuestions($decoded['questions'] ?? null);
         $title = trim((string) ($decoded['title'] ?? 'AI演習'));
 
+        $actorToken = $identity->resolve($request);
+        $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
+        $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
+        $practiceSession = $orchestrator->prepare(
+            $plan,
+            $task,
+            $recentAttempts,
+            $request->user()?->id,
+            $request->user() ? null : $actorToken,
+            (string) ($validated['prepare_request_id'] ?? Str::uuid()),
+        );
+
+        $practiceSession->update([
+            'status' => StudyPracticeSession::STATUS_READY,
+            'selected_questions' => collect($questions)->map(fn (array $question) => [
+                'question_ref' => (string) $question['id'],
+                'question_id' => null,
+                'source_type' => (string) $practiceSession->question_provider,
+            ])->values()->all(),
+        ]);
+
         $request->session()->put($this->sessionKey($plan, $task), [
             'title' => $title !== '' ? mb_substr($title, 0, 120) : 'AI演習',
             'questions' => $questions,
@@ -93,6 +143,7 @@ class StudyPracticeController extends Controller
             'assessment' => null,
             'attempt_id' => null,
             'attempt_token' => (string) Str::uuid(),
+            'practice_session_id' => $practiceSession->id,
         ]);
 
         return redirect()
@@ -106,6 +157,8 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         StudyPracticePromptService $promptService,
+        StudyPracticeOrchestrator $orchestrator,
+        BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -211,7 +264,33 @@ class StudyPracticeController extends Controller
         }
 
         $state['answers'] = $answers;
-        $state['evaluation_prompt'] = $promptService->evaluationPrompt($plan, $task, $questions, $answers);
+        $actorToken = $identity->resolve($request);
+        $practiceSession = ! empty($state['practice_session_id'])
+            ? $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+                ->whereKey((int) $state['practice_session_id'])
+                ->first()
+            : null;
+
+        if ($practiceSession) {
+            $assessmentHandoff = $orchestrator->prepareAssessment(
+                $practiceSession,
+                $plan,
+                $task,
+                $questions,
+                $answers,
+            );
+            $state['evaluation_prompt'] = (string) data_get(
+                $assessmentHandoff,
+                'payload.evaluation_prompt',
+                ''
+            );
+            $practiceSession->update(['status' => StudyPracticeSession::STATUS_ANSWERED]);
+        } else {
+            // V40 compatibility for an in-progress browser session created
+            // before StudyPracticeSession existed.
+            $state['evaluation_prompt'] = $promptService->evaluationPrompt($plan, $task, $questions, $answers);
+        }
+
         $state['assessment'] = null;
         $state['attempt_id'] = null;
         $request->session()->put($key, $state);
@@ -293,6 +372,9 @@ class StudyPracticeController extends Controller
         $attempt = StudyPracticeAttempt::query()->createOrFirst(
             ['request_hash' => $requestHash],
             [
+                'study_practice_session_id' => ! empty($state['practice_session_id'])
+                    ? (int) $state['practice_session_id']
+                    : null,
                 'plan_id' => $plan->id,
                 'task_id' => $task->id,
                 'user_id' => $request->user()?->id,
@@ -313,6 +395,12 @@ class StudyPracticeController extends Controller
         $state['assessment'] = $assessment;
         $state['attempt_id'] = $attempt->id;
         $request->session()->put($key, $state);
+
+        if (! empty($state['practice_session_id'])) {
+            $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+                ->whereKey((int) $state['practice_session_id'])
+                ->update(['status' => StudyPracticeSession::STATUS_ASSESSED]);
+        }
 
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
@@ -353,6 +441,18 @@ class StudyPracticeController extends Controller
 
             if ($attempt->applied_at) {
                 $alreadyApplied = true;
+
+                if ($attempt->study_practice_session_id) {
+                    StudyPracticeSession::query()
+                        ->whereKey($attempt->study_practice_session_id)
+                        ->where('plan_id', $plan->id)
+                        ->where('task_id', $task->id)
+                        ->update([
+                            'status' => StudyPracticeSession::STATUS_COMPLETED,
+                            'completed_at' => now(),
+                        ]);
+                }
+
                 return;
             }
 
@@ -393,6 +493,17 @@ class StudyPracticeController extends Controller
                 'progress_after_percent' => $progressAfter,
                 'applied_at' => now(),
             ]);
+
+            if ($attempt->study_practice_session_id) {
+                StudyPracticeSession::query()
+                    ->whereKey($attempt->study_practice_session_id)
+                    ->where('plan_id', $plan->id)
+                    ->where('task_id', $task->id)
+                    ->update([
+                        'status' => StudyPracticeSession::STATUS_COMPLETED,
+                        'completed_at' => now(),
+                    ]);
+            }
         }, 3);
 
         return redirect()
@@ -402,11 +513,27 @@ class StudyPracticeController extends Controller
                 : '学習結果をTaskへ反映しました。弱点と次のActionは次回のAI演習にも引き継がれます。');
     }
 
-    public function reset(Request $request, Plan $plan, Task $task, PlanOwnershipService $ownership)
-    {
+    public function reset(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+        BehaviorIdentityService $identity,
+    ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
-        $request->session()->forget($this->sessionKey($plan, $task));
+
+        $key = $this->sessionKey($plan, $task);
+        $state = $request->session()->get($key, []);
+        if (! empty($state['practice_session_id'])) {
+            $actorToken = $identity->resolve($request);
+            $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+                ->whereKey((int) $state['practice_session_id'])
+                ->whereNotIn('status', [StudyPracticeSession::STATUS_COMPLETED, StudyPracticeSession::STATUS_ABANDONED])
+                ->update(['status' => StudyPracticeSession::STATUS_ABANDONED]);
+        }
+
+        $request->session()->forget($key);
 
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
@@ -675,6 +802,19 @@ class StudyPracticeController extends Controller
     private function attemptQuery(Request $request, Plan $plan, Task $task, string $actorToken)
     {
         $query = StudyPracticeAttempt::query()
+            ->where('plan_id', $plan->id)
+            ->where('task_id', $task->id);
+
+        if ($request->user()) {
+            return $query->where('user_id', $request->user()->id);
+        }
+
+        return $query->whereNull('user_id')->where('actor_token', $actorToken);
+    }
+
+    private function practiceSessionQuery(Request $request, Plan $plan, Task $task, string $actorToken)
+    {
+        $query = StudyPracticeSession::query()
             ->where('plan_id', $plan->id)
             ->where('task_id', $task->id);
 

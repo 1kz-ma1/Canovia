@@ -21,7 +21,33 @@
                     @endif
                 </div>
             </div>
-            <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300">AIは問題作成と評価を担当し、CanoviaはTaskの文脈・回答UI・学習履歴・進捗反映を担当します。評価を読み込んだだけではTaskを変更せず、確認後に「Taskへ反映」を押したときだけ更新します。</p>
+            <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300">CanoviaがTaskと学習履歴から今回の演習方針を決め、問題の準備・回答・評価・次回出題までを一つの学習ループとして管理します。現在は問題準備と記述評価を外部AIへ受け渡しますが、Question Bankや内蔵AIへ切り替わっても入口はこのAI演習のままです。</p>
+
+            <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-300">PRACTICE STRATEGY</p>
+                        <h2 class="mt-1 text-base font-black text-slate-100">{{ $practiceStrategy['label'] ?? 'Task理解度確認' }}</h2>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">{{ $practiceStrategy['reason'] ?? '' }}</p>
+                    </div>
+                    <span class="badge badge-slate">{{ (int) ($practiceStrategy['target_question_count'] ?? 10) }}問目安</span>
+                </div>
+
+                @if (collect($practiceStrategy['focus_topics'] ?? [])->isNotEmpty())
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach (($practiceStrategy['focus_topics'] ?? []) as $topic)
+                            <span class="badge badge-slate">{{ $topic }}</span>
+                        @endforeach
+                    </div>
+                @endif
+
+                <p class="mt-3 text-[11px] leading-5 text-slate-500">
+                    問題ソース：{{ ($practiceProvider['provider'] ?? 'external_ai') === 'external_ai' ? '外部AI（現在）' : ($practiceProvider['provider'] ?? 'Canovia') }}
+                    @if ($currentPracticeSession)
+                        · Session #{{ $currentPracticeSession->id }}
+                    @endif
+                </p>
+            </div>
         </section>
 
         @if (session('success'))
@@ -77,12 +103,12 @@
         <section class="page-card p-5 sm:p-6">
             <div class="flex items-center gap-3">
                 <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">1</span>
-                <div><h2 class="font-black text-slate-100">AIに問題を作ってもらう</h2><p class="text-xs text-slate-500">Taskの内容とIDを含んだ専用プロンプトです。</p></div>
+                <div><h2 class="font-black text-slate-100">演習問題を準備する</h2><p class="text-xs text-slate-500">Canoviaが決めた演習方針を、現在は外部AIへ引き継ぎます。</p></div>
             </div>
             <textarea id="studyPracticeGenerationPrompt" readonly class="form-control mt-4 min-h-[300px] font-mono text-xs leading-6">{{ $generationPrompt }}</textarea>
             <div class="mt-3 flex flex-wrap items-center gap-2">
-                <button type="button" class="btn-primary" data-copy-text="{{ $generationPrompt }}">問題作成プロンプトをコピー</button>
-                <span class="text-xs text-slate-500">普段使っているAIへそのまま送ってください。</span>
+                <button type="button" class="btn-primary" data-copy-text="{{ $generationPrompt }}">演習準備プロンプトをコピー</button>
+                <span class="text-xs text-slate-500">今は普段使っているAIへ送ります。将来はこの受け渡しをCanovia内で自動化します。</span>
             </div>
         </section>
 
@@ -93,6 +119,7 @@
             </div>
             <form method="POST" action="{{ route('plans.tasks.study_practice.import', [$plan, $task]) }}" class="mt-4">
                 @csrf
+                <input type="hidden" name="prepare_request_id" value="{{ $prepareRequestId }}">
                 <textarea name="questions_json" class="form-control min-h-[220px] font-mono text-xs" placeholder="AIが返したJSONを貼り付け">{{ old('questions_json') }}</textarea>
                 @error('questions_json')<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
 
