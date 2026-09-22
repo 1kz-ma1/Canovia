@@ -12,8 +12,9 @@ class QuestionBankGrader
 
     /**
      * @param array<int, array<string, mixed>> $questions
+     * @param array<int, array<string, mixed>> $answers
      */
-    public function canGrade(array $questions): bool
+    public function canGrade(array $questions, array $answers = []): bool
     {
         if ($questions === []) {
             return false;
@@ -39,6 +40,8 @@ class QuestionBankGrader
             return false;
         }
 
+        $answersByQuestion = collect($answers)->keyBy('question_id');
+
         foreach ($questions as $question) {
             $model = $models->get((int) $question['source_question_id']);
             $rule = $model?->grading_rule ?? [];
@@ -54,6 +57,15 @@ class QuestionBankGrader
                 ->filter(fn ($field) => (string) ($field['id'] ?? '') !== $fieldId);
 
             if ($requiredNonGraded->isNotEmpty()) {
+                return false;
+            }
+
+            $questionAnswer = $answersByQuestion->get((string) ($question['id'] ?? ''), []);
+            $hasNonGradedInput = collect(is_array($questionAnswer) ? ($questionAnswer['fields'] ?? []) : [])
+                ->filter(fn ($field) => is_array($field) && (string) ($field['field_id'] ?? '') !== $fieldId)
+                ->contains(fn ($field) => $this->hasMeaningfulValue($field['value'] ?? null));
+
+            if ($hasNonGradedInput) {
                 return false;
             }
         }
@@ -175,6 +187,15 @@ class QuestionBankGrader
             : 0.0;
 
         return abs((float) $actual - (float) $rule['answer']) <= $tolerance;
+    }
+
+    private function hasMeaningfulValue(mixed $value): bool
+    {
+        if (is_array($value)) {
+            return collect($value)->filter(fn ($item) => trim((string) $item) !== '')->isNotEmpty();
+        }
+
+        return is_scalar($value) && trim((string) $value) !== '';
     }
 
     private function concepts(?Question $question): Collection
