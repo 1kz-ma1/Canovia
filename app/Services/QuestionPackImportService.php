@@ -95,7 +95,7 @@ class QuestionPackImportService
                 'exam_code' => $examCode !== '' ? mb_substr($examCode, 0, 80) : null,
                 'subject' => $subject !== '' ? mb_substr($subject, 0, 120) : null,
                 'version' => mb_substr($version, 0, 40),
-                'status' => $existing?->status ?? 'draft',
+                'status' => 'draft',
                 'downloadable' => array_key_exists('downloadable', $packData)
                     ? (bool) $packData['downloadable']
                     : true,
