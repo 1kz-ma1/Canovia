@@ -30,6 +30,7 @@ class Plan extends Model
         'description',
         'category',
         'priority',
+        'priority_mode',
         'start_date',
         'deadline',
         'is_public',
