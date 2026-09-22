@@ -13,7 +13,7 @@ class StudyPracticeOrchestrator
 {
     public function __construct(
         private readonly StudyPracticeStrategyService $strategyService,
-        private readonly ExternalAiStudyPracticeQuestionProvider $externalAiProvider,
+        private readonly StudyPracticeProviderRouter $providerRouter,
     ) {}
 
     /**
@@ -38,7 +38,8 @@ class StudyPracticeOrchestrator
 
         return [
             'strategy' => $strategy,
-            'provider' => $this->externalAiProvider->prepare($plan, $task, $recentAttempts, $strategy),
+            'provider' => $this->providerRouter->questionProvider($plan, $task, $strategy)
+            ->prepare($plan, $task, $recentAttempts, $strategy),
         ];
     }
 
@@ -96,5 +97,29 @@ class StudyPracticeOrchestrator
         }
 
         return $session;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $questions
+     * @param array<int, array<string, mixed>> $answers
+     * @return array<string, mixed>
+     */
+    public function prepareAssessment(
+        StudyPracticeSession $session,
+        Plan $plan,
+        Task $task,
+        array $questions,
+        array $answers,
+    ): array {
+        $provider = $this->providerRouter->assessmentProvider($plan, $task);
+        $prepared = $provider->prepare($plan, $task, $questions, $answers);
+
+        $session->update([
+            'assessment_provider' => (string) ($prepared['provider'] ?? $provider->key()),
+            'assessment_provider_mode' => (string) ($prepared['mode'] ?? $provider->mode()),
+            'assessment_payload' => is_array($prepared['payload'] ?? null) ? $prepared['payload'] : [],
+        ]);
+
+        return $prepared;
     }
 }
