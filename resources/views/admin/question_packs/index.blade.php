@@ -18,6 +18,63 @@
             <div class="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.06] px-4 py-3 text-sm text-emerald-100">{{ session('status') }}</div>
         @endif
 
+        <section class="page-card border-violet-300/15 p-5 sm:p-6">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[.14em] text-violet-300">BUNDLED PACKS</p>
+                    <h2 class="mt-1 text-xl font-black text-slate-50">Canovia同梱問題集</h2>
+                    <p class="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+                        リポジトリで管理している検証済みPackです。まずDraftへ取り込み、内容を確認してからpublishedへ変更します。
+                    </p>
+                </div>
+                <span class="badge badge-slate">{{ ($bundledPacks ?? collect())->count() }} packs</span>
+            </div>
+
+            <div class="mt-4 grid gap-3 lg:grid-cols-2">
+                @forelse (($bundledPacks ?? collect()) as $bundled)
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <strong class="text-sm text-slate-100">{{ $bundled['title'] }}</strong>
+                                <p class="mt-1 text-[11px] text-slate-500">
+                                    {{ $bundled['exam_code'] ?: '—' }}
+                                    @if ($bundled['subject']) · {{ $bundled['subject'] }} @endif
+                                    @if ($bundled['version']) · v{{ $bundled['version'] }} @endif
+                                </p>
+                            </div>
+                            <span class="badge badge-slate">{{ $bundled['question_count'] }}問</span>
+                        </div>
+
+                        @if (data_get($bundled, 'metadata.source_period'))
+                            <p class="mt-3 text-xs leading-5 text-slate-400">
+                                出典：{{ data_get($bundled, 'metadata.source_period') }}
+                            </p>
+                        @endif
+
+                        @if (data_get($bundled, 'metadata.license_note'))
+                            <p class="mt-2 text-[11px] leading-5 text-slate-500">
+                                {{ data_get($bundled, 'metadata.license_note') }}
+                            </p>
+                        @endif
+
+                        <form method="POST" action="{{ route('admin.question_packs.import_bundled') }}" class="mt-4">
+                            @csrf
+                            <input type="hidden" name="catalog_key" value="{{ $bundled['key'] }}">
+                            <button type="submit" class="btn-secondary">Draftへ取り込む</button>
+                        </form>
+                    </article>
+                @empty
+                    <div class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4 text-sm text-slate-500">
+                        同梱Question Packはまだありません。
+                    </div>
+                @endforelse
+            </div>
+
+            @error('catalog_key')
+                <p class="mt-3 text-sm font-semibold text-rose-300">{{ $message }}</p>
+            @enderror
+        </section>
+
         <section class="grid gap-6 xl:grid-cols-[1.05fr_.95fr]">
             <div class="page-card p-5 sm:p-6">
                 <div class="flex items-start justify-between gap-4">
@@ -87,7 +144,7 @@
                             @csrf
                             @method('PATCH')
                             <select name="status" class="form-control max-w-[180px]">
-                                @foreach (AppModelsQuestionPack::STATUSES as $status)
+                                @foreach (\App\Models\QuestionPack::STATUSES as $status)
                                     <option value="{{ $status }}" @selected($pack->status === $status)>{{ $status }}</option>
                                 @endforeach
                             </select>
