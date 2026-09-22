@@ -123,7 +123,7 @@ class StudyPracticeOrchestrator
         array $questions,
         array $answers,
     ): array {
-        $provider = $this->providerRouter->assessmentProvider($plan, $task, $questions);
+        $provider = $this->providerRouter->assessmentProvider($plan, $task, $questions, $answers);
         $prepared = $provider->prepare($plan, $task, $questions, $answers);
 
         $session->update([
