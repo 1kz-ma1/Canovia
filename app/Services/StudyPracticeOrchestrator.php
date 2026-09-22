@@ -54,10 +54,13 @@ class StudyPracticeOrchestrator
         ?int $userId,
         ?string $actorToken,
         string $prepareRequestId,
+        ?string $providerKey = null,
     ): StudyPracticeSession {
         $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
 
-        $provider = $this->providerRouter->questionProvider($plan, $task, $strategy);
+        $provider = $providerKey !== null
+            ? $this->providerRouter->questionProviderByKey($providerKey)
+            : $this->providerRouter->questionProvider($plan, $task, $strategy);
         $prepared = $provider->prepare($plan, $task, $recentAttempts, $strategy);
 
         $isDirect = (string) ($prepared['mode'] ?? 'handoff') === 'direct'
