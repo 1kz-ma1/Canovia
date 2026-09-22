@@ -60,21 +60,28 @@ class QuestionBankStudyPracticeQuestionProvider implements StudyPracticeQuestion
                 'recent' => in_array((int) $question->id, $recentQuestionIds, true),
             ])
             ->sort(function (array $left, array $right) use ($strategy) {
-                $difficultyDirection = ($strategy['key'] ?? '') === 'retention_and_transfer' ? -1 : 1;
+                $preferHarder = ($strategy['key'] ?? '') === 'retention_and_transfer';
 
-                return [
-                    $right['focus_score'],
-                    $left['recent'] ? 0 : 1,
-                    $difficultyDirection * (int) $right['question']->difficulty,
-                    -1 * (int) $right['question']->sort_order,
-                    -1 * (int) $right['question']->id,
-                ] <=> [
-                    $left['focus_score'],
-                    $right['recent'] ? 0 : 1,
-                    $difficultyDirection * (int) $left['question']->difficulty,
-                    -1 * (int) $left['question']->sort_order,
-                    -1 * (int) $left['question']->id,
+                $leftRank = [
+                    -1 * (int) $left['focus_score'],
+                    $left['recent'] ? 1 : 0,
+                    $preferHarder
+                        ? -1 * (int) $left['question']->difficulty
+                        : (int) $left['question']->difficulty,
+                    (int) $left['question']->sort_order,
+                    (int) $left['question']->id,
                 ];
+                $rightRank = [
+                    -1 * (int) $right['focus_score'],
+                    $right['recent'] ? 1 : 0,
+                    $preferHarder
+                        ? -1 * (int) $right['question']->difficulty
+                        : (int) $right['question']->difficulty,
+                    (int) $right['question']->sort_order,
+                    (int) $right['question']->id,
+                ];
+
+                return $leftRank <=> $rightRank;
             })
             ->take($targetCount)
             ->pluck('question')
