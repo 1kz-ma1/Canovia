@@ -39,17 +39,26 @@ class PlanToolService
         }
 
         if ($plan->relationLoaded('resources') || $task->relationLoaded('resources')) {
-            $resourceCount = ($task->relationLoaded('resources') ? $task->resources->count() : 0)
-                + ($plan->relationLoaded('resources') ? $plan->resources->count() : 0);
+            $taskResourceCount = $task->relationLoaded('resources') ? $task->resources->count() : 0;
+            $planResourceCount = $plan->relationLoaded('resources') ? $plan->resources->count() : 0;
+            $resourceCount = max($taskResourceCount, $planResourceCount);
+            $resourceDescription = match (true) {
+                $taskResourceCount > 0 && $planResourceCount > 0
+                    => "このTaskに関連 {$taskResourceCount} 件 / Plan全体 {$planResourceCount} 件の資料があります。",
+                $taskResourceCount > 0
+                    => "このTaskに関連する資料 {$taskResourceCount} 件を開きます。",
+                $planResourceCount > 0
+                    => "Plan全体の資料 {$planResourceCount} 件から必要な情報を開きます。",
+                default => '参考資料やURLをこのPlanへまとめます。',
+            };
+
             $tools[] = [
                 'id' => 'resources',
                 'name' => '関連資料',
-                'description' => $resourceCount > 0
-                    ? "登録済みの資料 {$resourceCount} 件から必要な情報を開きます。"
-                    : '参考資料やURLをこのPlanへまとめます。',
+                'description' => $resourceDescription,
                 'icon' => '⌘',
                 'recommended' => false,
-                'badge' => $resourceCount > 0 ? "{$resourceCount}件" : '資料',
+                'badge' => $taskResourceCount > 0 ? "Task {$taskResourceCount}件" : ($resourceCount > 0 ? "{$resourceCount}件" : '資料'),
             ];
         }
 
