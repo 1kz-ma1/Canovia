@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\StudyPracticeAttempt;
+use App\Models\StudyPracticeSession;
 use App\Models\Task;
 use App\Services\AiJsonInputNormalizer;
 use App\Services\BehaviorIdentityService;
 use App\Services\PlanOwnershipService;
+use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +24,7 @@ class StudyPracticeController extends Controller
         Plan $plan,
         Task $task,
         PlanOwnershipService $ownership,
-        StudyPracticePromptService $promptService,
+        StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
@@ -43,12 +45,36 @@ class StudyPracticeController extends Controller
         $currentAttempt = ! empty($state['attempt_id'])
             ? (clone $attemptQuery)->whereKey((int) $state['attempt_id'])->first()
             : null;
-        $generationPrompt = $promptService->generationPrompt($plan, $task, $recentAttempts);
+        $currentPracticeSession = ! empty($state['practice_session_id'])
+            ? $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+                ->whereKey((int) $state['practice_session_id'])
+                ->first()
+            : null;
+
+        $orchestration = $orchestrator->previewHandoff($plan, $task, $recentAttempts);
+        $practiceStrategy = $currentPracticeSession
+            ? (array) data_get($currentPracticeSession->selection_context, 'strategy', $orchestration['strategy'])
+            : $orchestration['strategy'];
+        $practiceProvider = $currentPracticeSession
+            ? [
+                'provider' => $currentPracticeSession->question_provider,
+                'mode' => $currentPracticeSession->question_provider_mode,
+            ]
+            : $orchestration['provider'];
+        $generationPrompt = $currentPracticeSession
+            ? (string) data_get($currentPracticeSession->provider_payload, 'generation_prompt', data_get($orchestration, 'provider.payload.generation_prompt', ''))
+            : (string) data_get($orchestration, 'provider.payload.generation_prompt', '');
+        $prepareRequestId = old('prepare_request_id')
+            ?: ($currentPracticeSession?->prepare_request_id ?? (string) Str::uuid());
 
         return view('study_practice.show', [
             'plan' => $plan,
             'task' => $task,
             'generationPrompt' => $generationPrompt,
+            'practiceStrategy' => $practiceStrategy,
+            'practiceProvider' => $practiceProvider,
+            'currentPracticeSession' => $currentPracticeSession,
+            'prepareRequestId' => $prepareRequestId,
             'exerciseTitle' => $state['title'] ?? null,
             'questions' => $state['questions'] ?? [],
             'answers' => $state['answers'] ?? [],
