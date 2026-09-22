@@ -131,7 +131,7 @@ class StudyPracticeController extends Controller
             'selected_questions' => collect($questions)->map(fn (array $question) => [
                 'question_ref' => (string) $question['id'],
                 'question_id' => null,
-                'source_type' => 'external_ai',
+                'source_type' => (string) $practiceSession->question_provider,
             ])->values()->all(),
         ]);
 
