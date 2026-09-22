@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v40.2',
+        'date' => '2026-09-22',
+        'title' => 'Canovia問題集から直接演習',
+        'summary' => '公開Question Packで十分にカバーできるTaskは外部AIへのコピペなしで直接出題し、選択・複数選択・数値問題はCanovia側で機械採点できるようにしました。',
+        'highlights' => [
+            'Question BankのCoverageをPlan・Task・資格コード・重点分野から判定し、十分な場合だけQuestion Bank Providerを自動選択します。',
+            '問題数や重点分野のCoverageが不足する場合は、従来どおり外部AIへ安全にフォールバックします。',
+            'exact_choice・exact_multiple・numeric_toleranceのgrading_ruleをCanovia側で機械採点します。',
+            '任意の思考過程をユーザーが入力した場合やai_rubric問題は、Question Bankの正答・rubricを評価根拠として外部AIへ渡します。',
+            'AdminへQuestion Pack JSONのDraft取込・公開状態管理を追加し、公開済みPackは上書き不可のversion運用にしました。',
+            '問題ごとのsource_type・source_referenceを保持し、Question Bank出題時は出典を画面で確認できます。',
+        ],
+        'tip' => 'Question Packが対応済みならAI演習から「演習を始める」だけで問題へ進めます。未対応・Coverage不足の範囲だけ外部AIを使います。',
+    ],
+    [
         'version' => 'v40.1',
         'date' => '2026-09-22',
         'title' => 'AI演習の選定と評価をCanoviaが統括',
