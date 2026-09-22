@@ -28,7 +28,15 @@ class StudyPracticeController extends Controller
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
 
-        $state = $request->session()->get($this->sessionKey($plan, $task), []);
+        $key = $this->sessionKey($plan, $task);
+        $state = $request->session()->get($key, []);
+        if (! empty($state['questions']) && collect($state['questions'])->contains(
+            fn ($question) => is_array($question) && empty($question['response_fields'])
+        )) {
+            $state['questions'] = $this->normalizeQuestions($state['questions']);
+            $request->session()->put($key, $state);
+        }
+
         $actorToken = $identity->resolve($request);
         $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
         $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
@@ -124,8 +132,25 @@ class StudyPracticeController extends Controller
                 $questionInput = ['answer' => $questionInput];
             }
 
+            $responseFields = $question['response_fields'] ?? [];
+            if (! is_array($responseFields) || $responseFields === []) {
+                $legacyType = (string) ($question['type'] ?? 'text');
+                $responseFields = [[
+                    'id' => 'answer',
+                    'type' => match ($legacyType) {
+                        'single_choice' => 'single_choice',
+                        'multiple_choice' => 'multiple_choice',
+                        'number' => 'number',
+                        default => 'textarea',
+                    },
+                    'label' => '回答',
+                    'required' => true,
+                    'choices' => $question['choices'] ?? [],
+                ]];
+            }
+
             $fields = [];
-            foreach (($question['response_fields'] ?? []) as $field) {
+            foreach ($responseFields as $field) {
                 $fieldId = (string) $field['id'];
                 $type = (string) $field['type'];
                 $required = (bool) ($field['required'] ?? true);
