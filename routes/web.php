@@ -88,6 +88,7 @@ Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('
 Route::get('/admin/telemetry', [AdminTelemetryController::class, 'index'])->name('admin.telemetry.index');
 Route::get('/admin/question-packs', [AdminQuestionPackController::class, 'index'])->name('admin.question_packs.index');
 Route::post('/admin/question-packs/import', [AdminQuestionPackController::class, 'import'])->name('admin.question_packs.import');
+Route::post('/admin/question-packs/import-bundled', [AdminQuestionPackController::class, 'importBundled'])->name('admin.question_packs.import_bundled');
 Route::patch('/admin/question-packs/{questionPack}/status', [AdminQuestionPackController::class, 'updateStatus'])->name('admin.question_packs.status');
 Route::patch('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('admin.feedback.status');
 Route::patch('/admin/feedback/{feedback}/archive', [AdminFeedbackController::class, 'archive'])->name('admin.feedback.archive');
