@@ -189,6 +189,12 @@
                                     <span>{{ $guidanceTask->status === 'doing' ? '進行中' : '未着手' }}</span>
                                 </div>
 
+                                @if (data_get($guidance, 'priority_evaluation.mode') === 'auto' && data_get($guidance, 'priority_evaluation.reasons.0'))
+                                    <p class="mt-2 text-[11px] leading-4 text-slate-500">
+                                        自動判定：{{ data_get($guidance, 'priority_evaluation.reasons.0') }}
+                                    </p>
+                                @endif
+
                                 @if ($adaptive)
                                     <div class="pk-v395-adaptive-note">
                                         <span class="text-cyan-200">Canoviaの提案</span>
