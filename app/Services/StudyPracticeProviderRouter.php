@@ -27,6 +27,15 @@ class StudyPracticeProviderRouter
             : $this->externalQuestionProvider;
     }
 
+    public function questionProviderByKey(string $key): StudyPracticeQuestionProvider
+    {
+        return match ($key) {
+            'question_bank' => $this->questionBankProvider,
+            'external_ai' => $this->externalQuestionProvider,
+            default => $this->externalQuestionProvider,
+        };
+    }
+
     /**
      * @param array<int, array<string, mixed>> $questions
      */
