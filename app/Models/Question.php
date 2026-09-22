@@ -6,6 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Question extends Model
 {
+    public const SOURCE_TYPES = [
+        'official',
+        'licensed',
+        'canovia_original',
+        'derived',
+        'ai_generated',
+    ];
     protected $fillable = [
         'question_pack_id', 'external_key', 'source_type', 'source_reference',
         'prompt', 'response_schema', 'grading_rule', 'learning_metadata',
