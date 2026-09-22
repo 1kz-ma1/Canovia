@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v40.3',
+        'date' => '2026-09-23',
+        'title' => 'AP科目AのCanovia問題集を同梱',
+        'summary' => '応用情報技術者試験の科目A向けに、IPA過去問の出題テーマを参考にしたCanovia Core v1を追加し、AdminからワンクリックでDraftへ取り込めるようにしました。',
+        'highlights' => [
+            'AP科目A向けのCanoviaオリジナル・類題を28問同梱しました。',
+            'MTU計算・DNSレコードは単独弱点でもQuestion Bank Coverageを満たせるよう、それぞれ3問以上を用意しました。',
+            'ネットワーク・DB・計算・OS・セキュリティを中心に、現在の弱点補強へ使えるlearning_metadataを設定しました。',
+            'IPA過去問を参考にした類題はderivedとして出典を保持し、Canovia独自問題はcanovia_originalとして区別します。',
+            'AdminのQuestion Pack画面へBundled Pack一覧とDraft取込ボタンを追加しました。',
+            '公式試験の解答記号をそのまま保持できるよう、choice.idでア・イ・ウ・エなどUnicode文字を利用可能にしました。',
+        ],
+        'tip' => 'Admin > 問題集から「応用情報技術者試験 科目A Canovia Core v1」をDraftへ取り込み、内容確認後にpublishedへ変更するとAI演習で自動利用されます。',
+    ],
+    [
         'version' => 'v40.2',
         'date' => '2026-09-22',
         'title' => 'Canovia問題集から直接演習',

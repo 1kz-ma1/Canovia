@@ -785,12 +785,12 @@ class StudyPracticeController extends Controller
 
                 if (
                     $choiceId === ''
-                    || preg_match('/^[A-Za-z0-9_-]{1,20}$/', $choiceId) !== 1
+                    || preg_match('/^[\p{L}\p{N}_-]{1,20}$/u', $choiceId) !== 1
                     || isset($seenChoiceIds[$choiceId])
                     || $choiceLabel === ''
                 ) {
                     throw ValidationException::withMessages([
-                        'questions_json' => 'choice.idは英数字・_・-だけの重複しない20文字以内の値にし、labelも入力してください。',
+                        'questions_json' => 'choice.idは文字・数字・_・-だけの重複しない20文字以内の値にし、labelも入力してください。',
                     ]);
                 }
 
