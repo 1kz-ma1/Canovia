@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Plan;
+use Carbon\Carbon;
 
 class PlanPriorityService
 {
@@ -98,7 +99,7 @@ class PlanPriorityService
         }
 
         $lastWorked = $plan->workLogs->max(fn ($log) => $log->worked_on?->timestamp ?? 0);
-        if ($lastWorked > 0 && (int) now()->diffInDays(CarbonCarbon::createFromTimestamp($lastWorked)) >= 7) {
+        if ($lastWorked > 0 && (int) now()->diffInDays(Carbon::createFromTimestamp($lastWorked)) >= 7) {
             $score += 5;
             $reasons[] = '最近このPlanの作業実績がありません';
         }
@@ -109,15 +110,15 @@ class PlanPriorityService
 
         $priority = match (true) {
             $score >= 62 => 1,
-            $score >= 42 => 2,
-            $score >= 24 => 3,
-            $score >= 10 => 4,
+            $score >= 36 => 2,
+            $score >= 20 => 3,
+            $score >= 8 => 4,
             default => 5,
         };
 
         if ($reasons === []) {
             $reasons[] = $remainingDays === null
-                ? '期限や遅れの強いシグナルがないため通常優先度です'
+                ? '期限や遅れの強いシグナルがないため自動優先度は低めです'
                 : '期限・進捗・残作業量から自動判定しています';
         }
 
