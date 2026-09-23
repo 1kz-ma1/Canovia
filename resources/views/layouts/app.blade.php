@@ -8,6 +8,7 @@
         request()->routeIs('timeline.*') => 'タイムライン',
         request()->routeIs('calendar.*') => 'カレンダー',
         request()->routeIs('future_memos.*') => '未来メモ',
+        request()->routeIs('feedback.*') => 'Canovia Future',
         request()->routeIs('chat.*'), request()->routeIs('achievements.*'), request()->routeIs('plans.review_assistant.*') => '計画を更新',
         request()->routeIs('public_plans.*') => '共有プラン',
         request()->routeIs('plans.*'), request()->routeIs('tasks.*'), request()->routeIs('my_plans.*') => '計画',
@@ -144,7 +145,7 @@
                     </span>
                     <span>更新情報</span>
                 </button>
-                <button type="button" class="mobile-feedback-action" data-feedback-open aria-label="Canoviaへフィードバックを送る" title="フィードバック">
+                <a href="{{ route('feedback.index') }}" class="mobile-feedback-action" aria-label="Canovia Futureを開く" title="フィードバック">
                     <span class="mobile-feedback-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
                             <path d="M5.2 5.7h13.6a2.2 2.2 0 0 1 2.2 2.2v7.2a2.2 2.2 0 0 1-2.2 2.2h-7.1L7.3 20l.9-2.7h-3A2.2 2.2 0 0 1 3 15.1V7.9a2.2 2.2 0 0 1 2.2-2.2Z"/>
@@ -153,7 +154,7 @@
                         <i></i>
                     </span>
                     <span>フィードバック</span>
-                </button>
+                </a>
                 <button type="button" class="mobile-utility-button" data-ui-settings-open aria-label="表示設定を開く" title="表示設定">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a1.6 1.6 0 0 0 0-3.2h-.9a1.8 1.8 0 0 1 0-3.6H15A6 6 0 0 0 15 3h-3Zm-4.5 7.5h.01M9 6.8h.01M14.8 6.6h.01M17.2 10h.01"/></svg>
                 </button>
@@ -329,7 +330,7 @@
             </div>
         </dialog>
 
-        <button type="button" class="feedback-fab hidden md:inline-flex" data-feedback-open aria-label="Canoviaへフィードバックを送る">意見</button>
+        <a href="{{ route('feedback.index') }}" class="feedback-fab hidden md:inline-flex" aria-label="Canovia Futureを開く">意見</a>
         <dialog class="feedback-dialog" data-feedback-dialog aria-labelledby="feedback-title">
             <form method="POST" action="{{ route('feedback.store') }}" class="feedback-dialog-card">
                 @csrf
