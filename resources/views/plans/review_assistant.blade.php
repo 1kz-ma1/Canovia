@@ -137,7 +137,7 @@
                 </div>
             </div>
 
-            <div id="review-input-section" class="assistant-message-row assistant-message-right">
+            <div id="review-input-section" class="assistant-message-row assistant-message-right" data-guide-target="plan-update-input">
                 <div class="assistant-bubble assistant-bubble-user assistant-form-bubble">
                     <p class="assistant-speaker">あなた</p>
 
