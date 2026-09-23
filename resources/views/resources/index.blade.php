@@ -41,7 +41,7 @@
     @endif
 
     @if ($canEdit)
-        <section class="page-card mb-7 p-5 sm:p-6" data-resource-add-shell data-server-preferred-provider="{{ $preferred }}">
+        <section class="page-card mb-7 p-5 sm:p-6" data-resource-add-shell data-server-preferred-provider="{{ $preferred }}" data-guide-target="resource-add">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <p class="text-sm font-semibold text-cyan-300">資料を追加</p>
