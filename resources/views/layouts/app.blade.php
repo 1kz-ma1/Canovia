@@ -93,6 +93,7 @@
 
                 <div class="hidden items-center gap-2 lg:flex">
                     <a href="{{ route('calendar.index') }}" class="header-secondary-link">カレンダー</a>
+                    <button type="button" class="header-secondary-link canovia-guide-desktop-trigger" data-guide-open aria-label="Canovia Guideを開く">ガイド</button>
                     <button type="button" class="header-secondary-link release-notes-desktop-trigger" data-release-notes-open aria-label="Canoviaの更新情報を見る">更新情報<span class="release-notes-new-dot" data-release-notes-new aria-hidden="true"></span></button>
                     <button type="button" class="ui-settings-trigger" data-ui-settings-open aria-label="表示設定を開く">表示</button>
                     @auth
@@ -122,6 +123,16 @@
                     <p class="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300">CANOVIA</p>
                     <p class="truncate text-sm font-bold text-slate-50">{{ $mobileSection }}</p>
                 </div>
+                <button type="button" class="mobile-guide-action" data-guide-open aria-label="Canovia Guideを開く" title="ガイド">
+                    <span class="mobile-guide-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="8.5"/>
+                            <path d="m14.8 9.2-2 5.6-5.6 2 2-5.6 5.6-2Z"/>
+                            <circle cx="12" cy="12" r="1.1"/>
+                        </svg>
+                    </span>
+                    <span>ガイド</span>
+                </button>
                 <button type="button" class="mobile-release-action" data-release-notes-open aria-label="Canoviaの更新情報を見る" title="更新情報">
                     <span class="mobile-release-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
@@ -364,6 +375,7 @@
         </dialog>
     @endunless
 
+    @include('layouts.partials.guide')
     @include('layouts.partials.onboarding')
 </body>
 </html>
