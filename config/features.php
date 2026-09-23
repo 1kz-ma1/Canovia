@@ -3,6 +3,8 @@
 $canoviaAi = (bool) env('FEATURE_CANOVIA_AI', env('FEATURE_PACEKEEPER_AI', false));
 
 return [
+    // Feature Flags control rollout/visibility only.
+    // Per-actor usage rights belong to FeatureAccessService / config/entitlements.php.
     // 将来のアプリ内伴走AI。実装・課金方針が固まるまでは一般UIに出さない。
     'canovia_ai' => $canoviaAi,
 
