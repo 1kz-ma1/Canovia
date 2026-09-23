@@ -29,11 +29,22 @@
             <div class="page-card p-5 sm:p-6">
                 <p class="text-sm font-semibold text-cyan-300">1. AIへ渡す</p>
                 <h2 class="mt-1 text-xl font-bold text-slate-50">この相談文をそのまま送る</h2>
-                <div class="mt-4 flex justify-end">
-                    <button type="button" class="btn-secondary px-3 py-2 text-xs" data-resource-prompt-copy>相談文をコピー</button>
+                <textarea id="resource-assistant-prompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $prompt }}</textarea>
+                <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4">
+                    <p class="text-sm font-semibold text-slate-100">資料整理の相談文はCanovia側で準備済みです</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-400">普段使っているAIへ、そのまま送ってください。</p>
+                    <button type="button" class="btn-primary mt-4" data-copy-target="#resource-assistant-prompt">相談文をコピー</button>
+                    <details class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                        <summary class="cursor-pointer text-xs font-semibold text-slate-300">この相談文に含まれる情報</summary>
+                        <ul class="mt-3 space-y-2 text-xs leading-5 text-slate-500">
+                            <li>・対象PlanとTask一覧</li>
+                            <li>・登録済み資料のタイトル・URL・メモ</li>
+                            <li>・資料をどのTaskへ紐づけるか判断する条件</li>
+                            <li>・Canoviaへ戻すJSON形式と対象ID</li>
+                        </ul>
+                    </details>
+                    <p class="mt-3 text-xs leading-5 text-slate-500">相談文には登録した資料URLも含まれるため、送信先AIと共有してよいURLか確認してください。</p>
                 </div>
-                <textarea id="resource-assistant-prompt" class="form-control mt-2 min-h-[420px] font-mono text-xs leading-6" readonly>{{ $prompt }}</textarea>
-                <p class="mt-3 text-xs leading-5 text-slate-500">CanoviaはAI APIへ直接送信しません。普段使っているAIへコピーして使えます。相談文には登録した資料URLも含まれるため、送信先AIと共有してよいURLか確認してください。</p>
             </div>
 
             <div class="page-card p-5 sm:p-6">
@@ -41,8 +52,21 @@
                 <h2 class="mt-1 text-xl font-bold text-slate-50">割り当て案をプレビュー</h2>
                 <form method="POST" action="{{ route('plans.resources.assistant.preview', $plan) }}" class="mt-4">
                     @csrf
-                    <textarea name="assignment_json" rows="18" class="form-control font-mono text-xs leading-6" placeholder="AIの最後のJSON回答を貼り付けてください">{{ old('assignment_json') }}</textarea>
-                    <button type="submit" class="btn-primary mt-4">割り当て案を読み込む</button>
+                    <button
+                        type="button"
+                        class="btn-primary"
+                        data-paste-target="#resource_assignment_json"
+                        data-paste-submit="1"
+                        data-paste-fallback="#resourceAssignmentJsonManual"
+                        data-paste-status="#resourceAssignmentJsonPasteStatus"
+                    >クリップボードから貼り付けて確認</button>
+                    <p id="resourceAssignmentJsonPasteStatus" class="mt-2 hidden text-xs leading-5 text-slate-400" aria-live="polite"></p>
+
+                    <details id="resourceAssignmentJsonManual" class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($errors->has('assignment_json') || old('assignment_json')) open @endif>
+                        <summary class="cursor-pointer text-xs font-semibold text-slate-300">手動で貼り付ける / JSONを確認する</summary>
+                        <textarea id="resource_assignment_json" name="assignment_json" rows="10" class="form-control mt-3 font-mono text-xs leading-6" placeholder="AIの最後のJSON回答を貼り付けてください">{{ old('assignment_json') }}</textarea>
+                        <button type="submit" class="btn-secondary mt-3">このJSONを読み込む</button>
+                    </details>
                 </form>
             </div>
         </section>
@@ -82,20 +106,6 @@
         @endif
     @endif
 
-    <script>
-        document.querySelector('[data-resource-prompt-copy]')?.addEventListener('click', async (event) => {
-            const textarea = document.getElementById('resource-assistant-prompt');
-            if (!textarea) return;
-            try {
-                await navigator.clipboard.writeText(textarea.value);
-                const button = event.currentTarget;
-                const original = button.textContent;
-                button.textContent = 'コピーしました';
-                setTimeout(() => { button.textContent = original; }, 1600);
-            } catch (error) {
-                textarea.focus();
-                textarea.select();
-            }
-        });
-    </script>
+    {{-- Clipboard copy/paste is handled centrally in resources/js/app.js. --}}
+
 @endsection
