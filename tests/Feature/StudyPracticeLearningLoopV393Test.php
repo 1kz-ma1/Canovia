@@ -164,6 +164,9 @@ class StudyPracticeLearningLoopV393Test extends TestCase
         $this->assertStringContainsString('スマートクォート（“ ”）は使わないでください', $prompt);
         $this->assertStringContainsString('response_fields', $prompt);
         $this->assertStringContainsString('reasoning用textarea', $prompt);
+        $this->assertStringContainsString('元の意味領域・業務文脈・専門用語を不自然に抽象化しない', $prompt);
+        $this->assertStringContainsString('病気・検査・陽性など自然な試験文脈', $prompt);
+        $this->assertStringContainsString('実際の試験で使われる自然な語彙・文体を優先する', $prompt);
 
         $evaluationPrompt = app(StudyPracticePromptService::class)->evaluationPrompt(
             $plan,
