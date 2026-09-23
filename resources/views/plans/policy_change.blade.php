@@ -77,24 +77,26 @@
                 外部AIは必要に応じて追加質問を行い、最後にCanoviaへ反映できるJSONを返します。
             </p>
 
-            <textarea
-                id="policyChangePrompt"
-                class="form-control mt-4 min-h-[420px] font-mono text-xs"
-                readonly
-            >{{ $answers['prompt'] }}</textarea>
+            <textarea id="policyChangePrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $answers['prompt'] }}</textarea>
 
-            <div class="mt-4 flex flex-wrap gap-3">
-                <button
-                    type="button"
-                    class="btn-primary"
-                    onclick="copyPolicyChangePrompt('policyChangePrompt')"
-                >
-                    プロンプトをコピー
-                </button>
+            <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4">
+                <p class="text-sm font-semibold text-slate-100">方針変更の相談内容はCanovia側で整理済みです</p>
+                <p class="mt-1 text-xs leading-5 text-slate-400">原文を読む必要はありません。普段使っているAIへそのまま送れます。</p>
+                <div class="mt-4 flex flex-wrap gap-3">
+                    <button type="button" class="btn-primary" data-copy-target="#policyChangePrompt">プロンプトをコピー</button>
+                    <a href="{{ route('plans.review_assistant.show', $selectedPlan) }}" class="btn-secondary">専用画面で確認する</a>
+                </div>
 
-                <a href="{{ route('plans.review_assistant.show', $selectedPlan) }}" class="btn-secondary">
-                    専用画面で確認する
-                </a>
+                <details class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                    <summary class="cursor-pointer text-xs font-semibold text-slate-300">このプロンプトに含まれる情報</summary>
+                    <ul class="mt-3 space-y-2 text-xs leading-5 text-slate-500">
+                        <li>・対象Planと現在のTask構成</li>
+                        <li>・変更前 / 変更後の方針と変更理由</li>
+                        <li>・影響範囲、期限、完成条件、維持したい条件</li>
+                        <li>・AIへ特に判断してほしい内容</li>
+                        <li>・正しいPlan / Task IDとCanoviaへ戻すJSON仕様</li>
+                    </ul>
+                </details>
             </div>
 
             <div class="assistant-notice assistant-notice-warning mt-4">
@@ -106,9 +108,9 @@
     <div class="assistant-message-row assistant-message-right">
         <div class="assistant-bubble assistant-bubble-user assistant-form-bubble">
             <p class="assistant-speaker">あなた</p>
-            <h2 class="mt-2 text-lg font-bold text-slate-100">外部AIから返された最終JSONを貼り付ける</h2>
+            <h2 class="mt-2 text-lg font-bold text-slate-100">外部AIから返された変更案を戻す</h2>
             <p class="mt-2 text-sm leading-6 text-slate-300">
-                AIとの追加質問が終わり、最終的なJSONが返されたら、回答全体またはJSON部分をそのまま貼り付けてください。
+                AI側で最終JSONをコピーしたら、Canoviaでは1回押すだけで貼り付けと変更プレビューへ進めます。
             </p>
 
             <form
@@ -118,73 +120,33 @@
             >
                 @csrf
 
-                <textarea
-                    name="operations_json"
-                    rows="16"
-                    class="form-control font-mono text-xs"
-                    required
-                    placeholder='{"schema_version":"1.0","target_plan":{"id":{{ $selectedPlan->id }},"title":"計画名","category":"カテゴリ"},"summary":"方針変更に合わせて計画を再編","operations":[{"type":"update_plan","description":"変更後の最新方針","reason":"方針変更を反映するため"},{"type":"update_task","task_id":31,"progress_percent":65,"status":"doing","estimated_minutes":1200,"priority":1,"reason":"既存成果を再評価したため"}]}'
-                >{{ old('operations_json') }}</textarea>
+                <button
+                    type="button"
+                    class="btn-primary w-full md:w-auto"
+                    data-paste-target="#policy_operations_json"
+                    data-paste-submit="1"
+                    data-paste-fallback="#policyOperationsJsonManual"
+                    data-paste-status="#policyOperationsJsonPasteStatus"
+                >クリップボードから貼り付けて確認</button>
+                <p id="policyOperationsJsonPasteStatus" class="hidden text-xs leading-5 text-slate-400" aria-live="polite"></p>
 
-                <button type="submit" class="btn-primary w-full md:w-auto">
-                    JSONを読み込んで変更内容を確認
-                </button>
+                <details id="policyOperationsJsonManual" class="ai-handoff-details rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($errors->has('operations_json') || old('operations_json')) open @endif>
+                    <summary class="cursor-pointer text-xs font-semibold text-slate-300">手動で貼り付ける / JSONを確認する</summary>
+                    <textarea
+                        id="policy_operations_json"
+                        name="operations_json"
+                        rows="10"
+                        class="form-control mt-3 font-mono text-xs"
+                        required
+                        placeholder='{"schema_version":"1.1","action":"restructure_plan","target_plan":{"id":{{ $selectedPlan->id }},"title":"計画名","category":"カテゴリ"},"summary":"方針変更に合わせて計画を再編","operations":[]}'
+                    >{{ old('operations_json') }}</textarea>
+                    <button type="submit" class="btn-secondary mt-3 w-full md:w-auto">このJSONを読み込んで確認</button>
+                </details>
             </form>
         </div>
         <div class="assistant-avatar assistant-avatar-user">YOU</div>
     </div>
 
-    <script>
-        async function copyPolicyChangePrompt(elementId) {
-            const element = document.getElementById(elementId);
+    {{-- Clipboard copy/paste is handled centrally in resources/js/app.js. --}}
 
-            if (! element) {
-                alert('コピー対象が見つかりません。');
-                return;
-            }
-
-            const text = element.value;
-
-            try {
-                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-                    await navigator.clipboard.writeText(text);
-                    alert('プロンプトをコピーしました。');
-                    return;
-                }
-
-                throw new Error('Clipboard API is unavailable.');
-            } catch (error) {
-                const fallback = document.createElement('textarea');
-                fallback.value = text;
-                fallback.setAttribute('readonly', '');
-                fallback.style.position = 'fixed';
-                fallback.style.opacity = '0';
-                fallback.style.pointerEvents = 'none';
-
-                document.body.appendChild(fallback);
-                fallback.select();
-                fallback.setSelectionRange(0, fallback.value.length);
-
-                let copied = false;
-
-                try {
-                    copied = document.execCommand('copy');
-                } catch (fallbackError) {
-                    copied = false;
-                }
-
-                document.body.removeChild(fallback);
-
-                if (copied) {
-                    alert('プロンプトをコピーしました。');
-                    return;
-                }
-
-                element.focus();
-                element.select();
-                element.setSelectionRange(0, element.value.length);
-                alert('自動コピーに失敗しました。選択された内容を手動でコピーしてください。');
-            }
-        }
-    </script>
 @endif
