@@ -7,6 +7,7 @@ use App\Data\UserStateData;
 use App\Enums\BehaviorEventType;
 use App\Enums\UserBehaviorState;
 use App\Models\BehaviorEvent;
+use App\Models\User;
 use App\Models\UserStateSnapshot;
 use App\Models\WorkSession;
 use Illuminate\Support\Collection;
@@ -27,6 +28,7 @@ class DashboardPresentationService
         UserStateData $state,
         array $excludedTaskIds = [],
         array $editablePlanIds = [],
+        ?User $actor = null,
     ): array {
         $plans = collect($plans->all());
         $previousSessions = WorkSession::with(['plan', 'task'])
@@ -44,6 +46,7 @@ class DashboardPresentationService
             $state,
             $actorToken,
             $editablePlanIds->keys()->all(),
+            $actor,
         );
         $planTabs = $plans->map(function ($plan) use ($previousSessions, $editablePlanIds, $guidanceDeck) {
             $progress = $this->progressService->calculate($plan);
