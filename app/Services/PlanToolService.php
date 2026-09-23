@@ -2,15 +2,21 @@
 
 namespace App\Services;
 
+use App\Enums\FeatureKey;
 use App\Models\Plan;
 use App\Models\Task;
+use App\Models\User;
 
 class PlanToolService
 {
+    public function __construct(
+        private readonly FeatureAccessService $featureAccess,
+    ) {}
+
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function forTask(Plan $plan, Task $task, bool $canEdit = true): array
+    public function forTask(Plan $plan, Task $task, bool $canEdit = true, ?User $actor = null): array
     {
         if (! $canEdit || in_array($task->status, ['done', 'cancelled'], true) || (int) $task->progress_percent >= 100) {
             return [];
@@ -27,7 +33,13 @@ class PlanToolService
             ],
         ];
 
-        if ($this->isStudyPlan($plan)) {
+        if (
+            $this->isStudyPlan($plan)
+            && $this->featureAccess->canUse($actor, FeatureKey::AiPractice, [
+                'plan_id' => (int) $plan->id,
+                'task_id' => (int) $task->id,
+            ])
+        ) {
             $tools[] = [
                 'id' => 'ai_practice',
                 'name' => 'AI演習',
@@ -62,7 +74,13 @@ class PlanToolService
             ];
         }
 
-        if ($this->isProjectPlan($plan)) {
+        if (
+            $this->isProjectPlan($plan)
+            && $this->featureAccess->canUse($actor, FeatureKey::ProjectArtifact, [
+                'plan_id' => (int) $plan->id,
+                'task_id' => (int) $task->id,
+            ])
+        ) {
             $artifactCount = $task->relationLoaded('artifacts') ? $task->artifacts->count() : 0;
             $tools[] = [
                 'id' => 'artifacts',
