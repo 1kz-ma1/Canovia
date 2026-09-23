@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Enums\FeatureKey;
 use App\Http\Controllers\WorkLogController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\HomeController;
@@ -172,7 +173,7 @@ Route::post('/plans/{plan}/resources/assistant/apply', [PlanResourceAssistantCon
 Route::post('/plans/{plan}/resources/assistant/reset', [PlanResourceAssistantController::class, 'reset'])->name('plans.resources.assistant.reset');
 Route::put('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'update'])->name('plans.resources.update');
 Route::delete('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'destroy'])->name('plans.resources.destroy');
-Route::middleware('feature.access:project_artifact')->group(function () {
+Route::middleware('feature.access:'.FeatureKey::ProjectArtifact->value)->group(function () {
     Route::get('/plans/{plan}/artifacts', [PlanArtifactController::class, 'index'])->name('plans.artifacts.index');
     Route::post('/plans/{plan}/artifacts', [PlanArtifactController::class, 'store'])->name('plans.artifacts.store');
     Route::put('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'update'])->name('plans.artifacts.update');
@@ -181,7 +182,7 @@ Route::middleware('feature.access:project_artifact')->group(function () {
 
 // Canovia Tools: 資格学習向けAI演習。外部AIとの受け渡しはJSONで行い、
 // Canovia側は問題UI・回答・評価プレビューを担当する。
-Route::middleware('feature.access:ai_practice')->group(function () {
+Route::middleware('feature.access:'.FeatureKey::AiPractice->value)->group(function () {
     Route::get('/plans/{plan}/tasks/{task}/study-practice', [StudyPracticeController::class, 'show'])->name('plans.tasks.study_practice.show');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/prepare', [StudyPracticeController::class, 'prepare'])->name('plans.tasks.study_practice.prepare');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/import', [StudyPracticeController::class, 'import'])->name('plans.tasks.study_practice.import');
