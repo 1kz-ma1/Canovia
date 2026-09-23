@@ -23,7 +23,7 @@
             </div>
             <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300">CanoviaがTaskと学習履歴から今回の演習方針を決め、問題ソースを自動選択します。Question Bankで十分にカバーできる場合はCanovia内で直接出題・採点し、不足する場合だけ外部AIへ引き継ぎます。</p>
 
-            <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+            <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4" data-guide-target="practice-strategy">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-300">PRACTICE STRATEGY</p>

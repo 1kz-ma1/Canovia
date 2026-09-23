@@ -16,7 +16,7 @@
         @csrf
         <label class="block">
             <span class="text-sm font-semibold text-slate-200">参加コード</span>
-            <input name="join_code" value="{{ old('join_code') }}" placeholder="CNV-7F3K9Q" autocomplete="off" autocapitalize="characters" class="form-control mt-2 w-full uppercase tracking-[0.12em]" required>
+            <input name="join_code" value="{{ old('join_code') }}" placeholder="CNV-7F3K9Q" autocomplete="off" autocapitalize="characters" class="form-control mt-2 w-full uppercase tracking-[0.12em]" data-guide-target="collaboration-code" required>
         </label>
         <button type="submit" class="btn-primary w-full justify-center">参加する</button>
     </form>

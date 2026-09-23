@@ -67,7 +67,7 @@
             <div class="w-full md:w-auto">
                 <div class="flex flex-wrap gap-2">
                     @if ($aiPracticeTask ?? false)
-                        <a href="{{ route('plans.tasks.study_practice.show', [$plan, $aiPracticeTask]) }}" class="btn-primary flex-1 md:flex-none">✦ AI演習</a>
+                        <a href="{{ route('plans.tasks.study_practice.show', [$plan, $aiPracticeTask]) }}" class="btn-primary flex-1 md:flex-none" data-guide-target="study-practice">✦ AI演習</a>
                     @endif
                     @if (! empty($planTools))
                         <a href="#canovia-tools" class="btn-secondary flex-1 md:flex-none">Tools</a>
