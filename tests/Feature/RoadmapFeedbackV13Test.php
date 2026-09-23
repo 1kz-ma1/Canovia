@@ -112,7 +112,7 @@ class RoadmapFeedbackV13Test extends TestCase
     public function test_feedback_can_store_five_star_rating_and_app_version(): void
     {
         $user = User::factory()->create();
-        config(['pacekeeper.version' => 'v13-test']);
+        config(['canovia.version' => 'v13-test']);
 
         $this->actingAs($user)->post(route('feedback.store'), [
             'type' => 'positive',
