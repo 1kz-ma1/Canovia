@@ -25,7 +25,7 @@ class ApQuestionPackV403Test extends TestCase
 
         $this->assertNotNull($item);
         $this->assertSame('AP', $item['exam_code']);
-        $this->assertSame(28, $item['question_count']);
+        $this->assertSame(74, $item['question_count']);
 
         $this->withSession([AdminAccessService::SESSION_KEY => true])
             ->post(route('admin.question_packs.import_bundled'), [
@@ -37,7 +37,7 @@ class ApQuestionPackV403Test extends TestCase
         $pack = QuestionPack::where('slug', 'ap-a-canovia-core-v1')->firstOrFail();
 
         $this->assertSame('draft', $pack->status);
-        $this->assertSame(28, $pack->questions()->count());
+        $this->assertSame(74, $pack->questions()->count());
 
         $mtu = $pack->questions()->where('external_key', 'net-mtu-001')->firstOrFail();
         $this->assertSame(
@@ -45,6 +45,13 @@ class ApQuestionPackV403Test extends TestCase
             collect($mtu->response_schema[0]['choices'])->pluck('id')->all()
         );
         $this->assertSame('イ', data_get($mtu->grading_rule, 'answer'));
+        $this->assertSame('1.1.0', $pack->version);
+        $this->assertSame('1.1', data_get($pack->metadata, 'content_rules_version'));
+
+        $bayes = $pack->questions()->where('external_key', 'calc-bayes-disease-025')->firstOrFail();
+        $this->assertStringContainsString('病気', $bayes->prompt);
+        $this->assertStringContainsString('陽性', $bayes->prompt);
+        $this->assertStringNotContainsString('異常な対象', $bayes->prompt);
     }
 
     public function test_published_ap_pack_covers_single_mtu_dns_and_database_weaknesses(): void
@@ -54,7 +61,18 @@ class ApQuestionPackV403Test extends TestCase
         [$user, $plan, $task] = $this->studyPlan();
         $coverage = app(QuestionBankCoverageService::class);
 
-        foreach (['MTU計算', 'DNSレコード', 'DB'] as $focus) {
+        foreach ([
+            'MTU計算',
+            'DNSレコード',
+            'DB',
+            'ベイズ',
+            'MIPS',
+            'ボトルネック',
+            'ラウンドロビン',
+            'スタベーション',
+            '可用性',
+            '品質特性',
+        ] as $focus) {
             $result = $coverage->evaluate($plan, $task, [
                 'key' => 'weakness_reinforcement',
                 'target_question_count' => 10,
@@ -65,6 +83,18 @@ class ApQuestionPackV403Test extends TestCase
             $this->assertSame('ap-a-canovia-core-v1', $result['pack']?->slug);
             $this->assertGreaterThanOrEqual(3, $result['focus_match_count']);
         }
+
+        $genericCalculation = QuestionPack::where('slug', 'ap-a-canovia-core-v1')
+            ->firstOrFail()
+            ->questions()
+            ->where('external_key', 'calc-mips-026')
+            ->firstOrFail();
+
+        $this->assertSame(
+            0,
+            $coverage->questionFocusScore($genericCalculation, collect(['MTU計算'])),
+            'A generic 計算 tag must not inflate MTU-specific coverage.'
+        );
     }
 
     public function test_ai_practice_uses_bundled_pack_directly_for_mtu_weakness(): void

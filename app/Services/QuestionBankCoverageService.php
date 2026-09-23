@@ -138,11 +138,28 @@ class QuestionBankCoverageService
         $score = 0;
         foreach ($focusTopics as $topic) {
             $normalizedTopic = $this->normalize($topic);
+
             foreach ($terms as $term) {
-                if ($term !== '' && (
-                    str_contains($normalizedTopic, $term)
-                    || str_contains($term, $normalizedTopic)
-                )) {
+                if ($term === '' || $normalizedTopic === '') {
+                    continue;
+                }
+
+                if ($term === $normalizedTopic) {
+                    $score += 3;
+                    continue;
+                }
+
+                // A specific metadata term may refine the focus topic.
+                // Example: focus "DNS" can match "DNSレコード".
+                if (mb_strlen($normalizedTopic) >= 3 && str_contains($term, $normalizedTopic)) {
+                    $score += 2;
+                    continue;
+                }
+
+                // A sufficiently specific term may be contained in a compound
+                // focus such as "MTU計算". Generic two-character labels such
+                // as "計算" must not make unrelated questions look like MTU.
+                if (mb_strlen($term) >= 3 && str_contains($normalizedTopic, $term)) {
                     $score++;
                 }
             }

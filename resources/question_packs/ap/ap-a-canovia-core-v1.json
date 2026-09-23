@@ -5,7 +5,7 @@
     "title": "応用情報技術者試験 科目A Canovia Core v1",
     "exam_code": "AP",
     "subject": "科目A",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "downloadable": true,
     "metadata": {
       "match_terms": [
@@ -25,10 +25,25 @@
         "ネットワーク",
         "DB",
         "データベース",
+        "NoSQL",
         "計算",
+        "ベイズ",
+        "MIPS",
+        "ボトルネック",
+        "ラウンドロビン",
+        "スタベーション",
+        "可用性",
+        "品質特性",
         "OS",
-        "セキュリティ"
-      ]
+        "アルゴリズム",
+        "セキュリティ",
+        "ソフトウェア",
+        "マネジメント",
+        "ストラテジ"
+      ],
+      "content_rules_version": "1.1",
+      "context_fidelity": "preserve_exam_domain",
+      "content_revision": "2026-09-23"
     }
   },
   "questions": [
@@ -1966,6 +1981,3226 @@
       "explanation": "サイドチャネル攻撃は、暗号アルゴリズムそのものではなく、実装時に漏れる消費電力や時間などの情報を利用します。",
       "difficulty": 3,
       "sort_order": 28,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bayes-disease-025",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "ある病気の有病率は2%である。病気に罹患している人を検査すると90%の確率で陽性となり、罹患していない人でも5%の確率で陽性となる。検査結果が陽性だった人が実際に病気に罹患している確率に最も近いものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "約15.5%"
+            },
+            {
+              "id": "イ",
+              "label": "約26.9%"
+            },
+            {
+              "id": "ウ",
+              "label": "約36.0%"
+            },
+            {
+              "id": "エ",
+              "label": "約64.3%"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "確率",
+          "ベイズの定理",
+          "条件付き確率"
+        ],
+        "weakness_targets": [
+          "ベイズ",
+          "計算",
+          "確率"
+        ],
+        "tags": [
+          "科目A",
+          "計算"
+        ],
+        "keywords": [
+          "有病率",
+          "陽性",
+          "偽陽性"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "陽性になる確率は0.02×0.90+0.98×0.05=0.067。病気かつ陽性は0.018なので、0.018/0.067≈0.269です。",
+      "difficulty": 4,
+      "sort_order": 29,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-mips-026",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "クロック周波数2GHzのCPUがあり、ある命令群を実行したときの平均CPIが2.5であった。このCPUの平均命令実行性能として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "400MIPS"
+            },
+            {
+              "id": "イ",
+              "label": "800MIPS"
+            },
+            {
+              "id": "ウ",
+              "label": "1,250MIPS"
+            },
+            {
+              "id": "エ",
+              "label": "5,000MIPS"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "コンピュータ構成",
+          "MIPS",
+          "CPI"
+        ],
+        "weakness_targets": [
+          "MIPS",
+          "計算",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "クロック周波数",
+          "命令実行性能"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "1秒当たり2×10^9クロックを平均2.5クロック/命令で割ると8×10^8命令/秒、すなわち800MIPSです。",
+      "difficulty": 3,
+      "sort_order": 30,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bottleneck-027",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "直列に接続された3工程A、B、Cの最大処理能力が、それぞれ毎分40個、毎分25個、毎分50個である。工程間に十分なバッファがあるとき、システム全体の最大スループットとボトルネックの組合せとして適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "25個/分・工程B"
+            },
+            {
+              "id": "イ",
+              "label": "40個/分・工程A"
+            },
+            {
+              "id": "ウ",
+              "label": "50個/分・工程C"
+            },
+            {
+              "id": "エ",
+              "label": "115個/分・工程B"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "性能",
+          "ボトルネック",
+          "スループット"
+        ],
+        "weakness_targets": [
+          "ボトルネック",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "性能"
+        ],
+        "keywords": [
+          "処理能力",
+          "直列工程"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "直列工程全体の処理能力は最も遅い工程に制約されます。工程Bの25個/分がボトルネックです。",
+      "difficulty": 2,
+      "sort_order": 31,
+      "is_active": true
+    },
+    {
+      "external_key": "os-roundrobin-028",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "全て時刻0に到着したプロセスP1、P2、P3があり、必要CPU時間はそれぞれ5、3、1である。タイムクォンタム2のラウンドロビン方式でP1、P2、P3の順に実行を開始し、コンテキスト切替時間は無視する。完了順序として正しいものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "P1→P2→P3"
+            },
+            {
+              "id": "イ",
+              "label": "P2→P3→P1"
+            },
+            {
+              "id": "ウ",
+              "label": "P3→P1→P2"
+            },
+            {
+              "id": "エ",
+              "label": "P3→P2→P1"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "ラウンドロビン"
+        ],
+        "weakness_targets": [
+          "ラウンドロビン",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "タイムクォンタム",
+          "CPUスケジューリング"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "P1を2、P2を2、P3を1実行してP3完了。その後P1を2、P2を1でP2完了、最後にP1が完了します。",
+      "difficulty": 4,
+      "sort_order": 32,
+      "is_active": true
+    },
+    {
+      "external_key": "os-starvation-029",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "優先度方式のCPUスケジューリングで、高優先度のプロセスが継続的に到着し、実行可能な低優先度プロセスが長時間CPUを割り当てられない状態が続いた。この現象と、その代表的な緩和策の組合せとして適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "デッドロック・タイムアウト"
+            },
+            {
+              "id": "イ",
+              "label": "スタベーション・エージング"
+            },
+            {
+              "id": "ウ",
+              "label": "スラッシング・ページ置換"
+            },
+            {
+              "id": "エ",
+              "label": "ライブロック・排他ロック"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "スタベーション"
+        ],
+        "weakness_targets": [
+          "スタベーション",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "エージング",
+          "優先度"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "低優先度処理が実行機会を得られない現象はスタベーションです。待ち時間に応じて優先度を上げるエージングが代表的な緩和策です。",
+      "difficulty": 3,
+      "sort_order": 33,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-availability-parallel-030",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "可用性0.90の同一装置を2台並列に構成し、少なくとも1台が稼働していればシステムは利用できる。各装置の故障は互いに独立しているとき、システム全体の可用性はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "0.81"
+            },
+            {
+              "id": "イ",
+              "label": "0.90"
+            },
+            {
+              "id": "ウ",
+              "label": "0.99"
+            },
+            {
+              "id": "エ",
+              "label": "1.80"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "信頼性",
+          "可用性",
+          "並列構成"
+        ],
+        "weakness_targets": [
+          "可用性",
+          "計算",
+          "信頼性"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "信頼性"
+        ],
+        "keywords": [
+          "冗長化",
+          "稼働率"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "両方が停止する確率は0.1×0.1=0.01なので、少なくとも1台が稼働する確率は1−0.01=0.99です。",
+      "difficulty": 3,
+      "sort_order": 34,
+      "is_active": true
+    },
+    {
+      "external_key": "quality-maintainability-031",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "ある業務システムでは、部品を変更したときの影響範囲を限定し、障害修正や機能追加、テストを短時間で行えるようモジュール間の依存を小さくした。この設計で特に向上を狙っている品質特性はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "可用性"
+            },
+            {
+              "id": "イ",
+              "label": "保守性"
+            },
+            {
+              "id": "ウ",
+              "label": "機密性"
+            },
+            {
+              "id": "エ",
+              "label": "使用性"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ソフトウェア品質",
+          "保守性"
+        ],
+        "weakness_targets": [
+          "品質特性",
+          "保守性"
+        ],
+        "tags": [
+          "科目A",
+          "ソフトウェア"
+        ],
+        "keywords": [
+          "変更容易性",
+          "モジュール化"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "変更容易性・修正容易性・試験容易性などは保守性に関係します。",
+      "difficulty": 2,
+      "sort_order": 35,
+      "is_active": true
+    },
+    {
+      "external_key": "quality-reliability-032",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "オンライン予約システムで、障害が起こりにくく、決められた条件下で一定期間継続して正しく機能することを重視している。この要求に最も直接対応する品質特性はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "信頼性"
+            },
+            {
+              "id": "イ",
+              "label": "互換性"
+            },
+            {
+              "id": "ウ",
+              "label": "移植性"
+            },
+            {
+              "id": "エ",
+              "label": "使用性"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ソフトウェア品質",
+          "信頼性"
+        ],
+        "weakness_targets": [
+          "品質特性",
+          "信頼性"
+        ],
+        "tags": [
+          "科目A",
+          "ソフトウェア"
+        ],
+        "keywords": [
+          "障害",
+          "品質モデル"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "一定条件・一定期間に正しく機能し続ける性質は信頼性です。可用性は利用可能である時間割合の観点を強く持ちます。",
+      "difficulty": 2,
+      "sort_order": 36,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-compression-transfer-033",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "100Mバイトのファイルを40%に圧縮してから、実効転送速度20Mビット/秒の回線で送信する。圧縮・展開に要する時間を無視すると、転送時間は何秒か。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "8秒"
+            },
+            {
+              "id": "イ",
+              "label": "16秒"
+            },
+            {
+              "id": "ウ",
+              "label": "20秒"
+            },
+            {
+              "id": "エ",
+              "label": "40秒"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "圧縮",
+          "転送時間"
+        ],
+        "weakness_targets": [
+          "圧縮転送",
+          "計算",
+          "ネットワーク"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク",
+          "計算"
+        ],
+        "keywords": [
+          "ビット",
+          "バイト",
+          "通信速度"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "圧縮後は40Mバイト=320Mビット。320Mビット÷20Mビット/秒=16秒です。",
+      "difficulty": 3,
+      "sort_order": 37,
+      "is_active": true
+    },
+    {
+      "external_key": "storage-wearleveling-034",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "NAND型フラッシュメモリを用いたSSDで、特定の物理ブロックに書換えが集中することを避け、メモリセルの寿命を均等化する制御はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "ウェアレベリング"
+            },
+            {
+              "id": "イ",
+              "label": "ストライピング"
+            },
+            {
+              "id": "ウ",
+              "label": "デフラグメンテーション"
+            },
+            {
+              "id": "エ",
+              "label": "スプーリング"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ストレージ",
+          "フラッシュメモリ",
+          "ウェアレベリング"
+        ],
+        "weakness_targets": [
+          "ウェアレベリング"
+        ],
+        "tags": [
+          "科目A",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "SSD",
+          "NAND"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "ウェアレベリングは書換え回数が特定セルへ偏らないよう配置を分散し、フラッシュメモリの寿命を延ばします。",
+      "difficulty": 2,
+      "sort_order": 38,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-da-035",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "0〜5Vを8ビットで表すD/A変換器がある。デジタル値0を0V、255を5Vに対応させるとき、デジタル値51を入力した場合の出力電圧として最も近いものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "0.5V"
+            },
+            {
+              "id": "イ",
+              "label": "1.0V"
+            },
+            {
+              "id": "ウ",
+              "label": "2.0V"
+            },
+            {
+              "id": "エ",
+              "label": "4.0V"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "D/A変換",
+          "量子化",
+          "電圧"
+        ],
+        "weakness_targets": [
+          "D/A変換",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "ハードウェア"
+        ],
+        "keywords": [
+          "8ビット",
+          "アナログ"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "51/255=0.2なので、5V×0.2=1.0Vです。",
+      "difficulty": 3,
+      "sort_order": 39,
+      "is_active": true
+    },
+    {
+      "external_key": "db-nosql-types-036",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "商品カタログをJSON形式で保存し、商品ごとに持つ属性が多少異なっても柔軟に扱いたい。この用途に最も適したNoSQLのデータモデルはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "キー・バリュー型"
+            },
+            {
+              "id": "イ",
+              "label": "ドキュメント型"
+            },
+            {
+              "id": "ウ",
+              "label": "ワイドカラム型"
+            },
+            {
+              "id": "エ",
+              "label": "グラフ型"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "NoSQL",
+          "ドキュメント型"
+        ],
+        "weakness_targets": [
+          "NoSQL",
+          "DB",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "JSON",
+          "スキーマ柔軟性"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "JSONのような階層構造をもつ文書を柔軟に格納する用途にはドキュメント型が適しています。",
+      "difficulty": 2,
+      "sort_order": 40,
+      "is_active": true
+    },
+    {
+      "external_key": "db-widecolumn-037",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "数百万台のIoT端末から時系列データを収集し、端末IDをキーとして大量の列を列ファミリ単位で分散管理したい。この用途に適したNoSQLのデータモデルはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "ドキュメント型"
+            },
+            {
+              "id": "イ",
+              "label": "ワイドカラム型"
+            },
+            {
+              "id": "ウ",
+              "label": "グラフ型"
+            },
+            {
+              "id": "エ",
+              "label": "RDBのビュー"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "NoSQL",
+          "ワイドカラム型"
+        ],
+        "weakness_targets": [
+          "NoSQL",
+          "DB",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "IoT",
+          "列ファミリ"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "多数の列を列ファミリ単位で分散管理する用途はワイドカラム型の代表例です。",
+      "difficulty": 3,
+      "sort_order": 41,
+      "is_active": true
+    },
+    {
+      "external_key": "db-graph-038",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "SNSで利用者間のフォロー関係をたどり、『Aさんから3人以内のつながりにいる利用者』を頻繁に検索したい。この用途に最も適したデータモデルはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "グラフ型"
+            },
+            {
+              "id": "イ",
+              "label": "キー・バリュー型"
+            },
+            {
+              "id": "ウ",
+              "label": "ワイドカラム型"
+            },
+            {
+              "id": "エ",
+              "label": "フラットファイル"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "NoSQL",
+          "グラフ型"
+        ],
+        "weakness_targets": [
+          "NoSQL",
+          "DB",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "SNS",
+          "関係探索"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "ノードとエッジで関係を表し、経路や近傍をたどる検索にはグラフ型が適しています。",
+      "difficulty": 2,
+      "sort_order": 42,
+      "is_active": true
+    },
+    {
+      "external_key": "algo-binarysearch-039",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "昇順に整列済みの1,024件のデータから二分探索で目的の値を探す。1回の比較ごとに探索範囲をほぼ半分にできるとき、最悪の場合の比較回数のオーダとして最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "O(1)"
+            },
+            {
+              "id": "イ",
+              "label": "O(log n)"
+            },
+            {
+              "id": "ウ",
+              "label": "O(n)"
+            },
+            {
+              "id": "エ",
+              "label": "O(n²)"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "アルゴリズム",
+          "二分探索",
+          "計算量"
+        ],
+        "weakness_targets": [
+          "アルゴリズム"
+        ],
+        "tags": [
+          "科目A",
+          "アルゴリズム"
+        ],
+        "keywords": [
+          "探索",
+          "オーダ"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "二分探索は探索範囲を半分ずつ減らすため、比較回数はデータ件数の対数に比例します。",
+      "difficulty": 2,
+      "sort_order": 43,
+      "is_active": true
+    },
+    {
+      "external_key": "algo-hashtable-040",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "社員番号をキーとして社員情報を格納し、社員番号が完全一致する検索を非常に多く行う。適切に設計された場合、平均的に高速な検索を期待できるデータ構造はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "ハッシュ表"
+            },
+            {
+              "id": "イ",
+              "label": "スタック"
+            },
+            {
+              "id": "ウ",
+              "label": "キュー"
+            },
+            {
+              "id": "エ",
+              "label": "連結リストだけを先頭から順に探索する構造"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "アルゴリズム",
+          "ハッシュ表"
+        ],
+        "weakness_targets": [
+          "アルゴリズム"
+        ],
+        "tags": [
+          "科目A",
+          "アルゴリズム"
+        ],
+        "keywords": [
+          "等価検索",
+          "ハッシュ関数"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "ハッシュ表はキーの等価検索を平均的に高速に行えます。",
+      "difficulty": 2,
+      "sort_order": 44,
+      "is_active": true
+    },
+    {
+      "external_key": "algo-stack-041",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "Webブラウザの『戻る』機能で、直前に閲覧したページから順に履歴を取り出したい。基本となるデータ構造はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "FIFOキュー"
+            },
+            {
+              "id": "イ",
+              "label": "スタック"
+            },
+            {
+              "id": "ウ",
+              "label": "優先度付きキュー"
+            },
+            {
+              "id": "エ",
+              "label": "ハッシュ表"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データ構造",
+          "スタック"
+        ],
+        "weakness_targets": [
+          "アルゴリズム"
+        ],
+        "tags": [
+          "科目A",
+          "アルゴリズム"
+        ],
+        "keywords": [
+          "LIFO",
+          "ブラウザ履歴"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "最後に追加した履歴を最初に取り出すLIFOの動作なのでスタックが適しています。",
+      "difficulty": 1,
+      "sort_order": 45,
+      "is_active": true
+    },
+    {
+      "external_key": "algo-complexity-042",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "要素数nの配列について、外側のループをn回実行し、その各回で内側のループもn回実行する処理がある。各ループ内部の処理時間を一定とすると、時間計算量のオーダはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "O(log n)"
+            },
+            {
+              "id": "イ",
+              "label": "O(n)"
+            },
+            {
+              "id": "ウ",
+              "label": "O(n log n)"
+            },
+            {
+              "id": "エ",
+              "label": "O(n²)"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "アルゴリズム",
+          "計算量"
+        ],
+        "weakness_targets": [
+          "アルゴリズム",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "アルゴリズム"
+        ],
+        "keywords": [
+          "ネストしたループ"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "n回×n回の処理になるため、実行回数はn²に比例します。",
+      "difficulty": 2,
+      "sort_order": 46,
+      "is_active": true
+    },
+    {
+      "external_key": "test-boundary-043",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "年齢を18歳以上65歳以下だけ受け付ける入力欄を境界値分析で確認する。境界付近を効率よく確認するテストデータの組合せとして最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "18, 40, 65"
+            },
+            {
+              "id": "イ",
+              "label": "17, 18, 65, 66"
+            },
+            {
+              "id": "ウ",
+              "label": "1, 18, 100"
+            },
+            {
+              "id": "エ",
+              "label": "17, 40, 66"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ソフトウェアテスト",
+          "境界値分析"
+        ],
+        "weakness_targets": [
+          "テスト",
+          "品質特性"
+        ],
+        "tags": [
+          "科目A",
+          "ソフトウェア"
+        ],
+        "keywords": [
+          "ブラックボックステスト",
+          "入力値"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "下限18と上限65の直前・境界値を確認するため、17,18,65,66が適切です。",
+      "difficulty": 2,
+      "sort_order": 47,
+      "is_active": true
+    },
+    {
+      "external_key": "test-levels-044",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "複数のモジュールを結合し、モジュール間のインタフェースやデータの受渡しが正しく動作することを主に確認するテストはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "単体テスト"
+            },
+            {
+              "id": "イ",
+              "label": "結合テスト"
+            },
+            {
+              "id": "ウ",
+              "label": "受入れテスト"
+            },
+            {
+              "id": "エ",
+              "label": "運用テスト"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ソフトウェアテスト",
+          "結合テスト"
+        ],
+        "weakness_targets": [
+          "テスト"
+        ],
+        "tags": [
+          "科目A",
+          "ソフトウェア"
+        ],
+        "keywords": [
+          "インタフェース"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "モジュール間の接続やインタフェースを確認するのは結合テストです。",
+      "difficulty": 1,
+      "sort_order": 48,
+      "is_active": true
+    },
+    {
+      "external_key": "dev-cicd-045",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "開発者がソースコードを共有リポジトリへ頻繁に統合し、そのたびに自動ビルドや自動テストを実行して不具合を早期に検出する実践はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "継続的インテグレーション"
+            },
+            {
+              "id": "イ",
+              "label": "ウォーターフォール"
+            },
+            {
+              "id": "ウ",
+              "label": "フェールオーバ"
+            },
+            {
+              "id": "エ",
+              "label": "リファクタリングだけを手動で行う運用"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ソフトウェア開発",
+          "CI",
+          "自動テスト"
+        ],
+        "weakness_targets": [
+          "ソフトウェア開発"
+        ],
+        "tags": [
+          "科目A",
+          "ソフトウェア"
+        ],
+        "keywords": [
+          "CI/CD",
+          "DevOps"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "継続的インテグレーションでは変更を頻繁に統合し、自動ビルド・テストで統合問題を早期発見します。",
+      "difficulty": 2,
+      "sort_order": 49,
+      "is_active": true
+    },
+    {
+      "external_key": "sec-xss-046",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "掲示板の投稿内容を適切にエスケープせずHTMLへ埋め込んだ結果、攻撃者が投稿したスクリプトが別の利用者のブラウザで実行された。この脆弱性はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "SQLインジェクション"
+            },
+            {
+              "id": "イ",
+              "label": "クロスサイトスクリプティング"
+            },
+            {
+              "id": "ウ",
+              "label": "CSRF"
+            },
+            {
+              "id": "エ",
+              "label": "ディレクトリトラバーサル"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "セキュリティ",
+          "Web",
+          "XSS"
+        ],
+        "weakness_targets": [
+          "セキュリティ"
+        ],
+        "tags": [
+          "科目A",
+          "セキュリティ"
+        ],
+        "keywords": [
+          "エスケープ",
+          "Webアプリ"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "利用者入力がHTMLへ安全に処理されず、ブラウザ上でスクリプトが実行されるのはXSSです。",
+      "difficulty": 2,
+      "sort_order": 50,
+      "is_active": true
+    },
+    {
+      "external_key": "sec-csrf-047",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "利用者が銀行サイトへログインしたまま攻撃者のサイトを閲覧したところ、利用者の意思に反して銀行サイトへの送金要求がブラウザから送信された。この攻撃はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "CSRF"
+            },
+            {
+              "id": "イ",
+              "label": "XSS"
+            },
+            {
+              "id": "ウ",
+              "label": "ブルートフォース攻撃"
+            },
+            {
+              "id": "エ",
+              "label": "DNSキャッシュポイズニング"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "セキュリティ",
+          "Web",
+          "CSRF"
+        ],
+        "weakness_targets": [
+          "セキュリティ"
+        ],
+        "tags": [
+          "科目A",
+          "セキュリティ"
+        ],
+        "keywords": [
+          "認証済みセッション",
+          "Webアプリ"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "認証済み利用者の権限を悪用して意図しないリクエストを送らせる攻撃はCSRFです。",
+      "difficulty": 2,
+      "sort_order": 51,
+      "is_active": true
+    },
+    {
+      "external_key": "sec-password-salt-048",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "利用者パスワードをハッシュ値として保存するとき、同じパスワードでも利用者ごとに異なるハッシュ値になり、事前計算済みのレインボーテーブルによる攻撃を難しくするために追加する値はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "ソルト"
+            },
+            {
+              "id": "イ",
+              "label": "セッションID"
+            },
+            {
+              "id": "ウ",
+              "label": "公開鍵"
+            },
+            {
+              "id": "エ",
+              "label": "チェックディジット"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "セキュリティ",
+          "パスワード",
+          "ソルト"
+        ],
+        "weakness_targets": [
+          "セキュリティ"
+        ],
+        "tags": [
+          "科目A",
+          "セキュリティ"
+        ],
+        "keywords": [
+          "ハッシュ",
+          "レインボーテーブル"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "利用者ごとにランダムなソルトを付加してからハッシュ化することで、同じパスワードでも保存値を異ならせられます。",
+      "difficulty": 2,
+      "sort_order": 52,
+      "is_active": true
+    },
+    {
+      "external_key": "sec-cert-049",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "WebブラウザがHTTPS接続先のサーバ証明書を検証するとき、証明書に記載された公開鍵が正当な主体のものであることを信頼するための基盤として中心的な役割を持つものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "認証局"
+            },
+            {
+              "id": "イ",
+              "label": "DHCPサーバ"
+            },
+            {
+              "id": "ウ",
+              "label": "NTPサーバ"
+            },
+            {
+              "id": "エ",
+              "label": "プロキシARP"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "セキュリティ",
+          "PKI",
+          "サーバ証明書"
+        ],
+        "weakness_targets": [
+          "セキュリティ"
+        ],
+        "tags": [
+          "科目A",
+          "セキュリティ"
+        ],
+        "keywords": [
+          "HTTPS",
+          "認証局"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "PKIでは信頼された認証局が証明書へ署名し、公開鍵と主体の対応を保証します。",
+      "difficulty": 2,
+      "sort_order": 53,
+      "is_active": true
+    },
+    {
+      "external_key": "pm-criticalpath-050",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "プロジェクトのネットワーク図で、開始から完了までの経路のうち所要時間が最も長く、その経路上の作業が遅れるとプロジェクト全体の完了も遅れる経路を何というか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "クリティカルパス"
+            },
+            {
+              "id": "イ",
+              "label": "ベースライン"
+            },
+            {
+              "id": "ウ",
+              "label": "スプリント"
+            },
+            {
+              "id": "エ",
+              "label": "バックログ"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "プロジェクトマネジメント",
+          "クリティカルパス"
+        ],
+        "weakness_targets": [
+          "マネジメント"
+        ],
+        "tags": [
+          "科目A",
+          "マネジメント"
+        ],
+        "keywords": [
+          "PERT",
+          "工期"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "全体工期を決定する最長経路をクリティカルパスといいます。",
+      "difficulty": 1,
+      "sort_order": 54,
+      "is_active": true
+    },
+    {
+      "external_key": "pm-evm-051",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "ある時点でPV=100万円、EV=80万円、AC=90万円であった。EVMの評価として適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "予定より進んでおり、予算も節約できている"
+            },
+            {
+              "id": "イ",
+              "label": "予定より遅れているが、予算は節約できている"
+            },
+            {
+              "id": "ウ",
+              "label": "予定より遅れており、コストも予算超過傾向である"
+            },
+            {
+              "id": "エ",
+              "label": "予定どおりで、コストも予算どおりである"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "プロジェクトマネジメント",
+          "EVM",
+          "PV",
+          "EV",
+          "AC"
+        ],
+        "weakness_targets": [
+          "マネジメント",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "マネジメント",
+          "計算"
+        ],
+        "keywords": [
+          "SV",
+          "CV"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "SV=EV−PV=−20で進捗遅れ、CV=EV−AC=−10でコスト超過傾向です。",
+      "difficulty": 3,
+      "sort_order": 55,
+      "is_active": true
+    },
+    {
+      "external_key": "service-sla-052",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "月30日間、24時間提供するサービスで月間可用性99.9%以上をSLAとする。1か月に許容される停止時間の上限に最も近いものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "約4.3分"
+            },
+            {
+              "id": "イ",
+              "label": "約43.2分"
+            },
+            {
+              "id": "ウ",
+              "label": "約7.2時間"
+            },
+            {
+              "id": "エ",
+              "label": "約43.2時間"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "サービスマネジメント",
+          "SLA",
+          "可用性"
+        ],
+        "weakness_targets": [
+          "可用性",
+          "マネジメント",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "マネジメント",
+          "計算"
+        ],
+        "keywords": [
+          "停止時間",
+          "サービスレベル"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "30日×24時間×60分=43,200分。停止可能割合0.1%=0.001なので43.2分です。",
+      "difficulty": 3,
+      "sort_order": 56,
+      "is_active": true
+    },
+    {
+      "external_key": "strategy-break-even-053",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "新サービスの固定費が600万円、1件当たりの販売価格が5,000円、1件当たりの変動費が2,000円である。利益が0になる損益分岐点の販売件数はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "1,200件"
+            },
+            {
+              "id": "イ",
+              "label": "2,000件"
+            },
+            {
+              "id": "ウ",
+              "label": "3,000件"
+            },
+            {
+              "id": "エ",
+              "label": "6,000件"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "経営戦略",
+          "損益分岐点"
+        ],
+        "weakness_targets": [
+          "ストラテジ",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "ストラテジ",
+          "計算"
+        ],
+        "keywords": [
+          "固定費",
+          "変動費",
+          "限界利益"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "1件当たりの限界利益は5,000−2,000=3,000円。600万円÷3,000円=2,000件です。",
+      "difficulty": 3,
+      "sort_order": 57,
+      "is_active": true
+    },
+    {
+      "external_key": "strategy-swot-054",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "ある企業がSWOT分析を行ったところ、『自社が保有する高いブランド認知度』が挙げられた。これはどの区分に分類するのが最も適切か。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "Strength"
+            },
+            {
+              "id": "イ",
+              "label": "Weakness"
+            },
+            {
+              "id": "ウ",
+              "label": "Opportunity"
+            },
+            {
+              "id": "エ",
+              "label": "Threat"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "経営戦略",
+          "SWOT"
+        ],
+        "weakness_targets": [
+          "ストラテジ"
+        ],
+        "tags": [
+          "科目A",
+          "ストラテジ"
+        ],
+        "keywords": [
+          "内部環境",
+          "強み"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "自社内部の有利な要因なのでStrength（強み）に分類します。",
+      "difficulty": 1,
+      "sort_order": 58,
+      "is_active": true
+    },
+    {
+      "external_key": "arch-container-055",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "同じOSカーネルを共有しながら、アプリケーションごとにプロセス・ファイルシステム・ネットワークなどを隔離して実行環境を提供する技術の説明として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "コンテナ"
+            },
+            {
+              "id": "イ",
+              "label": "完全仮想化だけを用いる仮想マシン"
+            },
+            {
+              "id": "ウ",
+              "label": "RAID"
+            },
+            {
+              "id": "エ",
+              "label": "CDN"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "システム構成",
+          "コンテナ",
+          "仮想化"
+        ],
+        "weakness_targets": [
+          "コンピュータ構成"
+        ],
+        "tags": [
+          "科目A",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "Docker",
+          "OSカーネル"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "コンテナはホストOSのカーネルを共有しつつ、アプリケーションの実行環境を隔離します。",
+      "difficulty": 2,
+      "sort_order": 59,
+      "is_active": true
+    },
+    {
+      "external_key": "arch-raid5-056",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "同容量のディスク4台でRAID5を構成する。各ディスクの容量が2TBのとき、パリティ分を考慮した実効容量はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "2TB"
+            },
+            {
+              "id": "イ",
+              "label": "4TB"
+            },
+            {
+              "id": "ウ",
+              "label": "6TB"
+            },
+            {
+              "id": "エ",
+              "label": "8TB"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ストレージ",
+          "RAID5"
+        ],
+        "weakness_targets": [
+          "コンピュータ構成",
+          "計算"
+        ],
+        "tags": [
+          "科目A",
+          "コンピュータ構成",
+          "計算"
+        ],
+        "keywords": [
+          "パリティ",
+          "冗長化"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "RAID5の実効容量は（台数−1）×1台容量なので、(4−1)×2TB=6TBです。",
+      "difficulty": 2,
+      "sort_order": 60,
+      "is_active": true
+    },
+    {
+      "external_key": "net-arp-057",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "同一IPv4 LAN内で、送信先IPアドレスに対応するMACアドレスを調べるために利用されるプロトコルはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "ARP"
+            },
+            {
+              "id": "イ",
+              "label": "DNS"
+            },
+            {
+              "id": "ウ",
+              "label": "DHCP"
+            },
+            {
+              "id": "エ",
+              "label": "ICMP"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "ARP",
+          "IPv4"
+        ],
+        "weakness_targets": [
+          "ネットワーク"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク"
+        ],
+        "keywords": [
+          "MACアドレス",
+          "LAN"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "ARPはIPv4アドレスから同一LAN上のMACアドレスを解決します。",
+      "difficulty": 1,
+      "sort_order": 61,
+      "is_active": true
+    },
+    {
+      "external_key": "net-dhcp-058",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "社内LANへ接続したPCに、IPアドレス、サブネットマスク、デフォルトゲートウェイなどの設定を自動配布するために利用されるプロトコルはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "DHCP"
+            },
+            {
+              "id": "イ",
+              "label": "SMTP"
+            },
+            {
+              "id": "ウ",
+              "label": "SNMP"
+            },
+            {
+              "id": "エ",
+              "label": "NTP"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ネットワーク",
+          "DHCP"
+        ],
+        "weakness_targets": [
+          "ネットワーク"
+        ],
+        "tags": [
+          "科目A",
+          "ネットワーク"
+        ],
+        "keywords": [
+          "IPアドレス配布"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "DHCPは端末へIPアドレスなどのネットワーク設定を自動配布します。",
+      "difficulty": 1,
+      "sort_order": 62,
+      "is_active": true
+    },
+    {
+      "external_key": "db-sql-join-059",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "顧客表(customer_id, name)と注文表(order_id, customer_id, amount)がある。注文が1件もない顧客も含めて全顧客を一覧表示し、注文がある場合だけ注文情報も表示したい。顧客表を左側にしたとき適切な結合はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "INNER JOIN"
+            },
+            {
+              "id": "イ",
+              "label": "LEFT OUTER JOIN"
+            },
+            {
+              "id": "ウ",
+              "label": "CROSS JOIN"
+            },
+            {
+              "id": "エ",
+              "label": "顧客表を使わず注文表だけを検索する"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "データベース",
+          "SQL",
+          "外部結合"
+        ],
+        "weakness_targets": [
+          "DB",
+          "データベース"
+        ],
+        "tags": [
+          "科目A",
+          "データベース"
+        ],
+        "keywords": [
+          "SQL",
+          "JOIN"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "左側の顧客を全件残し、対応する注文があれば結合するのでLEFT OUTER JOINが適切です。",
+      "difficulty": 2,
+      "sort_order": 63,
+      "is_active": true
+    },
+    {
+      "external_key": "quality-performance-060",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "Web APIの応答時間を短縮し、同時に処理できる要求件数を増やすため、処理アルゴリズムやキャッシュ構成を改善した。この改善が最も直接対象としている品質特性はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "性能効率性"
+            },
+            {
+              "id": "イ",
+              "label": "移植性"
+            },
+            {
+              "id": "ウ",
+              "label": "機密性"
+            },
+            {
+              "id": "エ",
+              "label": "適合性"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "ソフトウェア品質",
+          "性能効率性"
+        ],
+        "weakness_targets": [
+          "品質特性",
+          "性能"
+        ],
+        "tags": [
+          "科目A",
+          "ソフトウェア"
+        ],
+        "keywords": [
+          "応答時間",
+          "スループット"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "応答時間や資源効率、処理能力は性能効率性に関係します。",
+      "difficulty": 2,
+      "sort_order": 64,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bayes-disease-061",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "ある病気の有病率は1%である。病気に罹患している人を検査すると95%の確率で陽性となり、罹患していない人でも2%の確率で陽性となる。陽性だった人が実際に病気に罹患している確率に最も近いものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "約4.6%"
+            },
+            {
+              "id": "イ",
+              "label": "約16.2%"
+            },
+            {
+              "id": "ウ",
+              "label": "約32.4%"
+            },
+            {
+              "id": "エ",
+              "label": "約67.6%"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "確率",
+          "ベイズの定理",
+          "条件付き確率"
+        ],
+        "weakness_targets": [
+          "ベイズ",
+          "計算",
+          "確率"
+        ],
+        "tags": [
+          "科目A",
+          "計算"
+        ],
+        "keywords": [
+          "有病率",
+          "陽性",
+          "偽陽性"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "病気かつ陽性は0.01×0.95=0.0095、陽性全体は0.0095+0.99×0.02=0.0293。0.0095/0.0293≈0.324です。",
+      "difficulty": 4,
+      "sort_order": 65,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bayes-disease-062",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "ある病気の有病率は5%である。病気に罹患している人の80%が陽性となり、罹患していない人の10%も陽性となる検査がある。検査結果が陰性だった人が実際には病気に罹患していない確率に最も近いものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "約17.4%"
+            },
+            {
+              "id": "イ",
+              "label": "約82.6%"
+            },
+            {
+              "id": "ウ",
+              "label": "約98.8%"
+            },
+            {
+              "id": "エ",
+              "label": "約99.9%"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "確率",
+          "ベイズの定理",
+          "条件付き確率"
+        ],
+        "weakness_targets": [
+          "ベイズ",
+          "計算",
+          "確率"
+        ],
+        "tags": [
+          "科目A",
+          "計算"
+        ],
+        "keywords": [
+          "有病率",
+          "陰性",
+          "条件付き確率"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "病気でないかつ陰性は0.95×0.90=0.855。陰性全体は0.05×0.20+0.855=0.865なので、0.855/0.865≈0.988です。",
+      "difficulty": 4,
+      "sort_order": 66,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-mips-063",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "クロック周波数3GHzのCPUで、平均CPIが1.5である。平均命令実行性能として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "500MIPS"
+            },
+            {
+              "id": "イ",
+              "label": "1,500MIPS"
+            },
+            {
+              "id": "ウ",
+              "label": "2,000MIPS"
+            },
+            {
+              "id": "エ",
+              "label": "4,500MIPS"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "コンピュータ構成",
+          "MIPS",
+          "CPI"
+        ],
+        "weakness_targets": [
+          "MIPS",
+          "計算",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "クロック周波数",
+          "命令実行性能"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "3×10^9クロック/秒 ÷1.5クロック/命令 =2×10^9命令/秒なので2,000MIPSです。",
+      "difficulty": 3,
+      "sort_order": 67,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-mips-064",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "あるCPUは500MIPSで動作する。平均CPIが4のとき、このCPUのクロック周波数として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "125MHz"
+            },
+            {
+              "id": "イ",
+              "label": "500MHz"
+            },
+            {
+              "id": "ウ",
+              "label": "1GHz"
+            },
+            {
+              "id": "エ",
+              "label": "2GHz"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "コンピュータ構成",
+          "MIPS",
+          "CPI"
+        ],
+        "weakness_targets": [
+          "MIPS",
+          "計算",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "クロック周波数",
+          "逆算"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "500MIPSは5×10^8命令/秒。1命令4クロックなので必要クロックは2×10^9クロック/秒、すなわち2GHzです。",
+      "difficulty": 3,
+      "sort_order": 68,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bottleneck-065",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "Webシステムで、1秒当たりに処理できる要求数がWebサーバ120件、アプリケーションサーバ80件、DBサーバ100件である。各要求が三つのサーバを順に通るとき、システム全体の最大スループットと最初に改善すべきボトルネックの組合せはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "80件/秒・アプリケーションサーバ"
+            },
+            {
+              "id": "イ",
+              "label": "100件/秒・DBサーバ"
+            },
+            {
+              "id": "ウ",
+              "label": "120件/秒・Webサーバ"
+            },
+            {
+              "id": "エ",
+              "label": "300件/秒・DBサーバ"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "性能",
+          "ボトルネック",
+          "スループット"
+        ],
+        "weakness_targets": [
+          "ボトルネック",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "性能"
+        ],
+        "keywords": [
+          "Webシステム",
+          "処理能力"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "全要求が各サーバを順に通るため、最も処理能力が低いアプリケーションサーバの80件/秒が全体を制約します。",
+      "difficulty": 2,
+      "sort_order": 69,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bottleneck-066",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "製品1個を完成させるために工程A、B、Cを順に通る。1個当たりの処理時間はAが30秒、Bが45秒、Cが20秒で、各工程は1台ずつ独立して連続稼働できる。定常状態で生産数を増やすため、設備増強を最優先すべき工程はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "工程A"
+            },
+            {
+              "id": "イ",
+              "label": "工程B"
+            },
+            {
+              "id": "ウ",
+              "label": "工程C"
+            },
+            {
+              "id": "エ",
+              "label": "三工程を同時に増強しなければ効果がない"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "性能",
+          "ボトルネック",
+          "生産性"
+        ],
+        "weakness_targets": [
+          "ボトルネック",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "性能"
+        ],
+        "keywords": [
+          "工程",
+          "処理時間"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "1個当たり処理時間が最も長い工程Bが最も低い処理能力となり、定常状態の生産量を制約します。",
+      "difficulty": 2,
+      "sort_order": 70,
+      "is_active": true
+    },
+    {
+      "external_key": "os-roundrobin-067",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "全て時刻0に到着したP1、P2、P3があり、必要CPU時間はそれぞれ4、5、2である。タイムクォンタム2のラウンドロビン方式でP1、P2、P3の順に実行を開始する。コンテキスト切替時間を無視したとき、最初に完了するプロセスはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "P1"
+            },
+            {
+              "id": "イ",
+              "label": "P2"
+            },
+            {
+              "id": "ウ",
+              "label": "P3"
+            },
+            {
+              "id": "エ",
+              "label": "P1とP3が同時"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "ラウンドロビン"
+        ],
+        "weakness_targets": [
+          "ラウンドロビン",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "タイムクォンタム",
+          "CPUスケジューリング"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "P1を2、P2を2実行した後、P3は必要時間2を1回のクォンタムで使い切るので最初に完了します。",
+      "difficulty": 3,
+      "sort_order": 71,
+      "is_active": true
+    },
+    {
+      "external_key": "os-roundrobin-068",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "タイムクォンタムを非常に大きくしたラウンドロビン方式は、全プロセスが同時刻に到着し途中で待ちが発生しない単純な条件では、どの方式に近い動作になるか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "到着順に最後まで実行するFCFS"
+            },
+            {
+              "id": "イ",
+              "label": "常に最短ジョブを選ぶSJF"
+            },
+            {
+              "id": "ウ",
+              "label": "最低優先度を先に実行する方式"
+            },
+            {
+              "id": "エ",
+              "label": "ページ置換のLRU"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "ラウンドロビン",
+          "FCFS"
+        ],
+        "weakness_targets": [
+          "ラウンドロビン",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "タイムクォンタム",
+          "FCFS"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "クォンタムが各CPUバーストより十分大きければ、各プロセスは順番が来た時に完了まで実行できるためFCFSに近づきます。",
+      "difficulty": 3,
+      "sort_order": 72,
+      "is_active": true
+    },
+    {
+      "external_key": "os-starvation-069",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "優先度方式でスタベーションを防ぐためにエージングを採用した。エージングの説明として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "待ち時間が長くなるほどプロセスの優先度を徐々に上げる"
+            },
+            {
+              "id": "イ",
+              "label": "全プロセスの優先度を常に同じ値へ固定する"
+            },
+            {
+              "id": "ウ",
+              "label": "実行中プロセスのメモリを定期的にディスクへ退避する"
+            },
+            {
+              "id": "エ",
+              "label": "優先度の高いプロセスを永久に実行し続ける"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "スタベーション",
+          "エージング"
+        ],
+        "weakness_targets": [
+          "スタベーション",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "優先度",
+          "待ち時間"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "エージングは長く待っている処理の優先度を徐々に高め、いつまでも実行されない状態を防ぎます。",
+      "difficulty": 2,
+      "sort_order": 73,
+      "is_active": true
+    },
+    {
+      "external_key": "os-starvation-070",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "スタベーションとデッドロックの違いを表す説明として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "スタベーションでは特定処理が長時間待たされる一方、他の処理は進行している場合がある"
+            },
+            {
+              "id": "イ",
+              "label": "スタベーションでは関係する全処理が必ず相互待ちになる"
+            },
+            {
+              "id": "ウ",
+              "label": "デッドロックでは必ず低優先度処理だけが待たされる"
+            },
+            {
+              "id": "エ",
+              "label": "両者は同じ現象の別名である"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スタベーション",
+          "デッドロック"
+        ],
+        "weakness_targets": [
+          "スタベーション",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "デッドロック",
+          "優先度"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "スタベーションでは資源やCPUを得られない特定処理が待ち続けても、他処理は進行し得ます。デッドロックは複数処理が互いに待ち合って進行不能になる状態です。",
+      "difficulty": 3,
+      "sort_order": 74,
       "is_active": true
     }
   ]
