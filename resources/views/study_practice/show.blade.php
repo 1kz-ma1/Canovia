@@ -151,36 +151,74 @@
                 <section class="page-card p-5 sm:p-6">
                     <div class="flex items-center gap-3">
                         <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">1</span>
-                        <div><h2 class="font-black text-slate-100">演習問題を準備する</h2><p class="text-xs text-slate-500">Question BankのCoverageが足りないため、今回だけ外部AIへ引き継ぎます。</p></div>
+                        <div>
+                            <h2 class="font-black text-slate-100">演習問題を準備する</h2>
+                            <p class="text-xs text-slate-500">Question BankのCoverageが足りないため、今回だけ外部AIへ引き継ぎます。</p>
+                        </div>
                     </div>
-                    <textarea id="studyPracticeGenerationPrompt" readonly class="form-control mt-4 min-h-[300px] font-mono text-xs leading-6">{{ $generationPrompt }}</textarea>
-                    <div class="mt-3 flex flex-wrap items-center gap-2">
-                        <button type="button" class="btn-primary" data-copy-text="{{ $generationPrompt }}">演習準備プロンプトをコピー</button>
-                        <span class="text-xs text-slate-500">普段使っているAIへそのまま送ってください。</span>
+
+                    <textarea id="studyPracticeGenerationPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $generationPrompt }}</textarea>
+
+                    <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4">
+                        <p class="text-sm font-semibold text-slate-100">AIへ渡す準備はCanovia側で完了しています</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">原文を読む必要はありません。普段使っているAIへ、そのままコピーして送ってください。</p>
+                        <button type="button" class="btn-primary mt-4" data-copy-target="#studyPracticeGenerationPrompt">演習準備プロンプトをコピー</button>
+
+                        <details class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                            <summary class="cursor-pointer text-xs font-semibold text-slate-300">このプロンプトに含まれる情報</summary>
+                            <ul class="mt-3 space-y-2 text-xs leading-5 text-slate-500">
+                                <li>・Plan / TaskのID・タイトル・説明・現在進捗</li>
+                                <li>・Canoviaが決めた今回の演習方針と重点分野</li>
+                                <li>・最近の演習履歴、弱点、次Action</li>
+                                <li>・問題数、回答UI、JSON形式の制約</li>
+                                <li>・対象Plan / Taskを変更しないための安全条件</li>
+                            </ul>
+                        </details>
                     </div>
                 </section>
 
                 <section class="page-card p-5 sm:p-6">
                     <div class="flex items-center gap-3">
                         <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">2</span>
-                        <div><h2 class="font-black text-slate-100">問題JSONをCanoviaへ戻す</h2><p class="text-xs text-slate-500">説明文が少し混じっていてもCanovia側でJSON部分を抽出します。</p></div>
+                        <div>
+                            <h2 class="font-black text-slate-100">問題をCanoviaへ戻す</h2>
+                            <p class="text-xs text-slate-500">AI側で返答をコピーしたら、Canoviaでは1回押すだけで貼り付けと読み込みを進められます。</p>
+                        </div>
                     </div>
+
                     <form method="POST" action="{{ route('plans.tasks.study_practice.import', [$plan, $task]) }}" class="mt-4">
                         @csrf
                         <input type="hidden" name="prepare_request_id" value="{{ $prepareRequestId }}">
-                        <textarea name="questions_json" class="form-control min-h-[220px] font-mono text-xs" placeholder="AIが返したJSONを貼り付け">{{ old('questions_json') }}</textarea>
+
+                        <button
+                            type="button"
+                            class="btn-primary"
+                            data-paste-target="#questions_json"
+                            data-paste-submit="1"
+                            data-paste-fallback="#questionJsonManualInput"
+                            data-paste-status="#questionJsonPasteStatus"
+                        >クリップボードから貼り付けて読み込む</button>
+                        <p id="questionJsonPasteStatus" class="mt-2 hidden text-xs leading-5 text-slate-400" aria-live="polite"></p>
                         @error('questions_json')<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
+
+                        <details id="questionJsonManualInput" class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($questionJsonError || old('questions_json')) open @endif>
+                            <summary class="cursor-pointer text-xs font-semibold text-slate-300">手動で貼り付ける / JSONを確認する</summary>
+                            <textarea id="questions_json" name="questions_json" class="form-control mt-3 min-h-[180px] font-mono text-xs" placeholder="AIが返したJSONを貼り付け">{{ old('questions_json') }}</textarea>
+                            <button type="submit" class="btn-secondary mt-3">このJSONを読み込む</button>
+                        </details>
 
                         @if ($questionJsonRepairPrompt)
                             <div class="mt-4 rounded-2xl border border-rose-300/20 bg-rose-300/[0.04] p-4">
                                 <p class="text-sm font-black text-rose-100">修正依頼を作りました</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-400">この内容を、さっき問題JSONを作ったAIへそのまま送ってください。修正版JSONが返ったら上の欄へ貼り直せます。</p>
-                                <textarea id="studyPracticeQuestionRepairPrompt" readonly class="form-control mt-3 min-h-[240px] font-mono text-xs leading-5">{{ $questionJsonRepairPrompt }}</textarea>
+                                <p class="mt-1 text-xs leading-5 text-slate-400">最初に問題を作ったAIへ修正依頼を送り、返ってきたJSONをもう一度貼り付けてください。</p>
+                                <textarea id="studyPracticeQuestionRepairPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $questionJsonRepairPrompt }}</textarea>
                                 <button type="button" class="btn-primary mt-3" data-copy-target="#studyPracticeQuestionRepairPrompt">修正依頼をコピー</button>
+                                <details class="ai-handoff-details mt-3 rounded-xl border border-rose-300/10 bg-slate-950/25 p-3">
+                                    <summary class="cursor-pointer text-xs font-semibold text-rose-100/80">修正依頼に含まれる情報</summary>
+                                    <p class="mt-2 text-xs leading-5 text-slate-500">Canoviaのエラー内容、返されたJSON、元の問題作成Prompt、正しいPlan / Task IDを含みます。</p>
+                                </details>
                             </div>
                         @endif
-
-                        <button type="submit" class="btn-primary mt-3">問題を読み込む</button>
                     </form>
                 </section>
             @endif
@@ -204,7 +242,7 @@
                     @foreach ($questions as $index => $question)
                         <fieldset class="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
                             <legend class="px-1 text-sm font-black text-slate-100">Q{{ $index + 1 }}</legend>
-                            <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-200">{{ $question['prompt'] }}</p>
+                            <p class="canovia-study-question mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-200">{{ $question['prompt'] }}</p>
                             @if (! empty($question['source_reference']))
                                 <p class="mt-2 text-[10px] leading-4 text-slate-600">出典：{{ $question['source_reference'] }}</p>
                             @endif
@@ -264,27 +302,63 @@
             <section class="page-card p-5 sm:p-6">
                 <div class="flex items-center gap-3">
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-violet-300/10 text-sm font-black text-violet-200">4</span>
-                    <div><h2 class="font-black text-slate-100">AIに採点・評価してもらう</h2><p class="text-xs text-slate-500">問題とあなたの回答をCanoviaがひとつの評価依頼にまとめました。</p></div>
+                    <div>
+                        <h2 class="font-black text-slate-100">AIに採点・評価してもらう</h2>
+                        <p class="text-xs text-slate-500">問題とあなたの回答はCanoviaが評価依頼へまとめています。原文を読む必要はありません。</p>
+                    </div>
                 </div>
-                <textarea readonly class="form-control mt-4 min-h-[320px] font-mono text-xs leading-6">{{ $evaluationPrompt }}</textarea>
-                <button type="button" class="btn-primary mt-3" data-copy-text="{{ $evaluationPrompt }}">評価プロンプトをコピー</button>
+
+                <textarea id="studyPracticeEvaluationPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $evaluationPrompt }}</textarea>
+
+                <div class="mt-4 rounded-2xl border border-violet-300/15 bg-violet-300/[0.035] p-4">
+                    <button type="button" class="btn-primary" data-copy-target="#studyPracticeEvaluationPrompt">評価プロンプトをコピー</button>
+                    <details class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                        <summary class="cursor-pointer text-xs font-semibold text-slate-300">この評価依頼に含まれる情報</summary>
+                        <ul class="mt-3 space-y-2 text-xs leading-5 text-slate-500">
+                            <li>・今回出題された問題と回答内容</li>
+                            <li>・選択回答とは別に、入力した計算過程・判断理由</li>
+                            <li>・Question Bank問題では正答Rule・解説・学習メタデータ</li>
+                            <li>・問題ごとの正誤、弱点、次Actionを返す評価形式</li>
+                            <li>・正しいPlan / Task IDと進捗反映の安全条件</li>
+                        </ul>
+                    </details>
+                </div>
 
                 <form method="POST" action="{{ route('plans.tasks.study_practice.assessment', [$plan, $task]) }}" class="mt-5 border-t border-slate-800 pt-5">
                     @csrf
-                    <label class="form-label" for="assessment_json">AIが返した評価JSON</label>
-                    <textarea id="assessment_json" name="assessment_json" class="form-control mt-2 min-h-[220px] font-mono text-xs" placeholder="評価JSONを貼り付け">{{ old('assessment_json') }}</textarea>
+
+                    <p class="text-sm font-semibold text-slate-100">AIの評価をCanoviaへ戻す</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">AI側で評価JSONをコピーしてから、下のボタンを押してください。</p>
+
+                    <button
+                        type="button"
+                        class="btn-primary mt-3"
+                        data-paste-target="#assessment_json"
+                        data-paste-submit="1"
+                        data-paste-fallback="#assessmentJsonManualInput"
+                        data-paste-status="#assessmentJsonPasteStatus"
+                    >クリップボードから貼り付けて確認</button>
+                    <p id="assessmentJsonPasteStatus" class="mt-2 hidden text-xs leading-5 text-slate-400" aria-live="polite"></p>
                     @error('assessment_json')<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
+
+                    <details id="assessmentJsonManualInput" class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($assessmentJsonError || old('assessment_json')) open @endif>
+                        <summary class="cursor-pointer text-xs font-semibold text-slate-300">手動で貼り付ける / 評価JSONを確認する</summary>
+                        <textarea id="assessment_json" name="assessment_json" class="form-control mt-3 min-h-[180px] font-mono text-xs" placeholder="評価JSONを貼り付け">{{ old('assessment_json') }}</textarea>
+                        <button type="submit" class="btn-secondary mt-3">この評価JSONを確認する</button>
+                    </details>
 
                     @if ($assessmentJsonRepairPrompt)
                         <div class="mt-4 rounded-2xl border border-rose-300/20 bg-rose-300/[0.04] p-4">
                             <p class="text-sm font-black text-rose-100">評価JSONの修正依頼を作りました</p>
-                            <p class="mt-1 text-xs leading-5 text-slate-400">評価を作ったAIへそのまま送り、返ってきた修正版JSONを同じ欄へ貼り直してください。</p>
-                            <textarea id="studyPracticeAssessmentRepairPrompt" readonly class="form-control mt-3 min-h-[240px] font-mono text-xs leading-5">{{ $assessmentJsonRepairPrompt }}</textarea>
+                            <p class="mt-1 text-xs leading-5 text-slate-400">評価を作ったAIへ修正依頼を送り、返ってきたJSONをもう一度貼り付けてください。</p>
+                            <textarea id="studyPracticeAssessmentRepairPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $assessmentJsonRepairPrompt }}</textarea>
                             <button type="button" class="btn-primary mt-3" data-copy-target="#studyPracticeAssessmentRepairPrompt">修正依頼をコピー</button>
+                            <details class="ai-handoff-details mt-3 rounded-xl border border-rose-300/10 bg-slate-950/25 p-3">
+                                <summary class="cursor-pointer text-xs font-semibold text-rose-100/80">修正依頼に含まれる情報</summary>
+                                <p class="mt-2 text-xs leading-5 text-slate-500">Canoviaのエラー内容、評価JSON、元の評価Prompt、正しいPlan / Task IDを含みます。</p>
+                            </details>
                         </div>
                     @endif
-
-                    <button type="submit" class="btn-primary mt-3">評価を読み込んで確認</button>
                 </form>
             </section>
         @endif

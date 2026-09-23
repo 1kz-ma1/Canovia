@@ -4,8 +4,21 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Klee One', 'Yu Kyokasho', 'YuKyokasho', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+:root {
+    --font-canovia-hand:
+        'Klee One',
+        'Yu Kyokasho',
+        'YuKyokasho',
+        'Hiragino Kaku Gothic ProN',
+        'Hiragino Sans',
+        'Noto Sans JP',
+        ui-sans-serif,
+        system-ui,
+        sans-serif;
 }
 
 @layer base {
@@ -15,15 +28,9 @@
     }
 
     body {
-        font-family:
-            ui-sans-serif,
-            system-ui,
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            "Helvetica Neue",
-            Arial,
-            sans-serif;
+        font-family: var(--font-canovia-hand);
+        letter-spacing: 0.012em;
+        font-feature-settings: "palt";
         min-height: 100vh;
         background:
             radial-gradient(circle at top left, rgb(14 165 233 / 0.16), transparent 32rem),
@@ -38,15 +45,10 @@
     h2,
     h3,
     .font-heading {
-        font-family:
-            "Yu Mincho",
-            "YuMincho",
-            "Hiragino Mincho ProN",
-            "Hiragino Mincho Pro",
-            "Noto Serif JP",
-            serif;
-        letter-spacing: 0.025em;
+        font-family: var(--font-canovia-hand);
+        letter-spacing: 0.035em;
         font-feature-settings: "palt";
+        font-weight: 600;
     }
 
     h1 {
@@ -81,6 +83,23 @@
     select {
         background-color: rgb(15 23 42);
         color: rgb(226 232 240);
+        font-family: var(--font-canovia-hand);
+    }
+
+    code,
+    pre,
+    .font-mono {
+        font-family:
+            ui-monospace,
+            SFMono-Regular,
+            Menlo,
+            Monaco,
+            Consolas,
+            "Liberation Mono",
+            "Courier New",
+            monospace !important;
+        letter-spacing: 0;
+        font-feature-settings: normal;
     }
 
     input::placeholder,
@@ -4374,4 +4393,50 @@ html[data-theme-resolved="light"] .release-note-section-title {
 }
 @media (min-width: 1180px) {
     .pk-v395-guidance-card { flex-basis: min(46%, 37rem); }
+}
+
+
+/* V40.4: quieter AI handoff surfaces. */
+.ai-handoff-details > summary {
+    position: relative;
+    list-style: none;
+    padding-right: 2rem;
+    user-select: none;
+}
+
+.ai-handoff-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.ai-handoff-details > summary::after {
+    content: '+';
+    position: absolute;
+    top: 50%;
+    right: 0.15rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    display: grid;
+    place-items: center;
+    transform: translateY(-50%);
+    border: 1px solid rgb(71 85 105 / 0.75);
+    border-radius: 9999px;
+    color: rgb(125 211 252);
+    background: rgb(15 23 42 / 0.7);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.ai-handoff-details[open] > summary::after {
+    content: '−';
+}
+
+.ai-handoff-details > summary:hover {
+    color: rgb(224 242 254);
+}
+
+.canovia-study-question {
+    font-family: var(--font-canovia-hand);
+    letter-spacing: 0.02em;
+    font-weight: 400;
 }
