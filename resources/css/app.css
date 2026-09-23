@@ -4394,3 +4394,49 @@ html[data-theme-resolved="light"] .release-note-section-title {
 @media (min-width: 1180px) {
     .pk-v395-guidance-card { flex-basis: min(46%, 37rem); }
 }
+
+
+/* V40.4: quieter AI handoff surfaces. */
+.ai-handoff-details > summary {
+    position: relative;
+    list-style: none;
+    padding-right: 2rem;
+    user-select: none;
+}
+
+.ai-handoff-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.ai-handoff-details > summary::after {
+    content: '+';
+    position: absolute;
+    top: 50%;
+    right: 0.15rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    display: grid;
+    place-items: center;
+    transform: translateY(-50%);
+    border: 1px solid rgb(71 85 105 / 0.75);
+    border-radius: 9999px;
+    color: rgb(125 211 252);
+    background: rgb(15 23 42 / 0.7);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.ai-handoff-details[open] > summary::after {
+    content: '−';
+}
+
+.ai-handoff-details > summary:hover {
+    color: rgb(224 242 254);
+}
+
+.canovia-study-question {
+    font-family: var(--font-canovia-hand);
+    letter-spacing: 0.02em;
+    font-weight: 400;
+}
