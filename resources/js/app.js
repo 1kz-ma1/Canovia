@@ -35,6 +35,68 @@ document.addEventListener('click', async (event) => {
     window.setTimeout(() => { button.textContent = original; }, 1600);
 });
 
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-paste-target]');
+    if (!button) return;
+
+    const target = document.querySelector(button.dataset.pasteTarget || '');
+    if (!(target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement)) return;
+
+    const original = button.textContent;
+    const fallback = button.dataset.pasteFallback
+        ? document.querySelector(button.dataset.pasteFallback)
+        : target.closest('details');
+    const status = button.dataset.pasteStatus
+        ? document.querySelector(button.dataset.pasteStatus)
+        : null;
+
+    const openFallback = (message) => {
+        if (fallback instanceof HTMLDetailsElement) fallback.open = true;
+        target.focus();
+        if (status) {
+            status.textContent = message;
+            status.classList.remove('hidden');
+        }
+    };
+
+    try {
+        if (!navigator.clipboard?.readText) {
+            throw new Error('clipboard-read-unsupported');
+        }
+
+        const text = await navigator.clipboard.readText();
+        if (!text.trim()) {
+            throw new Error('clipboard-empty');
+        }
+
+        target.value = text;
+        target.dispatchEvent(new Event('input', { bubbles: true }));
+        target.dispatchEvent(new Event('change', { bubbles: true }));
+        button.textContent = '貼り付けました';
+
+        if (status) {
+            status.textContent = 'クリップボードの内容を読み込みました。';
+            status.classList.remove('hidden');
+        }
+
+        if (button.dataset.pasteSubmit === '1') {
+            const form = target.closest('form');
+            window.setTimeout(() => form?.requestSubmit(), 120);
+        }
+    } catch (error) {
+        const message = error?.message === 'clipboard-empty'
+            ? 'クリップボードが空でした。手動貼り付け欄を開きました。'
+            : 'このブラウザではクリップボードを直接読めません。手動貼り付け欄を開きました。';
+        openFallback(message);
+        button.textContent = '手動貼り付けを開きました';
+    }
+
+    window.setTimeout(() => {
+        button.textContent = original;
+    }, 1800);
+});
+
 function recordBehavior(root, eventType, payload = {}) {
     if (!root?.dataset.eventUrl || !csrfToken) return;
 
