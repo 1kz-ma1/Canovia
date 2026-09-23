@@ -47,12 +47,25 @@
         @if (($answers['context_mode'] ?? null) === 'diff' && ($answers['effective_context_mode'] ?? null) === 'full')
             <div class="assistant-notice assistant-notice-info mt-4">この計画はまだ共有履歴がないため、今回は計画全体のプロンプトを生成しました。</div>
         @endif
-        <textarea id="aiContextPrompt" class="form-control mt-4 min-h-[420px] font-mono text-xs" readonly>{{ $answers['prompt'] }}</textarea>
-        <div class="mt-4 flex flex-wrap gap-3">
-            <button type="button" class="btn-primary" onclick="copyAndMarkContext(this)">コピーして共有済みにする</button>
-            <button type="button" class="btn-secondary" onclick="copyChatPrompt('aiContextPrompt', this)">コピーのみ</button>
+        <textarea id="aiContextPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $answers['prompt'] }}</textarea>
+        <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4">
+            <p class="text-sm font-semibold text-slate-100">共有コンテキストはCanovia側で整理済みです</p>
+            <p class="mt-1 text-xs leading-5 text-slate-400">原文を読む必要はありません。用途に合わせてコピーしてください。</p>
+            <div class="mt-4 flex flex-wrap gap-3">
+                <button type="button" class="btn-primary" onclick="copyAndMarkContext(this)">コピーして共有済みにする</button>
+                <button type="button" class="btn-secondary" onclick="copyChatPrompt('aiContextPrompt', this)">コピーのみ</button>
+            </div>
+            <details class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                <summary class="cursor-pointer text-xs font-semibold text-slate-300">この共有内容に含まれる情報</summary>
+                <ul class="mt-3 space-y-2 text-xs leading-5 text-slate-500">
+                    <li>・対象Planの目的、現在進捗、期限</li>
+                    <li>・Task、最近の実績、方針変更</li>
+                    <li>・選択した相談目的と質問</li>
+                    <li>・差分共有の場合は前回共有後の変更点</li>
+                </ul>
+            </details>
+            <p class="mt-3 text-xs leading-5 text-slate-400">共有済みにすると、次回はこの時点以降に追加・変更されたタスク、ログ、方針変更だけを抽出できます。</p>
         </div>
-        <p class="mt-3 text-xs leading-5 text-slate-400">共有済みにすると、次回はこの時点以降に追加・変更されたタスク、ログ、方針変更だけを抽出できます。</p>
         <form id="markContextForm" method="POST" action="{{ route('chat.context_exported') }}" class="hidden">@csrf</form>
     </div></div>
     <script>
