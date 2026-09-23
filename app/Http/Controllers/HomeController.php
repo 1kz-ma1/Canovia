@@ -66,6 +66,7 @@ class HomeController extends Controller
             $state,
             $request->session()->get('dashboard.recommendation_excluded', []),
             $editablePlans->pluck('id')->all(),
+            $request->user(),
         );
 
         $continuity = $continuityService->forPlans($editablePlans, $actorToken);

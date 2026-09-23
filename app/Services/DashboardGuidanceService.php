@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\UserStateData;
 use App\Models\Plan;
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 class DashboardGuidanceService
@@ -32,12 +33,13 @@ class DashboardGuidanceService
         UserStateData $state,
         string $actorToken,
         array $editablePlanIds,
+        ?User $actor = null,
     ): Collection {
         $editable = collect($editablePlanIds)->map(fn ($id) => (int) $id)->flip();
 
         return $plans
             ->filter(fn (Plan $plan) => $editable->has((int) $plan->id))
-            ->map(function (Plan $plan) use ($state, $actorToken) {
+            ->map(function (Plan $plan) use ($state, $actorToken, $actor) {
                 $task = $this->selectTask($plan);
 
                 if (! $task) {
@@ -51,7 +53,7 @@ class DashboardGuidanceService
                     candidateTaskIds: [(int) $task->id],
                 );
 
-                $tools = collect($this->toolService->forTask($plan, $task, true));
+                $tools = collect($this->toolService->forTask($plan, $task, true, $actor));
                 $recommendedTool = $tools->first(
                     fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && ($tool['recommended'] ?? false)
                 ) ?? $tools->first(fn (array $tool) => (bool) ($tool['recommended'] ?? false));

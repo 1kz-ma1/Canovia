@@ -32,15 +32,20 @@ class StudyPracticeOrchestrator
      * @param Collection<int, mixed> $recentAttempts
      * @return array{strategy:array<string,mixed>,provider:array<string,mixed>}
      */
-    public function previewHandoff(Plan $plan, Task $task, Collection $recentAttempts): array
-    {
+    public function previewHandoff(
+        Plan $plan,
+        Task $task,
+        Collection $recentAttempts,
+        ?string $providerKey = null,
+    ): array {
         $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
+        $provider = $providerKey !== null
+            ? $this->providerRouter->questionProviderByKey($providerKey)
+            : $this->providerRouter->questionProvider($plan, $task, $strategy);
 
         return [
             'strategy' => $strategy,
-            'provider' => $this->providerRouter
-                ->questionProvider($plan, $task, $strategy)
-                ->prepare($plan, $task, $recentAttempts, $strategy),
+            'provider' => $provider->prepare($plan, $task, $recentAttempts, $strategy),
         ];
     }
 

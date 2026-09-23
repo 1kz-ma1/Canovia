@@ -186,7 +186,7 @@ class PlanController extends Controller
             : collect();
 
         $taskTools = $plan->tasks
-            ->mapWithKeys(fn ($task) => [(int) $task->id => $toolService->forTask($plan, $task, $canEdit)])
+            ->mapWithKeys(fn ($task) => [(int) $task->id => $toolService->forTask($plan, $task, $canEdit, $request->user())])
             ->all();
         $toolFocusTask = $recommendation?->task
             ?? $plan->tasks->first(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true));
