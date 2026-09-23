@@ -172,20 +172,24 @@ Route::post('/plans/{plan}/resources/assistant/apply', [PlanResourceAssistantCon
 Route::post('/plans/{plan}/resources/assistant/reset', [PlanResourceAssistantController::class, 'reset'])->name('plans.resources.assistant.reset');
 Route::put('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'update'])->name('plans.resources.update');
 Route::delete('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'destroy'])->name('plans.resources.destroy');
-Route::get('/plans/{plan}/artifacts', [PlanArtifactController::class, 'index'])->name('plans.artifacts.index');
-Route::post('/plans/{plan}/artifacts', [PlanArtifactController::class, 'store'])->name('plans.artifacts.store');
-Route::put('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'update'])->name('plans.artifacts.update');
-Route::delete('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'destroy'])->name('plans.artifacts.destroy');
+Route::middleware('feature.access:project_artifact')->group(function () {
+    Route::get('/plans/{plan}/artifacts', [PlanArtifactController::class, 'index'])->name('plans.artifacts.index');
+    Route::post('/plans/{plan}/artifacts', [PlanArtifactController::class, 'store'])->name('plans.artifacts.store');
+    Route::put('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'update'])->name('plans.artifacts.update');
+    Route::delete('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'destroy'])->name('plans.artifacts.destroy');
+});
 
 // Canovia Tools: 資格学習向けAI演習。外部AIとの受け渡しはJSONで行い、
 // Canovia側は問題UI・回答・評価プレビューを担当する。
-Route::get('/plans/{plan}/tasks/{task}/study-practice', [StudyPracticeController::class, 'show'])->name('plans.tasks.study_practice.show');
-Route::post('/plans/{plan}/tasks/{task}/study-practice/prepare', [StudyPracticeController::class, 'prepare'])->name('plans.tasks.study_practice.prepare');
-Route::post('/plans/{plan}/tasks/{task}/study-practice/import', [StudyPracticeController::class, 'import'])->name('plans.tasks.study_practice.import');
-Route::post('/plans/{plan}/tasks/{task}/study-practice/answers', [StudyPracticeController::class, 'submitAnswers'])->name('plans.tasks.study_practice.answers');
-Route::post('/plans/{plan}/tasks/{task}/study-practice/assessment', [StudyPracticeController::class, 'previewAssessment'])->name('plans.tasks.study_practice.assessment');
-Route::post('/plans/{plan}/tasks/{task}/study-practice/apply', [StudyPracticeController::class, 'applyAssessment'])->name('plans.tasks.study_practice.apply');
-Route::post('/plans/{plan}/tasks/{task}/study-practice/reset', [StudyPracticeController::class, 'reset'])->name('plans.tasks.study_practice.reset');
+Route::middleware('feature.access:ai_practice')->group(function () {
+    Route::get('/plans/{plan}/tasks/{task}/study-practice', [StudyPracticeController::class, 'show'])->name('plans.tasks.study_practice.show');
+    Route::post('/plans/{plan}/tasks/{task}/study-practice/prepare', [StudyPracticeController::class, 'prepare'])->name('plans.tasks.study_practice.prepare');
+    Route::post('/plans/{plan}/tasks/{task}/study-practice/import', [StudyPracticeController::class, 'import'])->name('plans.tasks.study_practice.import');
+    Route::post('/plans/{plan}/tasks/{task}/study-practice/answers', [StudyPracticeController::class, 'submitAnswers'])->name('plans.tasks.study_practice.answers');
+    Route::post('/plans/{plan}/tasks/{task}/study-practice/assessment', [StudyPracticeController::class, 'previewAssessment'])->name('plans.tasks.study_practice.assessment');
+    Route::post('/plans/{plan}/tasks/{task}/study-practice/apply', [StudyPracticeController::class, 'applyAssessment'])->name('plans.tasks.study_practice.apply');
+    Route::post('/plans/{plan}/tasks/{task}/study-practice/reset', [StudyPracticeController::class, 'reset'])->name('plans.tasks.study_practice.reset');
+});
 
 Route::get('/plans/{plan}/ai-task-assistant', [AiTaskAssistantController::class, 'show'])
     ->name('plans.ai_task_assistant.show');
