@@ -2499,3 +2499,394 @@ document.addEventListener('DOMContentLoaded', () => {
 
     mountWorkTimerSafety();
 });
+
+
+// -----------------------------------------------------------------------------
+// V40.5 Canovia Guide: searchable catalog + reusable cross-screen Spotlight.
+// Future surfaces (for example Achievement "GO!") only need data-guide-start
+// or window.CanoviaGuide.start(guideKey).
+// -----------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const catalogElement = document.getElementById('canovia-guide-catalog');
+    const dialog = document.querySelector('[data-guide-dialog]');
+    const runner = document.querySelector('[data-guide-runner]');
+
+    if (!catalogElement || !dialog || !runner) return;
+
+    let catalog;
+    try {
+        catalog = JSON.parse(catalogElement.textContent || '{}');
+    } catch (_) {
+        return;
+    }
+
+    const version = Number(catalog.version || 1);
+    const guides = catalog.guides || {};
+    const authenticated = Boolean(catalog.authenticated);
+    const stateKey = `canovia.guide.active.v${version}`;
+    const completedKey = `canovia.guide.completed.v${version}`;
+
+    const searchInput = dialog.querySelector('[data-guide-search]');
+    const emptyState = dialog.querySelector('[data-guide-empty]');
+    const categoryElements = [...dialog.querySelectorAll('[data-guide-category]')];
+    const itemElements = [...dialog.querySelectorAll('[data-guide-start]')];
+
+    const bubble = runner.querySelector('[data-guide-bubble]');
+    const focusRing = runner.querySelector('[data-guide-focus-ring]');
+    const blockers = Object.fromEntries(
+        [...runner.querySelectorAll('[data-guide-blocker]')]
+            .map((element) => [element.dataset.guideBlocker, element])
+    );
+    const titleElement = runner.querySelector('[data-guide-title]');
+    const copyElement = runner.querySelector('[data-guide-copy]');
+    const progressElement = runner.querySelector('[data-guide-progress]');
+    const missingElement = runner.querySelector('[data-guide-missing]');
+    const prevButton = runner.querySelector('[data-guide-prev]');
+    const nextButton = runner.querySelector('[data-guide-next]');
+    const stopButton = runner.querySelector('[data-guide-stop]');
+
+    let activeState = null;
+    let activeTarget = null;
+    let missingMode = false;
+    let cleanupTargetListener = () => {};
+
+    const parseStored = (key, fallback) => {
+        try {
+            const value = JSON.parse(localStorage.getItem(key) || '');
+            return value && typeof value === 'object' ? value : fallback;
+        } catch (_) {
+            return fallback;
+        }
+    };
+
+    const completed = () => parseStored(completedKey, {});
+
+    const saveCompleted = (key) => {
+        const map = completed();
+        map[key] = new Date().toISOString();
+        localStorage.setItem(completedKey, JSON.stringify(map));
+        renderCompletion();
+    };
+
+    const renderCompletion = () => {
+        const map = completed();
+        dialog.querySelectorAll('[data-guide-completion]').forEach((element) => {
+            const key = element.dataset.guideCompletion;
+            const done = Boolean(map[key]);
+            element.textContent = done ? '✓ 完了' : 'GO!';
+            element.classList.toggle('is-complete', done);
+        });
+    };
+
+    const saveState = () => {
+        if (activeState) localStorage.setItem(stateKey, JSON.stringify(activeState));
+        else localStorage.removeItem(stateKey);
+    };
+
+    const currentGuide = () => activeState ? guides[activeState.key] : null;
+    const currentStep = () => {
+        const guide = currentGuide();
+        return guide?.steps?.[Number(activeState?.index || 0)] || null;
+    };
+
+    const pathMatches = (path) => !path || window.location.pathname === path;
+
+    const targetFor = (step) => {
+        if (!step?.target) return null;
+        return pacekeeperVisibleTarget(
+            `[data-guide-target="${CSS.escape(step.target)}"], [data-onboarding-target="${CSS.escape(step.target)}"]`
+        );
+    };
+
+    const setRect = (element, left, top, width, height) => {
+        if (!element) return;
+        element.style.left = `${Math.max(0, left)}px`;
+        element.style.top = `${Math.max(0, top)}px`;
+        element.style.width = `${Math.max(0, width)}px`;
+        element.style.height = `${Math.max(0, height)}px`;
+    };
+
+    const placeBubbleCentered = () => {
+        if (!bubble) return;
+        const width = Math.min(370, window.innerWidth - 24);
+        bubble.style.width = `${width}px`;
+        bubble.style.left = `${Math.max(12, (window.innerWidth - width) / 2)}px`;
+        const height = bubble.offsetHeight || 190;
+        bubble.style.top = `${Math.max(12, (window.innerHeight - height) / 2)}px`;
+    };
+
+    const placeOverlay = () => {
+        if (!activeTarget || runner.classList.contains('hidden')) return;
+
+        const rect = activeTarget.getBoundingClientRect();
+        const pad = 8;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const left = Math.max(8, rect.left - pad);
+        const top = Math.max(8, rect.top - pad);
+        const right = Math.min(viewportWidth - 8, rect.right + pad);
+        const bottom = Math.min(viewportHeight - 8, rect.bottom + pad);
+        const width = Math.max(0, right - left);
+        const height = Math.max(0, bottom - top);
+
+        setRect(blockers.top, 0, 0, viewportWidth, top);
+        setRect(blockers.left, 0, top, left, height);
+        setRect(blockers.right, right, top, viewportWidth - right, height);
+        setRect(blockers.bottom, 0, bottom, viewportWidth, viewportHeight - bottom);
+        setRect(focusRing, left, top, width, height);
+
+        if (!bubble) return;
+        const bubbleWidth = Math.min(370, viewportWidth - 24);
+        bubble.style.width = `${bubbleWidth}px`;
+        const bubbleHeight = bubble.offsetHeight || 190;
+        const below = bottom + 12;
+        const above = top - bubbleHeight - 12;
+        let bubbleTop = below + bubbleHeight <= viewportHeight - 12 ? below : above;
+        if (bubbleTop < 12) bubbleTop = Math.max(12, viewportHeight - bubbleHeight - 12);
+        const center = left + width / 2;
+        const bubbleLeft = Math.min(
+            viewportWidth - bubbleWidth - 12,
+            Math.max(12, center - bubbleWidth / 2)
+        );
+        bubble.style.left = `${bubbleLeft}px`;
+        bubble.style.top = `${bubbleTop}px`;
+    };
+
+    const clearTarget = () => {
+        cleanupTargetListener();
+        cleanupTargetListener = () => {};
+        activeTarget = null;
+    };
+
+    const hideRunner = () => {
+        clearTarget();
+        runner.classList.add('hidden');
+        document.body.classList.remove('canovia-guide-active');
+    };
+
+    const stopGuide = ({ openCatalog = false } = {}) => {
+        activeState = null;
+        saveState();
+        hideRunner();
+        if (openCatalog) {
+            pacekeeperOpenDialog(dialog);
+            searchInput?.focus();
+        }
+    };
+
+    const finishGuide = () => {
+        const key = activeState?.key;
+        if (key) saveCompleted(key);
+        stopGuide({ openCatalog: true });
+    };
+
+    const routeToStep = (step) => {
+        if (!step?.path || pathMatches(step.path)) return false;
+        window.location.assign(step.path);
+        return true;
+    };
+
+    const setAllBlockers = () => {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        setRect(blockers.top, 0, 0, viewportWidth, viewportHeight);
+        setRect(blockers.left, 0, 0, 0, 0);
+        setRect(blockers.right, 0, 0, 0, 0);
+        setRect(blockers.bottom, 0, 0, 0, 0);
+        if (focusRing) {
+            focusRing.style.width = '0px';
+            focusRing.style.height = '0px';
+        }
+    };
+
+    const renderStep = () => {
+        const guide = currentGuide();
+        const step = currentStep();
+
+        if (!guide || !step) {
+            finishGuide();
+            return;
+        }
+
+        if (routeToStep(step)) return;
+
+        clearTarget();
+        missingMode = false;
+
+        const index = Number(activeState.index || 0);
+        const total = guide.steps?.length || 1;
+        if (progressElement) progressElement.textContent = `${index + 1} / ${total} · ${guide.title}`;
+        if (titleElement) titleElement.textContent = step.title || guide.title;
+        if (copyElement) copyElement.textContent = step.copy || guide.description || '';
+
+        runner.classList.remove('hidden');
+        document.body.classList.add('canovia-guide-active');
+
+        const target = targetFor(step);
+
+        if (!target) {
+            missingMode = true;
+            missingElement?.classList.remove('hidden');
+            if (prevButton) prevButton.disabled = index <= 0;
+            if (nextButton) {
+                nextButton.disabled = false;
+                nextButton.textContent = 'ガイド一覧へ';
+            }
+            setAllBlockers();
+            requestAnimationFrame(placeBubbleCentered);
+            return;
+        }
+
+        missingElement?.classList.add('hidden');
+        activeTarget = target;
+        if (prevButton) prevButton.disabled = index <= 0;
+
+        const isClickStep = (step.advance || 'next') === 'click';
+        if (nextButton) {
+            nextButton.disabled = isClickStep;
+            nextButton.textContent = isClickStep
+                ? '光っている場所を押す'
+                : (index >= total - 1 ? '完了' : '次へ');
+        }
+
+        activeTarget.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+
+        if (isClickStep) {
+            const handler = () => {
+                const nextIndex = index + 1;
+                if (nextIndex >= total) {
+                    saveCompleted(activeState.key);
+                    activeState = null;
+                } else {
+                    activeState.index = nextIndex;
+                }
+                saveState();
+            };
+            activeTarget.addEventListener('click', handler, { capture: true, once: true });
+            cleanupTargetListener = () => activeTarget?.removeEventListener('click', handler, true);
+        }
+
+        window.setTimeout(placeOverlay, 180);
+    };
+
+    const advance = (delta = 1) => {
+        if (!activeState) return;
+        const guide = currentGuide();
+        if (!guide) return;
+
+        const nextIndex = Number(activeState.index || 0) + delta;
+        if (nextIndex < 0) return;
+
+        if (nextIndex >= (guide.steps?.length || 0)) {
+            finishGuide();
+            return;
+        }
+
+        activeState.index = nextIndex;
+        saveState();
+        renderStep();
+    };
+
+    const startGuide = (key) => {
+        const guide = guides[key];
+        if (!guide) return false;
+
+        if (guide.requires_auth && !authenticated) {
+            window.location.assign('/login');
+            return false;
+        }
+
+        pacekeeperCloseDialog(dialog);
+
+        const onboardingRoot = document.querySelector('[data-onboarding-root]');
+        onboardingRoot?.classList.add('hidden');
+        const onboardingIntro = document.querySelector('[data-onboarding-intro]');
+        pacekeeperCloseDialog(onboardingIntro);
+        document.body.classList.remove('onboarding-active');
+
+        activeState = { key, index: 0 };
+        saveState();
+        renderStep();
+        return true;
+    };
+
+    const openCatalog = () => {
+        hideRunner();
+        renderCompletion();
+        pacekeeperOpenDialog(dialog);
+        window.setTimeout(() => searchInput?.focus(), 60);
+    };
+
+    const applySearch = () => {
+        const query = (searchInput?.value || '').trim().toLocaleLowerCase('ja');
+        let visibleCount = 0;
+
+        itemElements.forEach((item) => {
+            const text = (item.dataset.guideSearchText || '').toLocaleLowerCase('ja');
+            const visible = query === '' || text.includes(query);
+            item.classList.toggle('hidden', !visible);
+            if (visible) visibleCount++;
+        });
+
+        categoryElements.forEach((category) => {
+            const visibleItems = [...category.querySelectorAll('[data-guide-start]')]
+                .filter((item) => !item.classList.contains('hidden'));
+            category.classList.toggle('hidden', visibleItems.length === 0);
+            if (query && visibleItems.length > 0) category.open = true;
+        });
+
+        emptyState?.classList.toggle('hidden', visibleCount > 0);
+    };
+
+    document.querySelectorAll('[data-guide-open]').forEach((button) => {
+        button.addEventListener('click', openCatalog);
+    });
+    dialog.querySelectorAll('[data-guide-close]').forEach((button) => {
+        button.addEventListener('click', () => pacekeeperCloseDialog(dialog));
+    });
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) pacekeeperCloseDialog(dialog);
+    });
+    searchInput?.addEventListener('input', applySearch);
+
+    document.addEventListener('click', (event) => {
+        const start = event.target.closest('[data-guide-start]');
+        if (!start) return;
+        event.preventDefault();
+        startGuide(start.dataset.guideStart);
+    });
+
+    prevButton?.addEventListener('click', () => advance(-1));
+    nextButton?.addEventListener('click', () => {
+        if (missingMode) {
+            stopGuide({ openCatalog: true });
+            return;
+        }
+        if (!nextButton.disabled) advance(1);
+    });
+    stopButton?.addEventListener('click', () => stopGuide());
+
+    window.addEventListener('resize', () => {
+        if (activeTarget) placeOverlay();
+        else if (!runner.classList.contains('hidden')) placeBubbleCentered();
+    });
+    window.addEventListener('scroll', () => {
+        if (activeTarget) placeOverlay();
+    }, { passive: true });
+
+    window.CanoviaGuide = {
+        start: startGuide,
+        open: openCatalog,
+        stop: () => stopGuide(),
+        completed: (key) => Boolean(completed()[key]),
+    };
+
+    renderCompletion();
+    applySearch();
+
+    const restored = parseStored(stateKey, null);
+    if (restored?.key && guides[restored.key]) {
+        activeState = restored;
+        renderStep();
+    }
+});
