@@ -27,7 +27,10 @@ class StudyPracticeOrchestrationV401Test extends TestCase
             ->assertSee('初回理解度確認')
             ->assertSee('演習準備プロンプトをコピー')
             ->assertSee('prepare_request_id', false)
-            ->assertSee('外部AI（現在）');
+            ->assertSee('外部AI')
+            ->assertSee('このプロンプトに含まれる情報')
+            ->assertSee('クリップボードから貼り付けて読み込む')
+            ->assertSee('手動で貼り付ける / JSONを確認する');
 
         $prepareRequestId = (string) Str::uuid();
         $questionPayload = [
@@ -71,6 +74,15 @@ class StudyPracticeOrchestrationV401Test extends TestCase
             ])
             ->assertRedirect($show)
             ->assertSessionHasNoErrors();
+
+        $this->actingAs($user)
+            ->get($show)
+            ->assertOk()
+            ->assertSee('評価プロンプトをコピー')
+            ->assertSee('この評価依頼に含まれる情報')
+            ->assertSee('クリップボードから貼り付けて確認')
+            ->assertSee('手動で貼り付ける / 評価JSONを確認する')
+            ->assertDontSee('min-h-[320px] font-mono', false);
 
         $practiceSession->refresh();
         $this->assertSame(StudyPracticeSession::STATUS_ANSWERED, $practiceSession->status);
