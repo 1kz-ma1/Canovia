@@ -4492,6 +4492,716 @@
       "difficulty": 2,
       "sort_order": 64,
       "is_active": true
+    },
+    {
+      "external_key": "calc-bayes-disease-061",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "ある病気の有病率は1%である。病気に罹患している人を検査すると95%の確率で陽性となり、罹患していない人でも2%の確率で陽性となる。陽性だった人が実際に病気に罹患している確率に最も近いものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "約4.6%"
+            },
+            {
+              "id": "イ",
+              "label": "約16.2%"
+            },
+            {
+              "id": "ウ",
+              "label": "約32.4%"
+            },
+            {
+              "id": "エ",
+              "label": "約67.6%"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "確率",
+          "ベイズの定理",
+          "条件付き確率"
+        ],
+        "weakness_targets": [
+          "ベイズ",
+          "計算",
+          "確率"
+        ],
+        "tags": [
+          "科目A",
+          "計算"
+        ],
+        "keywords": [
+          "有病率",
+          "陽性",
+          "偽陽性"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "病気かつ陽性は0.01×0.95=0.0095、陽性全体は0.0095+0.99×0.02=0.0293。0.0095/0.0293≈0.324です。",
+      "difficulty": 4,
+      "sort_order": 65,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bayes-disease-062",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "ある病気の有病率は5%である。病気に罹患している人の80%が陽性となり、罹患していない人の10%も陽性となる検査がある。検査結果が陰性だった人が実際には病気に罹患していない確率に最も近いものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "約17.4%"
+            },
+            {
+              "id": "イ",
+              "label": "約82.6%"
+            },
+            {
+              "id": "ウ",
+              "label": "約98.8%"
+            },
+            {
+              "id": "エ",
+              "label": "約99.9%"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "確率",
+          "ベイズの定理",
+          "条件付き確率"
+        ],
+        "weakness_targets": [
+          "ベイズ",
+          "計算",
+          "確率"
+        ],
+        "tags": [
+          "科目A",
+          "計算"
+        ],
+        "keywords": [
+          "有病率",
+          "陰性",
+          "条件付き確率"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "病気でないかつ陰性は0.95×0.90=0.855。陰性全体は0.05×0.20+0.855=0.865なので、0.855/0.865≈0.988です。",
+      "difficulty": 4,
+      "sort_order": 66,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-mips-063",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "クロック周波数3GHzのCPUで、平均CPIが1.5である。平均命令実行性能として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "500MIPS"
+            },
+            {
+              "id": "イ",
+              "label": "1,500MIPS"
+            },
+            {
+              "id": "ウ",
+              "label": "2,000MIPS"
+            },
+            {
+              "id": "エ",
+              "label": "4,500MIPS"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "コンピュータ構成",
+          "MIPS",
+          "CPI"
+        ],
+        "weakness_targets": [
+          "MIPS",
+          "計算",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "クロック周波数",
+          "命令実行性能"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "3×10^9クロック/秒 ÷1.5クロック/命令 =2×10^9命令/秒なので2,000MIPSです。",
+      "difficulty": 3,
+      "sort_order": 67,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-mips-064",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "あるCPUは500MIPSで動作する。平均CPIが4のとき、このCPUのクロック周波数として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "125MHz"
+            },
+            {
+              "id": "イ",
+              "label": "500MHz"
+            },
+            {
+              "id": "ウ",
+              "label": "1GHz"
+            },
+            {
+              "id": "エ",
+              "label": "2GHz"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "エ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "コンピュータ構成",
+          "MIPS",
+          "CPI"
+        ],
+        "weakness_targets": [
+          "MIPS",
+          "計算",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "計算",
+          "コンピュータ構成"
+        ],
+        "keywords": [
+          "クロック周波数",
+          "逆算"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "500MIPSは5×10^8命令/秒。1命令4クロックなので必要クロックは2×10^9クロック/秒、すなわち2GHzです。",
+      "difficulty": 3,
+      "sort_order": 68,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bottleneck-065",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "Webシステムで、1秒当たりに処理できる要求数がWebサーバ120件、アプリケーションサーバ80件、DBサーバ100件である。各要求が三つのサーバを順に通るとき、システム全体の最大スループットと最初に改善すべきボトルネックの組合せはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "80件/秒・アプリケーションサーバ"
+            },
+            {
+              "id": "イ",
+              "label": "100件/秒・DBサーバ"
+            },
+            {
+              "id": "ウ",
+              "label": "120件/秒・Webサーバ"
+            },
+            {
+              "id": "エ",
+              "label": "300件/秒・DBサーバ"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "性能",
+          "ボトルネック",
+          "スループット"
+        ],
+        "weakness_targets": [
+          "ボトルネック",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "性能"
+        ],
+        "keywords": [
+          "Webシステム",
+          "処理能力"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "全要求が各サーバを順に通るため、最も処理能力が低いアプリケーションサーバの80件/秒が全体を制約します。",
+      "difficulty": 2,
+      "sort_order": 69,
+      "is_active": true
+    },
+    {
+      "external_key": "calc-bottleneck-066",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "製品1個を完成させるために工程A、B、Cを順に通る。1個当たりの処理時間はAが30秒、Bが45秒、Cが20秒で、各工程は1台ずつ独立して連続稼働できる。定常状態で生産数を増やすため、設備増強を最優先すべき工程はどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "工程A"
+            },
+            {
+              "id": "イ",
+              "label": "工程B"
+            },
+            {
+              "id": "ウ",
+              "label": "工程C"
+            },
+            {
+              "id": "エ",
+              "label": "三工程を同時に増強しなければ効果がない"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "イ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "性能",
+          "ボトルネック",
+          "生産性"
+        ],
+        "weakness_targets": [
+          "ボトルネック",
+          "性能計算"
+        ],
+        "tags": [
+          "科目A",
+          "性能"
+        ],
+        "keywords": [
+          "工程",
+          "処理時間"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "1個当たり処理時間が最も長い工程Bが最も低い処理能力となり、定常状態の生産量を制約します。",
+      "difficulty": 2,
+      "sort_order": 70,
+      "is_active": true
+    },
+    {
+      "external_key": "os-roundrobin-067",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "全て時刻0に到着したP1、P2、P3があり、必要CPU時間はそれぞれ4、5、2である。タイムクォンタム2のラウンドロビン方式でP1、P2、P3の順に実行を開始する。コンテキスト切替時間を無視したとき、最初に完了するプロセスはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "P1"
+            },
+            {
+              "id": "イ",
+              "label": "P2"
+            },
+            {
+              "id": "ウ",
+              "label": "P3"
+            },
+            {
+              "id": "エ",
+              "label": "P1とP3が同時"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ウ"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "ラウンドロビン"
+        ],
+        "weakness_targets": [
+          "ラウンドロビン",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "タイムクォンタム",
+          "CPUスケジューリング"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "P1を2、P2を2実行した後、P3は必要時間2を1回のクォンタムで使い切るので最初に完了します。",
+      "difficulty": 3,
+      "sort_order": 71,
+      "is_active": true
+    },
+    {
+      "external_key": "os-roundrobin-068",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "タイムクォンタムを非常に大きくしたラウンドロビン方式は、全プロセスが同時刻に到着し途中で待ちが発生しない単純な条件では、どの方式に近い動作になるか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "到着順に最後まで実行するFCFS"
+            },
+            {
+              "id": "イ",
+              "label": "常に最短ジョブを選ぶSJF"
+            },
+            {
+              "id": "ウ",
+              "label": "最低優先度を先に実行する方式"
+            },
+            {
+              "id": "エ",
+              "label": "ページ置換のLRU"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "ラウンドロビン",
+          "FCFS"
+        ],
+        "weakness_targets": [
+          "ラウンドロビン",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "タイムクォンタム",
+          "FCFS"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "クォンタムが各CPUバーストより十分大きければ、各プロセスは順番が来た時に完了まで実行できるためFCFSに近づきます。",
+      "difficulty": 3,
+      "sort_order": 72,
+      "is_active": true
+    },
+    {
+      "external_key": "os-starvation-069",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "優先度方式でスタベーションを防ぐためにエージングを採用した。エージングの説明として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "待ち時間が長くなるほどプロセスの優先度を徐々に上げる"
+            },
+            {
+              "id": "イ",
+              "label": "全プロセスの優先度を常に同じ値へ固定する"
+            },
+            {
+              "id": "ウ",
+              "label": "実行中プロセスのメモリを定期的にディスクへ退避する"
+            },
+            {
+              "id": "エ",
+              "label": "優先度の高いプロセスを永久に実行し続ける"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スケジューリング",
+          "スタベーション",
+          "エージング"
+        ],
+        "weakness_targets": [
+          "スタベーション",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "優先度",
+          "待ち時間"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "エージングは長く待っている処理の優先度を徐々に高め、いつまでも実行されない状態を防ぎます。",
+      "difficulty": 2,
+      "sort_order": 73,
+      "is_active": true
+    },
+    {
+      "external_key": "os-starvation-070",
+      "source_type": "canovia_original",
+      "source_reference": null,
+      "prompt": "スタベーションとデッドロックの違いを表す説明として最も適切なものはどれか。",
+      "response_schema": [
+        {
+          "id": "answer",
+          "type": "single_choice",
+          "label": "回答",
+          "required": true,
+          "choices": [
+            {
+              "id": "ア",
+              "label": "スタベーションでは特定処理が長時間待たされる一方、他の処理は進行している場合がある"
+            },
+            {
+              "id": "イ",
+              "label": "スタベーションでは関係する全処理が必ず相互待ちになる"
+            },
+            {
+              "id": "ウ",
+              "label": "デッドロックでは必ず低優先度処理だけが待たされる"
+            },
+            {
+              "id": "エ",
+              "label": "両者は同じ現象の別名である"
+            }
+          ]
+        },
+        {
+          "id": "reasoning",
+          "type": "textarea",
+          "label": "考え方・判断理由",
+          "required": false,
+          "placeholder": "任意：なぜその答えを選んだかを書いてください。AI評価時に思考過程のフィードバックへ使います。",
+          "choices": []
+        }
+      ],
+      "grading_rule": {
+        "type": "exact_choice",
+        "field_id": "answer",
+        "answer": "ア"
+      },
+      "learning_metadata": {
+        "concepts": [
+          "OS",
+          "スタベーション",
+          "デッドロック"
+        ],
+        "weakness_targets": [
+          "スタベーション",
+          "スケジューリング"
+        ],
+        "tags": [
+          "科目A",
+          "OS"
+        ],
+        "keywords": [
+          "デッドロック",
+          "優先度"
+        ],
+        "content_rules_version": "1.1",
+        "context_fidelity": "exam_natural"
+      },
+      "explanation": "スタベーションでは資源やCPUを得られない特定処理が待ち続けても、他処理は進行し得ます。デッドロックは複数処理が互いに待ち合って進行不能になる状態です。",
+      "difficulty": 3,
+      "sort_order": 74,
+      "is_active": true
     }
   ]
 }
