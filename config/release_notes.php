@@ -2,6 +2,20 @@
 
 return [
     [
+        'version' => 'v40.7',
+        'date' => '2026-09-23',
+        'title' => 'Canovia Futureで次の進化に参加',
+        'summary' => 'フィードバック入口をCanovia Futureへ広げ、Canoviaが検討している将来候補をSupportできるようにしました。',
+        'highlights' => [
+            'フィードバックからCanovia Futureを開き、将来候補のSupport数と現在のstatusを確認できます。',
+            '同じactorから同じ候補へのSupportは1件に保ち、Supportはいつでも取り消せます。',
+            '500 Supportは実装確約ではなく、Roadmap入り・正式検討を始める目安として扱います。',
+            '従来の自由記述Feedbackは「その他のフィードバック」として引き続き利用できます。',
+            'Entitlementとは別に、将来の段階公開へ拡張できる最小Feature Flag境界を追加しました。',
+        ],
+        'tip' => '気になる候補だけSupportしてください。Support数はCanoviaの優先順位を考える材料として使われます。',
+    ],
+    [
         'version' => 'v40.6',
         'date' => '2026-09-23',
         'title' => '将来の収益化に備えるEntitlement基盤',
