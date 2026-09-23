@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\FeatureKey;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -19,23 +21,23 @@ return [
     'default_policy' => 'allow',
 
     'features' => [
-        'ai_practice' => [
+        FeatureKey::AiPractice->value => [
             'label' => 'AI Practice',
             'free' => true,
         ],
-        'advanced_analytics' => [
+        FeatureKey::AdvancedAnalytics->value => [
             'label' => 'Advanced Analytics',
             'free' => true,
         ],
-        'question_pack' => [
+        FeatureKey::QuestionPack->value => [
             'label' => 'Question Pack',
             'free' => true,
         ],
-        'project_artifact' => [
+        FeatureKey::ProjectArtifact->value => [
             'label' => 'Project Artifact',
             'free' => true,
         ],
-        'automatic_ai_execution' => [
+        FeatureKey::AutomaticAiExecution->value => [
             'label' => 'Automatic AI Execution',
             'free' => true,
         ],
