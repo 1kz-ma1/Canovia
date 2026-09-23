@@ -20,7 +20,7 @@
 
             <div class="flex flex-wrap gap-2">
                 @auth
-                    <a href="{{ route('collaboration.join.form') }}" class="btn-secondary">共同計画に参加</a>
+                    <a href="{{ route('collaboration.join.form') }}" class="btn-secondary" data-guide-target="collaboration-join">共同計画に参加</a>
                 @endauth
                 <a href="{{ route('plans.create') }}" class="btn-primary">新しい計画を作成する</a>
             </div>
