@@ -54,6 +54,42 @@ class StudyPracticeController extends Controller
                 ->first()
             : null;
 
+        // If the browser/PHP session was interrupted while answering, recover the
+        // newest resumable StudyPracticeSession silently. The answering screen
+        // should feel continuous rather than asking the learner to "resume".
+        if (! $currentPracticeSession && empty($state['questions'])) {
+            $currentPracticeSession = $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+                ->whereIn('status', [
+                    StudyPracticeSession::STATUS_READY,
+                    StudyPracticeSession::STATUS_IN_PROGRESS,
+                ])
+                ->whereNotNull('questions_snapshot')
+                ->latest('updated_at')
+                ->latest('id')
+                ->first();
+
+            if (
+                $currentPracticeSession
+                && is_array($currentPracticeSession->questions_snapshot)
+                && $currentPracticeSession->questions_snapshot !== []
+            ) {
+                $state = [
+                    'title' => $currentPracticeSession->exercise_title ?: 'AI演習',
+                    'questions' => $currentPracticeSession->questions_snapshot,
+                    'answers' => [],
+                    'draft_answers' => is_array($currentPracticeSession->draft_answers)
+                        ? $currentPracticeSession->draft_answers
+                        : [],
+                    'evaluation_prompt' => null,
+                    'assessment' => null,
+                    'attempt_id' => null,
+                    'attempt_token' => (string) Str::uuid(),
+                    'practice_session_id' => $currentPracticeSession->id,
+                ];
+                $request->session()->put($key, $state);
+            }
+        }
+
         $questionPackAllowed = $featureAccess->canUse(
             $request->user(),
             FeatureKey::QuestionPack,
@@ -79,6 +115,7 @@ class StudyPracticeController extends Controller
             : (string) data_get($orchestration, 'provider.payload.generation_prompt', '');
         $prepareRequestId = old('prepare_request_id')
             ?: ($currentPracticeSession?->prepare_request_id ?? (string) Str::uuid());
+        $draftAnswers = $this->draftAnswersForView($state, $currentPracticeSession);
 
         return view('study_practice.show', [
             'plan' => $plan,
@@ -91,6 +128,7 @@ class StudyPracticeController extends Controller
             'exerciseTitle' => $state['title'] ?? null,
             'questions' => $state['questions'] ?? [],
             'answers' => $state['answers'] ?? [],
+            'draftAnswers' => $draftAnswers,
             'evaluationPrompt' => $state['evaluation_prompt'] ?? null,
             'assessment' => $state['assessment'] ?? null,
             'currentAttempt' => $currentAttempt,
@@ -157,11 +195,18 @@ class StudyPracticeController extends Controller
             'title',
             'Canovia Question Bank演習',
         ));
+        $exerciseTitle = $title !== '' ? mb_substr($title, 0, 120) : 'Canovia Question Bank演習';
+
+        $practiceSession->update([
+            'exercise_title' => $exerciseTitle,
+            'questions_snapshot' => $questions,
+        ]);
 
         $request->session()->put($this->sessionKey($plan, $task), [
-            'title' => $title !== '' ? mb_substr($title, 0, 120) : 'Canovia Question Bank演習',
+            'title' => $exerciseTitle,
             'questions' => $questions,
             'answers' => [],
+            'draft_answers' => is_array($practiceSession->draft_answers) ? $practiceSession->draft_answers : [],
             'evaluation_prompt' => null,
             'assessment' => null,
             'attempt_id' => null,
@@ -202,6 +247,7 @@ class StudyPracticeController extends Controller
 
         $questions = $this->normalizeQuestions($decoded['questions'] ?? null);
         $title = trim((string) ($decoded['title'] ?? 'AI演習'));
+        $exerciseTitle = $title !== '' ? mb_substr($title, 0, 120) : 'AI演習';
 
         $actorToken = $identity->resolve($request);
         $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
@@ -218,17 +264,22 @@ class StudyPracticeController extends Controller
 
         $practiceSession->update([
             'status' => StudyPracticeSession::STATUS_READY,
+            'exercise_title' => $exerciseTitle,
             'selected_questions' => collect($questions)->map(fn (array $question) => [
                 'question_ref' => (string) $question['id'],
                 'question_id' => null,
                 'source_type' => (string) $practiceSession->question_provider,
             ])->values()->all(),
+            'questions_snapshot' => $questions,
+            'draft_answers' => null,
+            'draft_saved_at' => null,
         ]);
 
         $request->session()->put($this->sessionKey($plan, $task), [
-            'title' => $title !== '' ? mb_substr($title, 0, 120) : 'AI演習',
+            'title' => $exerciseTitle,
             'questions' => $questions,
             'answers' => [],
+            'draft_answers' => [],
             'evaluation_prompt' => null,
             'assessment' => null,
             'attempt_id' => null,
@@ -239,6 +290,69 @@ class StudyPracticeController extends Controller
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
             ->with('success', count($questions).'問の演習を読み込みました。Canovia上で回答できます。');
+    }
+
+    public function saveDraft(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+        BehaviorIdentityService $identity,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership);
+        abort_unless(trim((string) $plan->category) === '資格学習', 404);
+
+        $validated = $request->validate([
+            'practice_session_id' => ['required', 'integer', 'min:1'],
+            'answers_json' => ['required', 'string', 'max:120000'],
+        ]);
+
+        $decoded = json_decode((string) $validated['answers_json'], true);
+        if (! is_array($decoded)) {
+            throw ValidationException::withMessages([
+                'answers_json' => '途中回答を保存できませんでした。',
+            ]);
+        }
+
+        $actorToken = $identity->resolve($request);
+        $practiceSession = $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+            ->whereKey((int) $validated['practice_session_id'])
+            ->whereIn('status', [
+                StudyPracticeSession::STATUS_READY,
+                StudyPracticeSession::STATUS_IN_PROGRESS,
+            ])
+            ->first();
+
+        if (! $practiceSession) {
+            return response()->noContent(409);
+        }
+
+        $questions = $practiceSession->questions_snapshot;
+        if (! is_array($questions) || $questions === []) {
+            $state = $request->session()->get($this->sessionKey($plan, $task), []);
+            $questions = $state['questions'] ?? [];
+        }
+
+        if (! is_array($questions) || $questions === []) {
+            return response()->noContent(409);
+        }
+
+        $draftAnswers = $this->normalizeDraftAnswers($decoded, $questions);
+        $practiceSession->update([
+            'status' => StudyPracticeSession::STATUS_IN_PROGRESS,
+            'questions_snapshot' => $questions,
+            'draft_answers' => $draftAnswers,
+            'draft_saved_at' => now(),
+        ]);
+
+        $key = $this->sessionKey($plan, $task);
+        $state = $request->session()->get($key, []);
+        if ((int) ($state['practice_session_id'] ?? 0) === (int) $practiceSession->id) {
+            $state['draft_answers'] = $draftAnswers;
+            $request->session()->put($key, $state);
+        }
+
+        return response()->noContent();
     }
 
     public function submitAnswers(
@@ -263,6 +377,7 @@ class StudyPracticeController extends Controller
         }
 
         $rawAnswers = $request->input('answers', []);
+        $draftAnswers = $this->normalizeDraftAnswers($rawAnswers, $questions);
         $answers = [];
 
         foreach ($questions as $question) {
@@ -354,6 +469,7 @@ class StudyPracticeController extends Controller
         }
 
         $state['answers'] = $answers;
+        $state['draft_answers'] = $draftAnswers;
         $actorToken = $identity->resolve($request);
         $practiceSession = ! empty($state['practice_session_id'])
             ? $this->practiceSessionQuery($request, $plan, $task, $actorToken)
@@ -362,6 +478,11 @@ class StudyPracticeController extends Controller
             : null;
 
         if ($practiceSession) {
+            $practiceSession->update([
+                'draft_answers' => $draftAnswers,
+                'draft_saved_at' => now(),
+            ]);
+
             $assessmentHandoff = $orchestrator->prepareAssessment(
                 $practiceSession,
                 $plan,
@@ -651,6 +772,120 @@ class StudyPracticeController extends Controller
         if ((int) data_get($decoded, 'target_task.id') !== (int) $task->id) {
             throw ValidationException::withMessages([$field => '別のTask向けJSONです。開いているTaskのIDを変更せずAIへ返してください。']);
         }
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @return array<string, array<string, mixed>>
+     */
+    private function draftAnswersForView(array $state, ?StudyPracticeSession $practiceSession): array
+    {
+        if ($practiceSession && is_array($practiceSession->draft_answers)) {
+            return $practiceSession->draft_answers;
+        }
+
+        if (is_array($state['draft_answers'] ?? null)) {
+            return $state['draft_answers'];
+        }
+
+        $draft = [];
+        foreach (($state['answers'] ?? []) as $answer) {
+            if (! is_array($answer)) {
+                continue;
+            }
+
+            $questionId = trim((string) ($answer['question_id'] ?? ''));
+            if ($questionId === '') {
+                continue;
+            }
+
+            if (is_array($answer['fields'] ?? null)) {
+                foreach ($answer['fields'] as $field) {
+                    if (! is_array($field)) {
+                        continue;
+                    }
+
+                    $fieldId = trim((string) ($field['field_id'] ?? ''));
+                    if ($fieldId !== '') {
+                        $draft[$questionId][$fieldId] = $field['value'] ?? '';
+                    }
+                }
+            } elseif (array_key_exists('answer', $answer)) {
+                $draft[$questionId]['answer'] = $answer['answer'];
+            }
+        }
+
+        return $draft;
+    }
+
+    /**
+     * Keep partial answers safe without requiring the learner to have completed
+     * every required field. Final validation still happens in submitAnswers().
+     *
+     * @param array<int, array<string, mixed>> $questions
+     * @return array<string, array<string, mixed>>
+     */
+    private function normalizeDraftAnswers(mixed $raw, array $questions): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $draft = [];
+
+        foreach ($questions as $question) {
+            if (! is_array($question)) {
+                continue;
+            }
+
+            $questionId = (string) ($question['id'] ?? '');
+            if ($questionId === '' || ! array_key_exists($questionId, $raw)) {
+                continue;
+            }
+
+            $questionInput = $raw[$questionId];
+            if (! is_array($questionInput)) {
+                $questionInput = ['answer' => $questionInput];
+            }
+
+            foreach (($question['response_fields'] ?? []) as $field) {
+                if (! is_array($field)) {
+                    continue;
+                }
+
+                $fieldId = (string) ($field['id'] ?? '');
+                $type = (string) ($field['type'] ?? 'textarea');
+                if ($fieldId === '' || ! array_key_exists($fieldId, $questionInput)) {
+                    continue;
+                }
+
+                $value = $questionInput[$fieldId];
+
+                if ($type === 'multiple_choice') {
+                    $allowed = collect($field['choices'] ?? [])->pluck('id')->map('strval')->all();
+                    $values = is_array($value) ? array_map('strval', $value) : [];
+                    $draft[$questionId][$fieldId] = array_values(array_unique(
+                        array_filter($values, fn ($item) => in_array($item, $allowed, true))
+                    ));
+                    continue;
+                }
+
+                $value = is_scalar($value) ? (string) $value : '';
+
+                if ($type === 'single_choice') {
+                    $allowed = collect($field['choices'] ?? [])->pluck('id')->map('strval')->all();
+                    $value = in_array($value, $allowed, true) ? $value : '';
+                }
+
+                $draft[$questionId][$fieldId] = mb_substr(
+                    $value,
+                    0,
+                    $type === 'textarea' ? 12000 : 3000,
+                );
+            }
+        }
+
+        return $draft;
     }
 
     /**

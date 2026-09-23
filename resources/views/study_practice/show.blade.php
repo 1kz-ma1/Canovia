@@ -237,7 +237,18 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('plans.tasks.study_practice.answers', [$plan, $task]) }}" class="mt-5 space-y-4">
+                <form
+                    method="POST"
+                    action="{{ route('plans.tasks.study_practice.answers', [$plan, $task]) }}"
+                    class="mt-5 space-y-4"
+                    @if ($currentPracticeSession && in_array($currentPracticeSession->status, ['ready', 'in_progress'], true))
+                        data-study-practice-draft-form
+                        data-draft-url="{{ route('plans.tasks.study_practice.draft', [$plan, $task]) }}"
+                        data-draft-session-id="{{ $currentPracticeSession->id }}"
+                        data-draft-session-token="{{ $currentPracticeSession->session_token }}"
+                        data-draft-saved-at="{{ $currentPracticeSession->draft_saved_at?->toIso8601String() }}"
+                    @endif
+                >
                     @csrf
                     @foreach ($questions as $index => $question)
                         <fieldset class="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
@@ -252,6 +263,13 @@
                                     @php
                                         $fieldName = 'answers['.$question['id'].']['.$field['id'].']';
                                         $fieldError = 'answers.'.$question['id'].'.'.$field['id'];
+                                        $fieldValue = old(
+                                            $fieldError,
+                                            data_get($draftAnswers ?? [], $question['id'].'.'.$field['id'])
+                                        );
+                                        $fieldValues = is_array($fieldValue)
+                                            ? array_map('strval', $fieldValue)
+                                            : [];
                                     @endphp
                                     <div class="rounded-xl border border-slate-800/80 bg-slate-950/30 p-3">
                                         <label class="text-xs font-bold text-slate-300">
@@ -265,7 +283,7 @@
                                             <div class="mt-2 grid gap-2">
                                                 @foreach ($field['choices'] as $choice)
                                                     <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
-                                                        <input type="radio" name="{{ $fieldName }}" value="{{ $choice['id'] }}" class="mt-1">
+                                                        <input type="radio" name="{{ $fieldName }}" value="{{ $choice['id'] }}" class="mt-1" @checked((string) $fieldValue === (string) $choice['id'])>
                                                         <span><strong class="text-slate-100">{{ $choice['id'] }}</strong> {{ $choice['label'] }}</span>
                                                     </label>
                                                 @endforeach
@@ -274,17 +292,17 @@
                                             <div class="mt-2 grid gap-2">
                                                 @foreach ($field['choices'] as $choice)
                                                     <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
-                                                        <input type="checkbox" name="{{ $fieldName }}[]" value="{{ $choice['id'] }}" class="mt-1">
+                                                        <input type="checkbox" name="{{ $fieldName }}[]" value="{{ $choice['id'] }}" class="mt-1" @checked(in_array((string) $choice['id'], $fieldValues, true))>
                                                         <span><strong class="text-slate-100">{{ $choice['id'] }}</strong> {{ $choice['label'] }}</span>
                                                     </label>
                                                 @endforeach
                                             </div>
                                         @elseif ($field['type'] === 'number')
-                                            <input type="number" step="any" name="{{ $fieldName }}" class="form-control mt-2" placeholder="{{ $field['placeholder'] ?: '数値を入力' }}">
+                                            <input type="number" step="any" name="{{ $fieldName }}" value="{{ $fieldValue }}" class="form-control mt-2" placeholder="{{ $field['placeholder'] ?: '数値を入力' }}">
                                         @elseif ($field['type'] === 'short_text')
-                                            <input type="text" name="{{ $fieldName }}" class="form-control mt-2" placeholder="{{ $field['placeholder'] ?: '短く回答' }}">
+                                            <input type="text" name="{{ $fieldName }}" value="{{ $fieldValue }}" class="form-control mt-2" placeholder="{{ $field['placeholder'] ?: '短く回答' }}">
                                         @else
-                                            <textarea name="{{ $fieldName }}" class="form-control mt-2 min-h-28" placeholder="{{ $field['placeholder'] ?: '回答・考え方を入力' }}"></textarea>
+                                            <textarea name="{{ $fieldName }}" class="form-control mt-2 min-h-28" placeholder="{{ $field['placeholder'] ?: '回答・考え方を入力' }}">{{ $fieldValue }}</textarea>
                                         @endif
 
                                         @error($fieldError)<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror

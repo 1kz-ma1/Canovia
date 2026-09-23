@@ -2890,3 +2890,168 @@ document.addEventListener('DOMContentLoaded', () => {
         renderStep();
     }
 });
+
+
+// -----------------------------------------------------------------------------
+// V40.7.1 Study Practice draft persistence.
+//
+// The learner should never need a Save or Resume action. Every edit is written
+// to localStorage immediately and debounced to the active StudyPracticeSession.
+// The server snapshot is authoritative across normal navigation; localStorage
+// covers the short gap before a network autosave finishes.
+// -----------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('[data-study-practice-draft-form]');
+    if (!form) return;
+
+    const draftUrl = form.dataset.draftUrl;
+    const practiceSessionId = Number(form.dataset.draftSessionId || 0);
+    const sessionToken = form.dataset.draftSessionToken;
+    if (!draftUrl || !practiceSessionId || !sessionToken) return;
+
+    const storageKey = `canovia.study-practice.draft.v1.${sessionToken}`;
+    const answerElements = [...form.querySelectorAll('[name^="answers["]')];
+    const namePattern = /^answers\[([^\]]+)\]\[([^\]]+)\](\[\])?$/;
+    let saveTimer = null;
+
+    const collectAnswers = () => {
+        const answers = {};
+
+        answerElements.forEach((element) => {
+            const match = element.name.match(namePattern);
+            if (!match) return;
+
+            const [, questionId, fieldId, arraySuffix] = match;
+            answers[questionId] ||= {};
+
+            if (arraySuffix) {
+                answers[questionId][fieldId] ||= [];
+                if (element.checked) answers[questionId][fieldId].push(element.value);
+                return;
+            }
+
+            if (element.type === 'radio') {
+                if (!(fieldId in answers[questionId])) answers[questionId][fieldId] = '';
+                if (element.checked) answers[questionId][fieldId] = element.value;
+                return;
+            }
+
+            answers[questionId][fieldId] = element.value ?? '';
+        });
+
+        return answers;
+    };
+
+    const applyAnswers = (answers) => {
+        if (!answers || typeof answers !== 'object') return;
+
+        answerElements.forEach((element) => {
+            const match = element.name.match(namePattern);
+            if (!match) return;
+
+            const [, questionId, fieldId, arraySuffix] = match;
+            const value = answers?.[questionId]?.[fieldId];
+
+            if (arraySuffix) {
+                const values = Array.isArray(value) ? value.map(String) : [];
+                element.checked = values.includes(String(element.value));
+                return;
+            }
+
+            if (element.type === 'radio') {
+                element.checked = String(value ?? '') === String(element.value);
+                return;
+            }
+
+            if (value !== undefined && value !== null) element.value = String(value);
+        });
+    };
+
+    const readLocalDraft = () => {
+        try {
+            const value = JSON.parse(localStorage.getItem(storageKey) || 'null');
+            if (!value || typeof value !== 'object' || typeof value.answers !== 'object') return null;
+            return value;
+        } catch (_) {
+            return null;
+        }
+    };
+
+    const persistLocal = () => {
+        const snapshot = {
+            updatedAt: Date.now(),
+            answers: collectAnswers(),
+        };
+
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(snapshot));
+        } catch (_) {
+            // Server autosave remains available if local storage is unavailable.
+        }
+
+        return snapshot;
+    };
+
+    const persistServer = async (snapshot, keepalive = false) => {
+        if (!csrfToken || !snapshot) return;
+
+        const payload = JSON.stringify({
+            practice_session_id: practiceSessionId,
+            answers_json: JSON.stringify(snapshot.answers),
+        });
+
+        // Browsers cap keepalive requests to a small payload. localStorage still
+        // protects larger answers and the next page load retries them normally.
+        if (keepalive && payload.length > 50000) return;
+
+        try {
+            await fetch(draftUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                keepalive,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: payload,
+            });
+        } catch (_) {
+            // Draft persistence is intentionally silent. The local snapshot is
+            // kept and will be retried when this same practice session reopens.
+        }
+    };
+
+    const scheduleSave = () => {
+        const snapshot = persistLocal();
+        if (saveTimer) window.clearTimeout(saveTimer);
+        saveTimer = window.setTimeout(() => persistServer(snapshot), 450);
+    };
+
+    const localDraft = readLocalDraft();
+    const serverSavedAt = Date.parse(form.dataset.draftSavedAt || '') || 0;
+
+    if (localDraft && Number(localDraft.updatedAt || 0) > serverSavedAt) {
+        applyAnswers(localDraft.answers);
+        // A previous navigation may have happened before the debounce finished.
+        // Push the local copy back to the server without showing any resume UI.
+        window.setTimeout(() => persistServer(localDraft), 0);
+    }
+
+    form.addEventListener('input', scheduleSave);
+    form.addEventListener('change', scheduleSave);
+
+    const flushBeforeLeave = () => {
+        if (saveTimer) {
+            window.clearTimeout(saveTimer);
+            saveTimer = null;
+        }
+        const snapshot = persistLocal();
+        persistServer(snapshot, true);
+    };
+
+    window.addEventListener('pagehide', flushBeforeLeave);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushBeforeLeave();
+    });
+});

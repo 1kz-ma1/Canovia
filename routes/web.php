@@ -190,6 +190,7 @@ Route::middleware('feature.access:'.FeatureKey::AiPractice->value)->group(functi
     Route::get('/plans/{plan}/tasks/{task}/study-practice', [StudyPracticeController::class, 'show'])->name('plans.tasks.study_practice.show');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/prepare', [StudyPracticeController::class, 'prepare'])->name('plans.tasks.study_practice.prepare');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/import', [StudyPracticeController::class, 'import'])->name('plans.tasks.study_practice.import');
+    Route::post('/plans/{plan}/tasks/{task}/study-practice/draft', [StudyPracticeController::class, 'saveDraft'])->name('plans.tasks.study_practice.draft');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/answers', [StudyPracticeController::class, 'submitAnswers'])->name('plans.tasks.study_practice.answers');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/assessment', [StudyPracticeController::class, 'previewAssessment'])->name('plans.tasks.study_practice.assessment');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/apply', [StudyPracticeController::class, 'applyAssessment'])->name('plans.tasks.study_practice.apply');

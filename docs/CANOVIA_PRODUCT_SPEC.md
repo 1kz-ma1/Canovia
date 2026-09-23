@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-23 / main V40.6 + V40.7 foundation
+更新基準: 2026-09-24 / main V40.7 + V40.7.1 reliability patch
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -53,6 +53,7 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - Calendar / Availability
 - AI JSON外部往復によるTask生成・計画更新
 - AI Practice / Question Pack基盤
+- AI Practice途中回答の自動保存・無通知再開
 - Resource / Project Artifact
 - Future Memo
 - Achievement / Timeline / Release Notes

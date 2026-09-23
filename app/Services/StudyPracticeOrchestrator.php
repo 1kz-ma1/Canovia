@@ -83,6 +83,9 @@ class StudyPracticeOrchestrator
                 'status' => $isDirect
                     ? StudyPracticeSession::STATUS_READY
                     : StudyPracticeSession::STATUS_AWAITING_PROVIDER,
+                'exercise_title' => $isDirect
+                    ? mb_substr(trim((string) data_get($prepared, 'payload.title', 'Canovia Question Bank演習')), 0, 120)
+                    : null,
                 'strategy' => (string) $strategy['key'],
                 'strategy_version' => (string) ($strategy['version'] ?? 'v1'),
                 'selector_type' => (string) ($prepared['selector_type'] ?? 'external_ai'),
@@ -99,6 +102,9 @@ class StudyPracticeOrchestrator
                 'selected_questions' => is_array($prepared['selected_questions'] ?? null)
                     ? $prepared['selected_questions']
                     : null,
+                'questions_snapshot' => $isDirect ? $prepared['questions'] : null,
+                'draft_answers' => null,
+                'draft_saved_at' => null,
                 'started_at' => now(),
             ]
         );
