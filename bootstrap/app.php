@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use App\Http\Middleware\EnsureFeatureAccess;
 use App\Http\Middleware\NormalizeAiJsonInput;
 use App\Http\Middleware\RedirectLegacyCanoviaHost;
 use App\Http\Middleware\TrackAiPlanFunnel;
@@ -17,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn (Request $request) => route('auth.login.form'));
         $middleware->redirectUsersTo(fn (Request $request) => route('home'));
+        $middleware->alias([
+            'feature.access' => EnsureFeatureAccess::class,
+        ]);
         $middleware->appendToGroup('web', RedirectLegacyCanoviaHost::class);
         // Track the AI plan funnel before JSON normalization so even parser
         // failures are visible in diagnostics.
