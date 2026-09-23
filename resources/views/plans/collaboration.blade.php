@@ -23,7 +23,7 @@
         @if ($canManage ?? false)
             <form method="POST" action="{{ route('plans.collaboration.enable', $plan) }}" class="mt-5">
                 @csrf
-                <button class="btn-primary" type="submit">共同計画を有効にする</button>
+                <button class="btn-primary" type="submit" data-guide-target="collaboration-primary">共同計画を有効にする</button>
             </form>
         @endif
     </section>
@@ -34,7 +34,7 @@
     <section class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div class="space-y-5">
             @if ($canManage ?? false)
-            <article class="page-card p-6">
+            <article class="page-card p-6" data-guide-target="collaboration-primary">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h2 class="text-lg font-bold text-slate-50">招待する</h2>
