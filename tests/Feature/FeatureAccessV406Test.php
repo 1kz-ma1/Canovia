@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Services\Entitlements\FreeEntitlementResolver;
 use App\Services\FeatureAccessService;
+use App\Services\PlanToolService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -33,6 +34,28 @@ class FeatureAccessV406Test extends TestCase
                 $this->assertSame('free_access', $decision->reason);
             }
         }
+    }
+
+    public function test_feature_catalog_and_configuration_stay_in_sync(): void
+    {
+        $enumKeys = collect(FeatureKey::cases())->map(fn (FeatureKey $key) => $key->value)->sort()->values()->all();
+        $configuredKeys = collect(array_keys(config('entitlements.features', [])))->sort()->values()->all();
+
+        $this->assertSame($enumKeys, $configuredKeys);
+    }
+
+    public function test_tool_presentation_uses_the_same_access_boundary(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $plan->load(['resources', 'tasks.resources', 'tasks.artifacts']);
+        $task = $plan->tasks->first();
+
+        config()->set('entitlements.features.ai_practice.free', false);
+
+        $tools = collect(app(PlanToolService::class)->forTask($plan, $task, true, $user));
+
+        $this->assertFalse($tools->contains(fn (array $tool) => $tool['id'] === 'ai_practice'));
+        $this->assertTrue($tools->contains(fn (array $tool) => $tool['id'] === 'timer'));
     }
 
     public function test_feature_flag_visibility_is_not_part_of_entitlement_resolution(): void
