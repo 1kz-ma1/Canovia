@@ -83,6 +83,18 @@ class ApQuestionPackV403Test extends TestCase
             $this->assertSame('ap-a-canovia-core-v1', $result['pack']?->slug);
             $this->assertGreaterThanOrEqual(3, $result['focus_match_count']);
         }
+
+        $genericCalculation = QuestionPack::where('slug', 'ap-a-canovia-core-v1')
+            ->firstOrFail()
+            ->questions()
+            ->where('external_key', 'calc-mips-026')
+            ->firstOrFail();
+
+        $this->assertSame(
+            0,
+            $coverage->questionFocusScore($genericCalculation, collect(['MTU計算'])),
+            'A generic 計算 tag must not inflate MTU-specific coverage.'
+        );
     }
 
     public function test_ai_practice_uses_bundled_pack_directly_for_mtu_weakness(): void
