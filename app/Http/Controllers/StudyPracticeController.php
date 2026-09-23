@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FeatureKey;
 use App\Models\Plan;
 use App\Models\StudyPracticeAttempt;
 use App\Models\StudyPracticeSession;
 use App\Models\Task;
 use App\Services\AiJsonInputNormalizer;
 use App\Services\BehaviorIdentityService;
+use App\Services\FeatureAccessService;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
@@ -26,6 +28,7 @@ class StudyPracticeController extends Controller
         PlanOwnershipService $ownership,
         StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
+        FeatureAccessService $featureAccess,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -51,7 +54,17 @@ class StudyPracticeController extends Controller
                 ->first()
             : null;
 
-        $orchestration = $orchestrator->previewHandoff($plan, $task, $recentAttempts);
+        $questionPackAllowed = $featureAccess->canUse(
+            $request->user(),
+            FeatureKey::QuestionPack,
+            ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
+        );
+        $orchestration = $orchestrator->previewHandoff(
+            $plan,
+            $task,
+            $recentAttempts,
+            $questionPackAllowed ? null : 'external_ai',
+        );
         $practiceStrategy = $currentPracticeSession
             ? (array) data_get($currentPracticeSession->selection_context, 'strategy', $orchestration['strategy'])
             : $orchestration['strategy'];
@@ -92,9 +105,15 @@ class StudyPracticeController extends Controller
         PlanOwnershipService $ownership,
         StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
+        FeatureAccessService $featureAccess,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
+        $featureAccess->authorizeUse(
+            $request->user(),
+            FeatureKey::QuestionPack,
+            ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
+        );
 
         $validated = $request->validate([
             'prepare_request_id' => ['required', 'uuid'],
