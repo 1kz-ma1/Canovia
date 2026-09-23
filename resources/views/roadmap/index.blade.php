@@ -55,9 +55,9 @@
                     <p class="mt-1 truncate text-sm font-bold text-slate-100">{{ $plan->title }}</p>
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
-                    <a href="{{ route('plans.show', $plan) }}" class="btn-secondary px-3 py-2 text-xs">計画詳細</a>
-                    <a href="{{ route('plans.resources.index', $plan) }}" class="btn-secondary px-3 py-2 text-xs">関連資料</a>
-                    <a href="{{ route('plans.collaboration.settings', $plan) }}" class="btn-secondary border-cyan-300/20 bg-cyan-300/[0.05] px-3 py-2 text-xs text-cyan-100">
+                    <a href="{{ route('plans.show', $plan) }}" class="btn-secondary px-3 py-2 text-xs" data-guide-target="plan-detail">計画詳細</a>
+                    <a href="{{ route('plans.resources.index', $plan) }}" class="btn-secondary px-3 py-2 text-xs" data-guide-target="plan-resources">関連資料</a>
+                    <a href="{{ route('plans.collaboration.settings', $plan) }}" class="btn-secondary border-cyan-300/20 bg-cyan-300/[0.05] px-3 py-2 text-xs text-cyan-100" data-guide-target="collaboration-settings">
                         @if ($canManage ?? false)
                             {{ $plan->is_collaborative ? '共同計画を管理' : '共同計画にする' }}
                         @else
@@ -65,7 +65,7 @@
                         @endif
                     </a>
                     @if ($canManage ?? false)
-                        <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-primary px-3 py-2 text-xs">計画を更新</a>
+                        <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-primary px-3 py-2 text-xs" data-guide-target="plan-update">計画を更新</a>
                         <details class="relative">
                             <summary class="btn-secondary cursor-pointer list-none px-3 py-2 text-xs" aria-label="計画メニュー">…</summary>
                             <div class="absolute right-0 z-[80] mt-2 w-52 rounded-2xl border border-slate-700 bg-slate-950/95 p-2 shadow-2xl backdrop-blur">
