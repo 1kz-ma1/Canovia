@@ -4462,3 +4462,29 @@ html[data-theme-resolved="light"] .release-note-section-title {
     letter-spacing: 0.045em;
     line-height: 1.42;
 }
+
+
+/* V40.4.2: keep display handwriting visible instead of synthetic heavy bold. */
+h1,
+h2,
+h3,
+.font-heading,
+.pk-v18-hero h1,
+.pk-v18-recommendation-titlebar h2,
+.pk-v18-active-session h2,
+.pk-v18-card-heading h2,
+.pk-v18-mini-card-heading h2,
+[data-offline-timer-task],
+.pk-v18-today-card h2,
+.pk-v395-guidance-card h3 {
+    font-family: var(--font-canovia-display);
+    font-weight: 400 !important;
+}
+
+/* Mobile hero: mascot already carries enough personality; remove the bubble
+   rather than letting decorative copy compete with the primary heading. */
+@media (max-width: 767px) {
+    .pk-v22-guide-bubble-layer {
+        display: none !important;
+    }
+}
