@@ -164,7 +164,7 @@
                         <p class="mt-1 text-xs leading-5 text-slate-400">原文を読む必要はありません。普段使っているAIへ、そのままコピーして送ってください。</p>
                         <button type="button" class="btn-primary mt-4" data-copy-target="#studyPracticeGenerationPrompt">演習準備プロンプトをコピー</button>
 
-                        <details class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                        <details class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
                             <summary class="cursor-pointer text-xs font-semibold text-slate-300">このプロンプトに含まれる情報</summary>
                             <ul class="mt-3 space-y-2 text-xs leading-5 text-slate-500">
                                 <li>・Plan / TaskのID・タイトル・説明・現在進捗</li>
@@ -201,7 +201,7 @@
                         <p id="questionJsonPasteStatus" class="mt-2 hidden text-xs leading-5 text-slate-400" aria-live="polite"></p>
                         @error('questions_json')<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
 
-                        <details id="questionJsonManualInput" class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($questionJsonError || old('questions_json')) open @endif>
+                        <details id="questionJsonManualInput" class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($questionJsonError || old('questions_json')) open @endif>
                             <summary class="cursor-pointer text-xs font-semibold text-slate-300">手動で貼り付ける / JSONを確認する</summary>
                             <textarea id="questions_json" name="questions_json" class="form-control mt-3 min-h-[180px] font-mono text-xs" placeholder="AIが返したJSONを貼り付け">{{ old('questions_json') }}</textarea>
                             <button type="submit" class="btn-secondary mt-3">このJSONを読み込む</button>
@@ -213,7 +213,7 @@
                                 <p class="mt-1 text-xs leading-5 text-slate-400">最初に問題を作ったAIへ修正依頼を送り、返ってきたJSONをもう一度貼り付けてください。</p>
                                 <textarea id="studyPracticeQuestionRepairPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $questionJsonRepairPrompt }}</textarea>
                                 <button type="button" class="btn-primary mt-3" data-copy-target="#studyPracticeQuestionRepairPrompt">修正依頼をコピー</button>
-                                <details class="mt-3 rounded-xl border border-rose-300/10 bg-slate-950/25 p-3">
+                                <details class="ai-handoff-details mt-3 rounded-xl border border-rose-300/10 bg-slate-950/25 p-3">
                                     <summary class="cursor-pointer text-xs font-semibold text-rose-100/80">修正依頼に含まれる情報</summary>
                                     <p class="mt-2 text-xs leading-5 text-slate-500">Canoviaのエラー内容、返されたJSON、元の問題作成Prompt、正しいPlan / Task IDを含みます。</p>
                                 </details>
@@ -312,7 +312,7 @@
 
                 <div class="mt-4 rounded-2xl border border-violet-300/15 bg-violet-300/[0.035] p-4">
                     <button type="button" class="btn-primary" data-copy-target="#studyPracticeEvaluationPrompt">評価プロンプトをコピー</button>
-                    <details class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                    <details class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
                         <summary class="cursor-pointer text-xs font-semibold text-slate-300">この評価依頼に含まれる情報</summary>
                         <ul class="mt-3 space-y-2 text-xs leading-5 text-slate-500">
                             <li>・今回出題された問題と回答内容</li>
@@ -341,7 +341,7 @@
                     <p id="assessmentJsonPasteStatus" class="mt-2 hidden text-xs leading-5 text-slate-400" aria-live="polite"></p>
                     @error('assessment_json')<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
 
-                    <details id="assessmentJsonManualInput" class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($assessmentJsonError || old('assessment_json')) open @endif>
+                    <details id="assessmentJsonManualInput" class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($assessmentJsonError || old('assessment_json')) open @endif>
                         <summary class="cursor-pointer text-xs font-semibold text-slate-300">手動で貼り付ける / 評価JSONを確認する</summary>
                         <textarea id="assessment_json" name="assessment_json" class="form-control mt-3 min-h-[180px] font-mono text-xs" placeholder="評価JSONを貼り付け">{{ old('assessment_json') }}</textarea>
                         <button type="submit" class="btn-secondary mt-3">この評価JSONを確認する</button>
@@ -353,7 +353,7 @@
                             <p class="mt-1 text-xs leading-5 text-slate-400">評価を作ったAIへ修正依頼を送り、返ってきたJSONをもう一度貼り付けてください。</p>
                             <textarea id="studyPracticeAssessmentRepairPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $assessmentJsonRepairPrompt }}</textarea>
                             <button type="button" class="btn-primary mt-3" data-copy-target="#studyPracticeAssessmentRepairPrompt">修正依頼をコピー</button>
-                            <details class="mt-3 rounded-xl border border-rose-300/10 bg-slate-950/25 p-3">
+                            <details class="ai-handoff-details mt-3 rounded-xl border border-rose-300/10 bg-slate-950/25 p-3">
                                 <summary class="cursor-pointer text-xs font-semibold text-rose-100/80">修正依頼に含まれる情報</summary>
                                 <p class="mt-2 text-xs leading-5 text-slate-500">Canoviaのエラー内容、評価JSON、元の評価Prompt、正しいPlan / Task IDを含みます。</p>
                             </details>
