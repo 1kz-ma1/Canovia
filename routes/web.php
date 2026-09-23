@@ -20,6 +20,7 @@ use App\Http\Controllers\WorkSessionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OfflineWorkSessionController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\CanoviaFutureController;
 use App\Http\Controllers\AdminFeedbackController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminTelemetryController;
@@ -76,6 +77,9 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middle
 Route::get('/account', [AuthController::class, 'account'])->middleware('auth')->name('auth.account');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('auth.logout');
 Route::post('/offline/work-sessions/sync', [OfflineWorkSessionController::class, 'sync'])->name('offline.work_sessions.sync');
+Route::get('/feedback', [CanoviaFutureController::class, 'index'])->name('feedback.index');
+Route::post('/feedback/future/{roadmapFeature}/support', [CanoviaFutureController::class, 'support'])->middleware('throttle:30,1')->name('feedback.future.support');
+Route::delete('/feedback/future/{roadmapFeature}/support', [CanoviaFutureController::class, 'unsupport'])->middleware('throttle:30,1')->name('feedback.future.unsupport');
 Route::post('/feedback', [FeedbackController::class, 'store'])->middleware('throttle:12,1')->name('feedback.store');
 Route::post('/onboarding/complete', [OnboardingController::class, 'complete'])->middleware('throttle:30,1')->name('onboarding.complete');
 Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->middleware('throttle:30,1')->name('onboarding.skip');
