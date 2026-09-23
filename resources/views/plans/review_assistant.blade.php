@@ -185,10 +185,23 @@
                             現在の計画、タスク、最近の実績@if ($workSessionContext) と今回の作業記録@endif をまとめました。次の内容を普段使っているAIへ送ってください。
                         </p>
 
-                        <textarea id="reviewPrompt" class="form-control mt-4 min-h-[420px] font-mono text-xs" readonly>{{ $draft['prompt'] }}</textarea>
+                        <textarea id="reviewPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $draft['prompt'] }}</textarea>
 
-                        <div class="mt-4 flex flex-wrap gap-3">
-                            <button type="button" class="btn-primary" onclick="copyReviewPrompt()" data-funnel-event="plan_update_prompt_copy_clicked">プロンプトをコピー</button>
+                        <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4">
+                            <p class="text-sm font-semibold text-slate-100">AIへ渡す更新コンテキストはCanovia側で準備済みです</p>
+                            <p class="mt-1 text-xs leading-5 text-slate-400">原文を読む必要はありません。普段使っているAIへそのまま送ってください。</p>
+                            <button type="button" class="btn-primary mt-4" data-copy-target="#reviewPrompt" data-funnel-event="plan_update_prompt_copy_clicked">プロンプトをコピー</button>
+
+                            <details class="ai-handoff-details mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                                <summary class="cursor-pointer text-xs font-semibold text-slate-300">このプロンプトに含まれる情報</summary>
+                                <ul class="mt-3 space-y-2 text-xs leading-5 text-slate-500">
+                                    <li>・現在のPlan、Task、進捗、期限、作業可能時間</li>
+                                    <li>・最近の作業実績と、今回入力した補足内容</li>
+                                    <li>・未来メモなどAI共有対象の本人コンテキスト</li>
+                                    <li>・更新可能な操作、正しいPlan / Task ID</li>
+                                    <li>・JSON形式、進捗・作業時間の重複登録を防ぐ安全条件</li>
+                                </ul>
+                            </details>
                         </div>
                     </div>
                 </div>
@@ -197,22 +210,37 @@
                     <div class="assistant-bubble assistant-bubble-user assistant-form-bubble">
                         <p class="assistant-speaker">あなた</p>
                         <p class="mt-2 text-sm leading-6">
-                            外部AIとの対話後、最終的に返されたJSONを貼り付けます。
+                            外部AI側で最終JSONをコピーしたら、Canoviaでは1回押すだけで貼り付けと確認へ進めます。
                         </p>
 
                         <form method="POST" action="{{ route('plans.review_assistant.preview', $plan) }}" class="mt-4 space-y-4" data-review-json-preview>
                             @csrf
-                            <textarea
-                                name="operations_json"
-                                rows="14"
-                                class="form-control font-mono text-xs"
-                                required
-                                placeholder='{"schema_version":"2.0","flow":"result_recording","target_plan":{"id":{{ $plan->id }},"title":"計画名","category":"カテゴリ"},"summary":"AIが判断した更新内容","operations":[]}'
-                            >{{ old('operations_json') }}</textarea>
 
-                            <button type="submit" class="btn-primary w-full md:w-auto" data-async-plan-review-submit>
-                                変更内容を読み込んで確認
-                            </button>
+                            <button
+                                type="button"
+                                class="btn-primary w-full md:w-auto"
+                                data-paste-target="#review_operations_json"
+                                data-paste-submit="1"
+                                data-paste-fallback="#reviewOperationsJsonManual"
+                                data-paste-status="#reviewOperationsJsonPasteStatus"
+                            >クリップボードから貼り付けて確認</button>
+                            <p id="reviewOperationsJsonPasteStatus" class="hidden text-xs leading-5 text-slate-400" aria-live="polite"></p>
+
+                            <details id="reviewOperationsJsonManual" class="ai-handoff-details rounded-xl border border-slate-800 bg-slate-950/35 p-3" @if($errors->has('operations_json') || old('operations_json')) open @endif>
+                                <summary class="cursor-pointer text-xs font-semibold text-slate-300">手動で貼り付ける / JSONを確認する</summary>
+                                <textarea
+                                    id="review_operations_json"
+                                    name="operations_json"
+                                    rows="10"
+                                    class="form-control mt-3 font-mono text-xs"
+                                    required
+                                    placeholder='{"schema_version":"2.0","flow":"result_recording","target_plan":{"id":{{ $plan->id }},"title":"計画名","category":"カテゴリ"},"summary":"AIが判断した更新内容","operations":[]}'
+                                >{{ old('operations_json') }}</textarea>
+                                <button type="submit" class="btn-secondary mt-3 w-full md:w-auto" data-async-plan-review-submit>
+                                    このJSONを読み込んで確認
+                                </button>
+                            </details>
+
                             <div class="hidden rounded-xl border px-3 py-2 text-sm leading-6" data-async-plan-review-status aria-live="polite"></div>
                         </form>
                     </div>
@@ -261,8 +289,12 @@
                                 <p class="font-bold">Canoviaが検出した内容</p>
                                 <p class="mt-1 text-sm leading-6">{{ $jsonErrorMessage }}</p>
                             </div>
-                            <textarea id="reviewJsonRepairPrompt" class="form-control mt-4 min-h-[220px] font-mono text-xs" readonly>{{ $jsonRepairPrompt }}</textarea>
-                            <button type="button" class="btn-primary mt-3" onclick="copyReviewJsonRepairPrompt()">修正依頼をコピー</button>
+                            <textarea id="reviewJsonRepairPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only">{{ $jsonRepairPrompt }}</textarea>
+                            <button type="button" class="btn-primary mt-3" data-copy-target="#reviewJsonRepairPrompt">修正依頼をコピー</button>
+                            <details class="ai-handoff-details mt-3 rounded-xl border border-rose-300/10 bg-slate-950/25 p-3">
+                                <summary class="cursor-pointer text-xs font-semibold text-rose-100/80">修正依頼に含まれる情報</summary>
+                                <p class="mt-2 text-xs leading-5 text-slate-500">Canoviaが検出したエラー、貼り付けたJSON、元の更新Prompt、正しいPlan / Task IDと現在値を含みます。</p>
+                            </details>
                         </div>
                     </div>
                 @endif
@@ -415,73 +447,6 @@
         </main>
     </div>
 
-    <script>
-        async function copyReviewPrompt() {
-            const prompt = document.getElementById('reviewPrompt');
+    {{-- Clipboard copy/paste is handled centrally in resources/js/app.js. --}}
 
-            if (! prompt) {
-                alert('コピー対象が見つかりません。');
-                return;
-            }
-
-            try {
-                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-                    await navigator.clipboard.writeText(prompt.value);
-                    alert('プロンプトをコピーしました。');
-                    return;
-                }
-
-                throw new Error('Clipboard API is unavailable.');
-            } catch (error) {
-                const fallback = document.createElement('textarea');
-                fallback.value = prompt.value;
-                fallback.setAttribute('readonly', '');
-                fallback.style.position = 'fixed';
-                fallback.style.opacity = '0';
-                fallback.style.pointerEvents = 'none';
-
-                document.body.appendChild(fallback);
-                fallback.select();
-                fallback.setSelectionRange(0, fallback.value.length);
-
-                let copied = false;
-
-                try {
-                    copied = document.execCommand('copy');
-                } catch (fallbackError) {
-                    copied = false;
-                }
-
-                document.body.removeChild(fallback);
-
-                if (copied) {
-                    alert('プロンプトをコピーしました。');
-                    return;
-                }
-
-                prompt.focus();
-                prompt.select();
-                prompt.setSelectionRange(0, prompt.value.length);
-                alert('自動コピーに失敗しました。選択された内容を手動でコピーしてください。');
-            }
-        }
-
-        async function copyReviewJsonRepairPrompt() {
-            const prompt = document.getElementById('reviewJsonRepairPrompt');
-            if (! prompt) return;
-
-            try {
-                await navigator.clipboard.writeText(prompt.value);
-                alert('修正依頼をコピーしました。JSONを作ったAIへ送ってください。');
-            } catch (error) {
-                prompt.focus();
-                prompt.select();
-                prompt.setSelectionRange(0, prompt.value.length);
-                alert('自動コピーできませんでした。選択された内容を手動でコピーしてください。');
-            }
-        }
-
-        // Prompt/reset async submission is handled centrally in resources/js/app.js.
-        // JSON preview intentionally uses the browser's native form submission.
-    </script>
 @endsection
