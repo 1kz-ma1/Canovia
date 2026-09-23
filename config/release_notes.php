@@ -2,6 +2,23 @@
 
 return [
     [
+        'version' => 'v40.6',
+        'date' => '2026-09-23',
+        'title' => '将来の収益化に備えるEntitlement基盤',
+        'summary' => '現在の無料利用を変えずに、Premium・Coin・Gift・Sponsorなど複数の経路から同じ機能利用権を解決できる共通Access境界を追加しました。',
+        'highlights' => [
+            'Feature Keyを一元管理し、AI Practice・Question Pack・Project Artifactなどを安定した識別子で扱えるようにしました。',
+            'FeatureAccessServiceを追加し、機能側がPremiumやCoinを直接判定せず「このactorはこのFeatureを使えるか」だけ問い合わせる構造にしました。',
+            '現在はFreeEntitlementResolverだけを登録し、全Featureを従来どおり無料で利用できます。',
+            'Premium / Coin / Gift / Sponsorはaccess sourceとして予約しましたが、購入・残高・消費・付与・課金UIはまだ実装していません。',
+            'AI演習とProject ArtifactのRoute、Home/Plan上のTool表示を共通Access境界へ接続しました。',
+            'Question PackはAI Practiceとは別Featureとして判定でき、将来利用権が異なる場合は外部AI providerへフォールバックできる構造にしました。',
+            'Feature Flagは機能公開、Entitlementはactorの利用権として責務を分離しています。',
+            'AccessDecisionは将来BehaviorEventへ安全な判定メタデータを接続できる形にしましたが、現時点ではアクセス判定ログを増やしていません。',
+        ],
+        'tip' => 'V40.6では課金制限は有効になっていません。今まで使えていた機能はそのまま利用できます。',
+    ],
+    [
         'version' => 'v40.5',
         'date' => '2026-09-23',
         'title' => 'Canovia Guideで「やりたいこと」から案内',
