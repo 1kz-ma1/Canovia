@@ -227,7 +227,7 @@
                                         @csrf
                                         <input type="hidden" name="task_id" value="{{ $guidanceTask->id }}">
                                         <input type="hidden" name="source" value="dashboard">
-                                        <button type="submit" class="btn-secondary w-full px-3 py-2 text-xs" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
+                                        <button type="submit" class="btn-secondary w-full px-3 py-2 text-xs">
                                             ◷ 集中タイマー（任意）
                                         </button>
                                     </form>
@@ -270,7 +270,7 @@
                                             @csrf
                                             <input type="hidden" name="task_id" value="{{ $continuity['task_id'] }}">
                                             <input type="hidden" name="source" value="dashboard">
-                                            <button type="submit">続きから開始 →</button>
+                                            <button type="submit">◷ 集中タイマーで続ける →</button>
                                         </form>
                                     @endif
                                 </div>
