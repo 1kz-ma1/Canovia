@@ -154,7 +154,7 @@
                                     @elseif (($recommendationPrimaryTool['id'] ?? null) === 'resources')
                                         <a href="{{ route('plans.resources.index', $recommendation->plan) }}" class="pk-v18-start-cta w-full justify-center" data-onboarding-target="today-start">⌘ 関連資料を開く</a>
                                     @else
-                                        <a href="{{ route('plans.show', $recommendation->plan) }}" class="pk-v18-start-cta w-full justify-center" data-onboarding-target="today-start">Taskを確認する</a>
+                                        <div class="flex min-h-11 items-center justify-center rounded-xl border border-slate-700/80 bg-slate-950/35 px-4 py-2 text-center text-sm font-bold text-slate-200" data-onboarding-target="today-start">内容を確認したら、そのまま作業へ</div>
                                     @endif
 
                                     <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
@@ -218,7 +218,7 @@
                                                         @elseif (($candidatePrimaryTool['id'] ?? null) === 'resources')
                                                             <a href="{{ route('plans.resources.index', $candidate->plan) }}" class="btn-primary w-full justify-center">関連資料を開く</a>
                                                         @else
-                                                            <a href="{{ route('plans.show', $candidate->plan) }}" class="btn-primary w-full justify-center">Taskを確認する</a>
+                                                            <div class="rounded-xl border border-slate-700/80 bg-slate-950/30 px-3 py-2 text-center text-xs font-semibold text-slate-300">内容を確認したら、そのまま作業へ</div>
                                                         @endif
                                                         <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
                                                             @csrf
