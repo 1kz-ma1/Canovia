@@ -76,7 +76,7 @@ class TaskEvidence extends Model
             'study_practice_assessed' => sprintf(
                 'AI演習 %d%% · %s',
                 (int) data_get($this->metadata, 'score_percent', 0),
-                trim((string) data_get($this->metadata, 'evidence_summary', '評価結果を保存しました。')),
+                trim((string) data_get($this->metadata, 'evidence_summary')) ?: '評価結果を保存しました。',
             ),
             'artifact_state_observed' => sprintf(
                 '「%s」を%sしました。',
