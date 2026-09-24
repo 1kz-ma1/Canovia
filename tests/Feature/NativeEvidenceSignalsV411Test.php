@@ -33,17 +33,20 @@ class NativeEvidenceSignalsV411Test extends TestCase
 
         $service = app(TaskEvidenceService::class);
 
-        $first = $service->recordArtifactState($artifact, 'created')->firstOrFail();
-        $same = $service->recordArtifactState($artifact->fresh(), 'created')->firstOrFail();
+        $first = $service->recordArtifactState($artifact, 'created')->first();
+        $same = $service->recordArtifactState($artifact->fresh(), 'created')->first();
 
+        $this->assertNotNull($first);
+        $this->assertNotNull($same);
         $this->assertSame($first->id, $same->id);
         $this->assertDatabaseCount('task_evidences', 1);
         $this->assertSame(0.8, (float) $first->confidence);
         $this->assertSame('artifact_state_observed', $first->type);
 
         $artifact->update(['version_label' => 'v2']);
-        $second = $service->recordArtifactState($artifact->fresh(), 'updated')->firstOrFail();
+        $second = $service->recordArtifactState($artifact->fresh(), 'updated')->first();
 
+        $this->assertNotNull($second);
         $this->assertNotSame($first->id, $second->id);
         $this->assertDatabaseCount('task_evidences', 2);
         $this->assertSame('v2', data_get($second->metadata, 'version_label'));
