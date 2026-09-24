@@ -202,6 +202,7 @@ class TaskEvidenceV410Test extends TestCase
     {
         $view = file_get_contents(resource_path('views/dashboard/index.blade.php'));
         $planView = file_get_contents(resource_path('views/plans/show.blade.php'));
+        $todayView = file_get_contents(resource_path('views/navigation/index.blade.php'));
 
         $this->assertStringContainsString('PLAN HUB', $view);
         $this->assertStringContainsString('NEXT ACTION', $view);
@@ -213,6 +214,10 @@ class TaskEvidenceV410Test extends TestCase
         $this->assertStringContainsString('id="task-{{ $task->id }}"', $planView);
         $this->assertStringContainsString('◷ 集中タイマー', $planView);
         $this->assertStringContainsString('作業量の目安', $planView);
+
+        $this->assertStringContainsString('このTaskの進め方', $todayView);
+        $this->assertStringContainsString('集中タイマー（任意）', $todayView);
+        $this->assertStringNotContainsString('このまま開始', $todayView);
     }
 
     private function studyPlan(): array
