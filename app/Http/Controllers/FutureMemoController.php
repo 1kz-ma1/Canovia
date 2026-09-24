@@ -189,7 +189,7 @@ class FutureMemoController extends Controller
         return match ($value) {
             '勉強・資格', 'study' => '資格学習',
             '制作・開発', 'creation' => '個人開発',
-            '就職・将来', 'career' => 'その他',
+            '就職・将来', 'career' => '就活・キャリア',
             default => 'その他',
         };
     }
