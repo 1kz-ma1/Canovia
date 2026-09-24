@@ -847,11 +847,14 @@ class StudyPracticeController extends Controller
                 ->update(['status' => StudyPracticeSession::STATUS_ABANDONED]);
         }
 
+        $continuing = $request->boolean('continue');
         $request->session()->forget($key);
 
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
-            ->with('status', 'この演習をリセットしました。');
+            ->with('status', $continuing
+                ? '前回の結果を引き継いで、次の演習を準備します。'
+                : 'この演習をリセットしました。');
     }
 
     private function authorizeTask(Request $request, Plan $plan, Task $task, PlanOwnershipService $ownership): void
