@@ -6,17 +6,23 @@
     @php
         $previousRoadmapUrl = $previousPlan ? route('roadmap.index', ['plan_id' => $previousPlan->id]) : null;
         $nextRoadmapUrl = $nextPlan ? route('roadmap.index', ['plan_id' => $nextPlan->id]) : null;
+        $roadmapProfile = $roadmapPresentation ?? [];
     @endphp
 
     @if ($previousRoadmapUrl)<link rel="prefetch" href="{{ $previousRoadmapUrl }}">@endif
     @if ($nextRoadmapUrl)<link rel="prefetch" href="{{ $nextRoadmapUrl }}">@endif
 
     <div class="pk-v19-roadmap-page">
-        <header class="pk-v19-roadmap-hero">
+        <header
+            class="pk-v19-roadmap-hero"
+            data-roadmap-profile="{{ $roadmapProfile['key'] ?? 'general' }}"
+            data-roadmap-renderer-preference="{{ $roadmapProfile['roadmap_renderer'] ?? 'task_flow' }}"
+            data-roadmap-renderer-active="{{ $roadmapProfile['active_renderer'] ?? 'task_flow' }}"
+        >
             <div class="pk-v19-roadmap-hero-copy">
-                <p class="pk-v18-eyebrow">CANOVIA / ROADMAP</p>
-                <h1>ロードマップ</h1>
-                <p>小さな一歩が、<br>大きな未来につながる。</p>
+                <p class="pk-v18-eyebrow">CANOVIA / {{ $roadmapProfile['label'] ?? 'ROADMAP' }}</p>
+                <h1>{{ $roadmapProfile['roadmap_title'] ?? 'ロードマップ' }}</h1>
+                <p>{{ $roadmapProfile['roadmap_description'] ?? '小さな一歩が、大きな未来につながる。' }}</p>
             </div>
             <div class="pk-v19-roadmap-planet" aria-hidden="true"></div>
             <img src="/brand/mascot-guide.webp" alt="" class="pk-v19-roadmap-guide" aria-hidden="true">
@@ -53,6 +59,7 @@
                 <div class="min-w-0">
                     <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">選択中の計画</p>
                     <p class="mt-1 truncate text-sm font-bold text-slate-100">{{ $plan->title }}</p>
+                    <p class="mt-1 text-[11px] text-slate-500">{{ $roadmapProfile['label'] ?? '汎用' }}向け表示 · {{ $roadmapProfile['roadmap_description'] ?? '' }}</p>
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
                     <a href="{{ route('plans.show', $plan) }}" class="btn-secondary px-3 py-2 text-xs" data-guide-target="plan-detail">計画詳細</a>
@@ -92,7 +99,12 @@
                 data-next-url="{{ $nextRoadmapUrl }}"
                 aria-live="polite"
             >
-                <section class="pk-v19-roadmap-surface plan-identity-shell" data-plan-accent="{{ $plan->accentKey() }}">
+                <section
+                    class="pk-v19-roadmap-surface plan-identity-shell"
+                    data-plan-accent="{{ $plan->accentKey() }}"
+                    data-roadmap-renderer-preference="{{ $roadmapProfile['roadmap_renderer'] ?? 'task_flow' }}"
+                    data-roadmap-renderer-active="{{ $roadmapProfile['active_renderer'] ?? 'task_flow' }}"
+                >
                     @include('plans.partials.roadmap', [
                         'roadmap' => $roadmap,
                         'roadmapPlan' => $plan,
