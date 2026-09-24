@@ -78,11 +78,11 @@ class RecommendationService
                     0,
                     (int) round($task->estimated_minutes * (100 - $task->progress_percent) / 100)
                 );
+                $hasTimeEstimate = $remainingMinutes > 0;
 
-                if ($remainingMinutes <= 0) {
-                    continue;
-                }
-
+                // V41: missing/zero time does not mean the Task has no work left.
+                // Keep it recommendable and use the adaptive budget only as a
+                // presentation/planning estimate.
                 $candidateBudget = $effectiveBudget;
                 if ($timeBudgetMinutes === null && ($progress['availability_configured'] ?? false)) {
                     $availableToday = (int) ($progress['today_available_remaining_minutes'] ?? 0);
@@ -147,15 +147,17 @@ class RecommendationService
                     $score += min(15, $gap * 0.5);
                 }
 
-                $fitsBudget = $remainingMinutes <= $candidateBudget;
+                if ($hasTimeEstimate) {
+                    $fitsBudget = $remainingMinutes <= $candidateBudget;
 
-                if ($fitsBudget || $remainingMinutes <= $candidateBudget + 10) {
-                    $score += $weights['time_fit'];
-                    $fitMinutes = min($remainingMinutes, $candidateBudget);
-                    $this->reason($reasonScores, "約{$fitMinutes}分で区切りよく進めやすいため", $weights['time_fit']);
-                } elseif ($timeBudgetMinutes !== null) {
-                    $overRatio = $remainingMinutes / max(1, $candidateBudget);
-                    $score -= min(18, $weights['time_over_budget_penalty'] * min(2, $overRatio - 1));
+                    if ($fitsBudget || $remainingMinutes <= $candidateBudget + 10) {
+                        $score += $weights['time_fit'];
+                        $fitMinutes = min($remainingMinutes, $candidateBudget);
+                        $this->reason($reasonScores, "約{$fitMinutes}分で区切りよく進めやすいため", $weights['time_fit']);
+                    } elseif ($timeBudgetMinutes !== null) {
+                        $overRatio = $remainingMinutes / max(1, $candidateBudget);
+                        $score -= min(18, $weights['time_over_budget_penalty'] * min(2, $overRatio - 1));
+                    }
                 }
 
                 $activationCost = $this->personalizationService->effectiveActivationCost($task, $personalization);
@@ -171,7 +173,7 @@ class RecommendationService
                 }
 
                 if ($intent === 'short') {
-                    if ($remainingMinutes <= 20) {
+                    if ($hasTimeEstimate && $remainingMinutes <= 20) {
                         $score += 10;
                         $this->reason($reasonScores, '短時間で区切りやすい作業のため', 18);
                     }
@@ -215,7 +217,9 @@ class RecommendationService
                     $score -= 10;
                 }
 
-                $recommendedMinutes = min($remainingMinutes, $candidateBudget);
+                $recommendedMinutes = $hasTimeEstimate
+                    ? min($remainingMinutes, $candidateBudget)
+                    : $candidateBudget;
                 $reasons = collect($reasonScores)
                     ->sortDesc()
                     ->keys()
