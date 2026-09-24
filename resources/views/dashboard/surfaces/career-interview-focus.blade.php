@@ -7,7 +7,7 @@
             <div>
                 <p class="text-[10px] font-black uppercase tracking-[0.18em] text-fuchsia-300">INTERVIEW FOCUS</p>
                 <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">今は面接・選考対策を前に</h2>
-                <p class="mt-1 text-xs leading-5 text-slate-400">面接系Taskがあるため、このカードを就活Planで一時的に優先表示しています。</p>
+                <p class="mt-1 text-xs leading-5 text-slate-400">面接・選考に関するTaskがあるため、今は対策を優先します。</p>
             </div>
             <span class="badge badge-slate">{{ $interviewTasks->count() }}件</span>
         </div>
@@ -22,6 +22,6 @@
                 </div>
             @endforeach
         </div>
-        <p class="mt-3 text-[11px] text-slate-500">面接Taskがなくなれば、このSurfaceは自動でHomeから消えます。</p>
+        <p class="mt-3 text-[11px] text-slate-500">面接対策が落ち着けば、企業探しや応募準備など次に必要な支援が前へ戻ります。</p>
     </section>
 @endif
