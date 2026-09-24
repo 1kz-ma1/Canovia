@@ -9,6 +9,7 @@ use App\Models\TaskEvidence;
 use App\Models\TaskMilestone;
 use App\Models\TaskProgressDecision;
 use App\Models\User;
+use App\Services\PlanProgressService;
 use App\Services\PlanToolService;
 use App\Services\TaskEvidenceService;
 use App\Services\TaskExecutionRegistry;
@@ -90,6 +91,22 @@ class TaskEvidenceV410Test extends TestCase
 
         $this->assertSame(25, $progress);
         $this->assertSame(20, (int) $task->fresh()->progress_percent);
+    }
+
+    public function test_plan_progress_falls_back_to_task_progress_when_time_estimates_are_missing(): void
+    {
+        [, $plan, $task] = $this->studyPlan();
+
+        $task->update([
+            'estimated_minutes' => 0,
+            'remaining_minutes' => 0,
+            'progress_percent' => 60,
+        ]);
+
+        $plan->unsetRelation('tasks');
+        $progress = app(PlanProgressService::class)->calculate($plan->fresh());
+
+        $this->assertSame(60.0, $progress['weighted_progress_percent']);
     }
 
     public function test_ai_practice_creates_native_evidence_and_progress_decision_on_apply(): void
