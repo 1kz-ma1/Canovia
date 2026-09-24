@@ -180,6 +180,11 @@ task_id: {$task->id}
 - strengths / weaknesses は具体的な知識・思考内容を書く
 - recommended_task_progress_percentは、今回の結果だけでなく現在進捗も踏まえた0〜100の整数
 - next_actionは次に取るべき具体的な学習Actionを1つに絞る
+- next_stepは「この評価を見た直後にCanovia上で何をすべきか」を構造化して必ず返す
+- next_step.kindは practice / review / continue_task / complete_task / plan_update のいずれか
+- practiceを選ぶ場合はfocus_topicsとquestion_countも具体化し、今回見つかった弱点を優先する
+- labelはユーザーがそのまま次の行動として読める具体的な一文にする
+- reasonはなぜそれを次に行うのかを今回の結果に結び付けて簡潔に書く
 - evidence_summaryには正答状況や判断根拠を簡潔に残す
 - 推測でplan_idやtask_idを変更しない
 
@@ -208,7 +213,14 @@ JSONのキーと文字列を囲む引用符には半角ダブルクォート（"
   "weaknesses": ["補強すべき点"],
   "recommended_task_progress_percent": {$task->progress_percent},
   "evidence_summary": "評価根拠",
-  "next_action": "次に行う具体的な学習"
+  "next_action": "次に行う具体的な学習",
+  "next_step": {
+    "kind": "practice",
+    "label": "CNAMEとAレコードの使い分けを5問演習する",
+    "reason": "レコード種別の使い分けに混同が残っているため",
+    "focus_topics": ["DNS", "CNAME"],
+    "question_count": 5
+  }
 }
 PROMPT;
     }
