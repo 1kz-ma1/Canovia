@@ -13,6 +13,7 @@ use App\Services\FeatureAccessService;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
+use App\Services\TaskEvidenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,6 +22,10 @@ use InvalidArgumentException;
 
 class StudyPracticeController extends Controller
 {
+    public function __construct(
+        private readonly TaskEvidenceService $evidenceService,
+    ) {}
+
     public function show(
         Request $request,
         Plan $plan,
@@ -820,6 +825,30 @@ class StudyPracticeController extends Controller
                 'applied_at' => now(),
             ]);
 
+            $evidence = $this->recordStudyPracticeEvidence(
+                $request,
+                $lockedTask,
+                $attempt->fresh(),
+                $actorToken,
+            );
+            $this->evidenceService->recordProgressDecision(
+                task: $lockedTask,
+                progressBefore: $progressBefore,
+                progressAfter: $progressAfter,
+                reason: $reason,
+                evidence: $evidence,
+                source: 'rule',
+                status: 'applied',
+                userId: $request->user()?->id,
+                actorToken: $actorToken,
+                metadata: [
+                    'study_practice_attempt_id' => $attempt->id,
+                    'score_percent' => $attempt->score_percent,
+                    'recommended_task_progress_percent' => $attempt->recommended_task_progress_percent,
+                ],
+                dedupeKey: 'study-practice-apply:'.$attempt->id,
+            );
+
             if ($attempt->study_practice_session_id) {
                 StudyPracticeSession::query()
                     ->whereKey($attempt->study_practice_session_id)
@@ -1488,7 +1517,7 @@ class StudyPracticeController extends Controller
             'assessment' => $assessment,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        return StudyPracticeAttempt::query()->createOrFirst(
+        $attempt = StudyPracticeAttempt::query()->createOrFirst(
             ['request_hash' => $requestHash],
             [
                 'study_practice_session_id' => ! empty($state['practice_session_id'])
@@ -1513,6 +1542,44 @@ class StudyPracticeController extends Controller
                     ? (string) $assessment['next_action']
                     : null,
             ]
+        );
+
+        $this->recordStudyPracticeEvidence($request, $task, $attempt, $actorToken);
+
+        return $attempt;
+    }
+
+    private function recordStudyPracticeEvidence(
+        Request $request,
+        Task $task,
+        StudyPracticeAttempt $attempt,
+        string $actorToken,
+    ) {
+        $summary = trim((string) ($attempt->evidence_summary ?: (
+            'AI演習で'.$attempt->score_percent.'%の結果を記録しました。'
+        )));
+
+        return $this->evidenceService->record(
+            task: $task,
+            source: 'native',
+            type: 'study_practice_assessed',
+            summary: $summary,
+            confidence: 100,
+            metadata: [
+                'study_practice_attempt_id' => $attempt->id,
+                'study_practice_session_id' => $attempt->study_practice_session_id,
+                'score_percent' => $attempt->score_percent,
+                'strengths' => $attempt->strengths ?? [],
+                'weaknesses' => $attempt->weaknesses ?? [],
+                'recommended_task_progress_percent' => $attempt->recommended_task_progress_percent,
+                'next_action' => $attempt->next_action,
+                'applied_at' => $attempt->applied_at?->toISOString(),
+            ],
+            provider: 'study_practice',
+            providerReference: (string) $attempt->id,
+            userId: $request->user()?->id,
+            actorToken: $actorToken,
+            dedupeKey: 'study-practice-attempt:'.$attempt->id,
         );
     }
 
