@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Data\PlanCategoryProfileData;
 use App\Models\Plan;
 use App\Models\Task;
+use App\Models\User;
 use App\Services\PlanCategoryProfileService;
 use App\Services\PlanSituationResolver;
 use App\Services\PlanSurfaceEngine;
@@ -153,6 +154,101 @@ class AdaptiveSurfaceEngineV412Test extends TestCase
         $this->assertStringContainsString('CAREER PIPELINE', $career);
         $this->assertStringContainsString('INTERVIEW FOCUS', $interview);
         $this->assertStringContainsString('面接Taskがなくなれば', $interview);
+    }
+
+    public function test_future_ai_decision_can_only_reorder_registered_surfaces(): void
+    {
+        $plan = $this->plan('就活', '就活・キャリア');
+        $task = $this->task($plan, '一次面接対策', 1, status: 'doing');
+        $profile = app(PlanCategoryProfileService::class)->forPlan($plan);
+        $modules = $this->modulesFor($plan, $profile, $task);
+        $engine = app(PlanSurfaceEngine::class);
+
+        $context = $engine->policyContext(
+            $plan,
+            $profile,
+            ['career_has_interview' => true, 'active_task_count' => 1],
+            $modules,
+        );
+
+        $this->assertSame(1, $context['schema_version']);
+        $this->assertContains('current_task', $context['protected_module_ids']);
+        $this->assertNotEmpty($context['available_modules']);
+
+        $decided = $engine->applyDecision($modules, [
+            'ordered_module_ids' => ['career_pipeline', 'made_up_module', 'current_task'],
+            'hidden_module_ids' => ['current_task', 'recent_activity', 'evil_html_module'],
+        ]);
+
+        $ids = $decided->pluck('id')->all();
+
+        $this->assertSame('career_pipeline', $ids[0]);
+        $this->assertSame('current_task', $ids[1]);
+        $this->assertContains('plan_tools', $ids);
+        $this->assertNotContains('recent_activity', $ids);
+        $this->assertNotContains('made_up_module', $ids);
+        $this->assertNotContains('evil_html_module', $ids);
+    }
+
+    public function test_home_renders_career_surfaces_and_hides_interview_card_when_no_interview_task_remains(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::create([
+            'user_id' => $user->id,
+            'owner_token' => Str::random(64),
+            'public_slug' => (string) Str::uuid(),
+            'title' => 'エンジニア就活',
+            'description' => '応募と面接を進める',
+            'category' => '就活・キャリア',
+            'priority' => 1,
+            'priority_mode' => 'manual',
+            'start_date' => today(),
+            'deadline' => today()->addMonth(),
+            'is_public' => false,
+        ]);
+        $this->task($plan, '応募候補企業をリサーチする', 1);
+        $interview = $this->task($plan, 'A社 一次面接対策', 2, status: 'doing', progress: 30);
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('CAREER PIPELINE')
+            ->assertSee('INTERVIEW FOCUS')
+            ->assertSee('応募・選考の流れ');
+
+        $interview->update(['status' => 'done', 'progress_percent' => 100, 'remaining_minutes' => 0]);
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('CAREER PIPELINE')
+            ->assertDontSee('INTERVIEW FOCUS');
+    }
+
+    public function test_roadmap_copy_changes_with_career_profile_while_task_flow_remains_safe_fallback(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::create([
+            'user_id' => $user->id,
+            'owner_token' => Str::random(64),
+            'public_slug' => (string) Str::uuid(),
+            'title' => '就活',
+            'category' => '就活・キャリア',
+            'priority' => 1,
+            'priority_mode' => 'manual',
+            'start_date' => today(),
+            'deadline' => today()->addMonth(),
+            'is_public' => false,
+        ]);
+        $this->task($plan, '企業研究', 1);
+
+        $this->actingAs($user)
+            ->get(route('roadmap.index', ['plan_id' => $plan->id]))
+            ->assertOk()
+            ->assertSee('選考ロードマップ')
+            ->assertSee('企業探し・応募・面接・内定')
+            ->assertSee('data-roadmap-renderer-preference="pipeline"', false)
+            ->assertSee('data-roadmap-renderer-active="task_flow"', false);
     }
 
     public function test_plan_creation_and_editing_offer_career_category(): void
