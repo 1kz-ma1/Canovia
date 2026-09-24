@@ -43,7 +43,7 @@ class PlanSurfaceEngine
                 'dashboard.surfaces.career-pipeline',
                 94,
                 'primary',
-                '就活では複数企業・選考段階の現在地を同時に把握する価値が高いためです.',
+                '就活では複数企業・選考段階の現在地を同時に把握する価値が高いためです。',
                 ['pipeline' => $situation['career_pipeline'] ?? collect()],
             ));
 
