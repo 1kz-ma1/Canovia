@@ -54,9 +54,15 @@ class DashboardGuidanceService
                 );
 
                 $tools = collect($this->toolService->forTask($plan, $task, true, $actor));
-                $recommendedTool = $tools->first(
-                    fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && ($tool['recommended'] ?? false)
-                ) ?? $tools->first(fn (array $tool) => (bool) ($tool['recommended'] ?? false));
+                $recommendedTool = $tools
+                    ->filter(fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && (bool) ($tool['recommended'] ?? false))
+                    ->sortBy(fn (array $tool) => match ($tool['id'] ?? null) {
+                        'ai_practice' => 0,
+                        'artifacts' => 1,
+                        'resources' => 2,
+                        default => 9,
+                    })
+                    ->first();
 
                 return [
                     'plan' => $plan,
