@@ -219,14 +219,16 @@
                                         <a href="{{ route('plans.artifacts.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">制作ファイルを開く</a>
                                     @elseif (($tool['id'] ?? null) === 'resources')
                                         <a href="{{ route('plans.resources.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">関連資料を開く</a>
+                                    @else
+                                        <a href="{{ route('plans.show', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">Taskを確認する</a>
                                     @endif
 
                                     <form method="POST" action="{{ route('work_sessions.start') }}" class="flex-1" data-work-start-form>
                                         @csrf
                                         <input type="hidden" name="task_id" value="{{ $guidanceTask->id }}">
                                         <input type="hidden" name="source" value="dashboard">
-                                        <button type="submit" class="{{ $tool && ($tool['id'] ?? null) !== 'timer' ? 'btn-secondary' : 'btn-primary' }} w-full px-3 py-2 text-xs" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
-                                            ▶ {{ $guidanceTask->status === 'doing' ? '続きを始める' : 'このTaskを始める' }}
+                                        <button type="submit" class="btn-secondary w-full px-3 py-2 text-xs" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
+                                            ◷ 集中タイマー（任意）
                                         </button>
                                     </form>
                                 </div>
@@ -450,7 +452,7 @@
                                 @elseif (($recommendedTool['id'] ?? null) === 'resources')
                                     <a href="{{ route('plans.resources.index', $item['plan']) }}" class="btn-primary flex-1 px-4 py-2.5 text-sm lg:flex-none">⌘ 関連資料を開く</a>
                                 @else
-                                    <a href="{{ route('plans.show', $item['plan']) }}#task-{{ $primaryTask->id }}" class="btn-primary flex-1 px-4 py-2.5 text-sm lg:flex-none">Taskを確認する</a>
+                                    <a href="{{ route('plans.show', $item['plan']) }}" class="btn-primary flex-1 px-4 py-2.5 text-sm lg:flex-none">詳細で確認する</a>
                                 @endif
 
                                 @if ($planCanEdit)
@@ -479,7 +481,7 @@
                             <h3 class="mt-1 text-base font-black text-slate-100">次に触るTask</h3>
                             <p class="mt-1 text-xs text-slate-500">時間は作業量の目安。進捗はTaskの状態とEvidenceを中心に扱います。</p>
                         </div>
-                        <a href="{{ route('plans.show', $item['plan']) }}#task-list" class="text-xs font-bold text-sky-300">全Taskを見る →</a>
+                        <a href="{{ route('roadmap.index', ['plan_id' => $item['plan']->id]) }}" class="text-xs font-bold text-sky-300">全Taskを見る →</a>
                     </div>
 
                     <div class="mt-4 space-y-2">
@@ -488,7 +490,7 @@
                                 $taskRemaining = $taskItem->remaining_minutes ?? max(0, (int) round((int) $taskItem->estimated_minutes * (100 - (int) $taskItem->progress_percent) / 100));
                                 $isPrimaryTask = $primaryTask && (int) $primaryTask->id === (int) $taskItem->id;
                             @endphp
-                            <a href="{{ route('plans.show', $item['plan']) }}#task-{{ $taskItem->id }}" class="block rounded-2xl border {{ $isPrimaryTask ? 'border-cyan-300/25 bg-cyan-300/[0.045]' : 'border-white/8 bg-white/[0.025]' }} p-3 transition hover:border-cyan-300/25">
+                            <div class="rounded-2xl border {{ $isPrimaryTask ? 'border-cyan-300/25 bg-cyan-300/[0.045]' : 'border-white/8 bg-white/[0.025]' }} p-3">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
@@ -505,7 +507,7 @@
                                         <small class="mt-1 block text-[10px] text-slate-500">残り目安 {{ $taskRemaining }}分</small>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
                         @empty
                             <p class="rounded-xl border border-dashed border-slate-700/70 p-4 text-sm text-slate-500">未完了Taskはありません。</p>
                         @endforelse
