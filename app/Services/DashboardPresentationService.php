@@ -7,6 +7,7 @@ use App\Data\UserStateData;
 use App\Enums\BehaviorEventType;
 use App\Enums\UserBehaviorState;
 use App\Models\BehaviorEvent;
+use App\Models\TaskEvidence;
 use App\Models\User;
 use App\Models\UserStateSnapshot;
 use App\Models\WorkSession;
@@ -48,7 +49,22 @@ class DashboardPresentationService
             $editablePlanIds->keys()->all(),
             $actor,
         );
-        $planTabs = $plans->map(function ($plan) use ($previousSessions, $editablePlanIds, $guidanceDeck) {
+        $taskIds = $plans
+            ->flatMap(fn ($plan) => $plan->tasks->pluck('id'))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
+        $recentEvidenceByTask = $taskIds->isEmpty()
+            ? collect()
+            : TaskEvidence::query()
+                ->whereIn('task_id', $taskIds->all())
+                ->latest('occurred_at')
+                ->latest('id')
+                ->get()
+                ->groupBy('task_id');
+
+        $planTabs = $plans->map(function ($plan) use ($previousSessions, $editablePlanIds, $guidanceDeck, $recentEvidenceByTask) {
             $progress = $this->progressService->calculate($plan);
             $todayMinutes = (int) $plan->workLogs
                 ->filter(fn ($log) => $log->worked_on?->isToday())
@@ -65,6 +81,36 @@ class DashboardPresentationService
                 $previousSession?->task_id,
             );
 
+            $primaryTask = data_get($planGuidance, 'task');
+            $taskPreview = $plan->tasks
+                ->filter(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true) && (int) $task->progress_percent < 100)
+                ->sort(function ($left, $right) {
+                    $priority = max(1, min(5, (int) $left->priority))
+                        <=> max(1, min(5, (int) $right->priority));
+
+                    if ($priority !== 0) {
+                        return $priority;
+                    }
+
+                    $status = ($left->status === 'doing' ? 0 : 1) <=> ($right->status === 'doing' ? 0 : 1);
+                    if ($status !== 0) {
+                        return $status;
+                    }
+
+                    $sortOrder = (int) ($left->sort_order ?? PHP_INT_MAX) <=> (int) ($right->sort_order ?? PHP_INT_MAX);
+                    if ($sortOrder !== 0) {
+                        return $sortOrder;
+                    }
+
+                    return (int) $left->id <=> (int) $right->id;
+                })
+                ->take(4)
+                ->values();
+
+            $recentEvidence = $primaryTask
+                ? collect($recentEvidenceByTask->get((int) $primaryTask->id, collect()))->take(3)->values()
+                : collect();
+
             return [
                 'plan' => $plan,
                 'progress' => $progress,
@@ -72,6 +118,13 @@ class DashboardPresentationService
                 'previous_session' => $previousSession,
                 'recent_logs' => $plan->workLogs->sortByDesc('worked_on')->take(3)->values(),
                 'recommendation' => $recommendation,
+                'primary_task' => $primaryTask,
+                'recommended_tool' => data_get($planGuidance, 'recommended_tool'),
+                'tools' => data_get($planGuidance, 'tools', []),
+                'task_preview' => $taskPreview,
+                'recent_evidence' => $recentEvidence,
+                // Keep roadmap data for overall/offline summaries. The Plan tab itself
+                // now acts as a Plan Hub instead of duplicating the Roadmap screen.
                 'roadmap' => $roadmap,
                 'can_edit' => $canEdit,
             ];
