@@ -444,6 +444,7 @@ class StudyPracticeController extends Controller
         StudyPracticePromptService $promptService,
         StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
+        TaskEvidenceService $evidenceService,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -601,6 +602,7 @@ class StudyPracticeController extends Controller
                     $actorToken,
                 );
                 $state['attempt_id'] = $attempt->id;
+                $evidenceService->recordStudyPracticeAssessment($attempt);
                 $practiceSession->update(['status' => StudyPracticeSession::STATUS_ASSESSED]);
                 $request->session()->put($key, $state);
 
@@ -639,6 +641,7 @@ class StudyPracticeController extends Controller
         PlanOwnershipService $ownership,
         AiJsonInputNormalizer $normalizer,
         BehaviorIdentityService $identity,
+        TaskEvidenceService $evidenceService,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -719,6 +722,7 @@ class StudyPracticeController extends Controller
         );
         $state['assessment'] = $assessment;
         $state['attempt_id'] = $attempt->id;
+        $evidenceService->recordStudyPracticeAssessment($attempt);
         $request->session()->put($key, $state);
 
         if (! empty($state['practice_session_id'])) {
