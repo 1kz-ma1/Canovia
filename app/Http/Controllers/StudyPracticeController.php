@@ -1400,7 +1400,12 @@ class StudyPracticeController extends Controller
         }
 
         $query = $this->practiceSessionQuery($request, $plan, $task, $actorToken)
-            ->where('status', StudyPracticeSession::STATUS_ANSWERED)
+            ->whereIn('status', [
+                StudyPracticeSession::STATUS_READY,
+                StudyPracticeSession::STATUS_IN_PROGRESS,
+                StudyPracticeSession::STATUS_ANSWERED,
+                StudyPracticeSession::STATUS_ASSESSED,
+            ])
             ->whereNotNull('questions_snapshot');
 
         $practiceSession = null;
@@ -1418,6 +1423,7 @@ class StudyPracticeController extends Controller
 
         if (
             ! $practiceSession
+            || $practiceSession->status !== StudyPracticeSession::STATUS_ANSWERED
             || ! is_array($practiceSession->questions_snapshot)
             || $practiceSession->questions_snapshot === []
         ) {
