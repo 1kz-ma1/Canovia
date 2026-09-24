@@ -75,6 +75,41 @@
         @endif
 
         @php
+            $practiceStageIndex = match ($practiceStage ?? 'setup') {
+                'answering' => 2,
+                'evaluation' => 3,
+                'result' => 4,
+                default => 1,
+            };
+            $practiceSteps = [
+                1 => ['label' => '問題準備', 'short' => '準備'],
+                2 => ['label' => '回答', 'short' => '回答'],
+                3 => ['label' => 'AI評価', 'short' => '評価'],
+                4 => ['label' => '結果・次Action', 'short' => '結果'],
+            ];
+        @endphp
+
+        <section class="page-card px-4 py-3 sm:px-5" aria-label="AI演習の進行状況">
+            <div class="grid grid-cols-4 gap-2">
+                @foreach ($practiceSteps as $index => $step)
+                    @php
+                        $isComplete = $index < $practiceStageIndex;
+                        $isCurrent = $index === $practiceStageIndex;
+                    @endphp
+                    <div class="min-w-0 rounded-xl border px-2 py-2 text-center {{ $isCurrent ? 'border-cyan-300/30 bg-cyan-300/[0.06]' : ($isComplete ? 'border-emerald-300/15 bg-emerald-300/[0.035]' : 'border-slate-800 bg-slate-950/25') }}">
+                        <span class="block text-[10px] font-black {{ $isCurrent ? 'text-cyan-200' : ($isComplete ? 'text-emerald-300' : 'text-slate-600') }}">
+                            {{ $isComplete ? '✓' : $index }}
+                        </span>
+                        <span class="mt-1 block truncate text-[10px] font-bold sm:text-xs {{ $isCurrent ? 'text-slate-100' : 'text-slate-500' }}">
+                            <span class="sm:hidden">{{ $step['short'] }}</span>
+                            <span class="hidden sm:inline">{{ $step['label'] }}</span>
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
+        @php
             $questionJsonError = $errors->first('questions_json');
             $questionJsonRepairPrompt = $questionJsonError ? implode("\n", [
                 'CanoviaのAI演習・問題JSONでエラーが発生しました。',
@@ -99,7 +134,7 @@
             $assessmentJsonRepairPrompt = $assessmentJsonError ? implode("\n", [
                 'CanoviaのAI演習・評価JSONでエラーが発生しました。',
                 '下の「元のCanovia評価プロンプト」を仕様と対象Plan・Taskの唯一の正として扱ってください。',
-                'エラー解消に必要な箇所だけ修正し、採点結果・question_feedback・思考過程フィードバック・強み・弱点・評価根拠・次のActionなど正しい内容はできるだけ保持してください。',
+                'エラー解消に必要な箇所だけ修正し、採点結果・question_feedback・思考過程フィードバック・強み・弱点・評価根拠・next_action・next_stepなど正しい内容はできるだけ保持してください。',
                 'schema_versionは"1.0"、flowは"study_assessment"のままにしてください。',
                 'target_plan.idは '.$plan->id.'、target_task.idは '.$task->id.' のままにし、別のIDを推測・生成しないでください。',
                 'score_percentとrecommended_task_progress_percentは0〜100の整数にしてください。',
@@ -228,10 +263,166 @@
             @endif
         @endif
 
+        @if ($assessment)
+            <section id="practice-assessment" class="page-card scroll-mt-24 border-emerald-300/20 p-5 sm:p-6">
+                <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">ASSESSMENT / NEXT STEP</p>
+
+                @if ($nextStep)
+                    <div class="mt-3 rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.055] p-4 sm:p-5">
+                        <p class="text-[11px] font-black uppercase tracking-[0.14em] text-cyan-300">NEXT ACTION</p>
+                        <h2 class="mt-2 text-xl font-black leading-8 text-slate-50">{{ $nextStep['label'] }}</h2>
+                        @if ($nextStep['reason'])
+                            <p class="mt-2 text-sm leading-6 text-slate-300">{{ $nextStep['reason'] }}</p>
+                        @endif
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            @foreach (($nextStep['focus_topics'] ?? []) as $topic)
+                                <span class="badge badge-slate">{{ $topic }}</span>
+                            @endforeach
+                            @if (($nextStep['kind'] ?? '') === 'practice' && ! empty($nextStep['question_count']))
+                                <span class="badge badge-slate">{{ $nextStep['question_count'] }}問</span>
+                            @endif
+                        </div>
+
+                        <div class="mt-4">
+                            @if ($currentAttempt && ! $currentAttempt->applied_at)
+                                <a href="#practice-apply-result" class="btn-primary">まず学習結果をCanoviaへ反映</a>
+                            @elseif ($currentAttempt?->applied_at && ($nextStep['kind'] ?? '') === 'practice')
+                                <form method="POST" action="{{ route('plans.tasks.study_practice.reset', [$plan, $task]) }}">
+                                    @csrf
+                                    <input type="hidden" name="continue" value="1">
+                                    <button type="submit" class="btn-primary">この内容で次の演習へ</button>
+                                </form>
+                            @elseif ($currentAttempt?->applied_at && ($nextStep['kind'] ?? '') === 'plan_update')
+                                <a href="{{ route('plans.review_assistant.show', $plan) }}" class="btn-primary">学習結果をもとに計画を見直す</a>
+                            @elseif ($currentAttempt?->applied_at)
+                                <a href="{{ route('plans.show', $plan) }}" class="btn-primary">Taskへ戻って次の行動へ</a>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+                <div class="mt-5 flex flex-wrap items-end gap-4">
+                    <div><p class="text-xs text-slate-500">今回の評価</p><strong class="text-4xl text-slate-50">{{ $assessment['score_percent'] }}%</strong></div>
+                    <div>
+                        <p class="text-xs text-slate-500">{{ ($currentPracticeSession?->assessment_provider ?? '') === 'question_bank_grader' ? 'Task進捗（自動変更なし）' : '評価提案のTask進捗' }}</p>
+                        <strong class="text-2xl text-cyan-200">{{ $assessment['recommended_task_progress_percent'] }}%</strong>
+                    </div>
+                    @if ($currentAttempt?->applied_at)
+                        <span class="badge badge-green">Taskへ反映済み</span>
+                    @else
+                        <span class="badge badge-slate">確認待ち</span>
+                    @endif
+                </div>
+
+                <div class="mt-5 grid gap-4 md:grid-cols-2">
+                    <div class="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
+                        <h3 class="font-bold text-emerald-100">理解できている点</h3>
+                        <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['strengths'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
+                    </div>
+                    <div class="rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-4">
+                        <h3 class="font-bold text-amber-100">補強する点</h3>
+                        <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['weaknesses'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
+                    </div>
+                </div>
+                @if (collect($assessment['question_feedback'] ?? [])->isNotEmpty())
+                    <div class="mt-5 space-y-3">
+                        <h3 class="text-sm font-black text-slate-100">問題ごとのフィードバック</h3>
+                        @foreach ($assessment['question_feedback'] as $feedback)
+                            @php
+                                $correctnessLabel = match ($feedback['correctness'] ?? 'ungraded') {
+                                    'correct' => '正解',
+                                    'partial' => '一部正解',
+                                    'incorrect' => '要復習',
+                                    default => '評価対象外',
+                                };
+                                $correctnessClass = match ($feedback['correctness'] ?? 'ungraded') {
+                                    'correct' => 'badge-green',
+                                    'partial' => 'badge-slate',
+                                    'incorrect' => 'badge-amber',
+                                    default => 'badge-slate',
+                                };
+                            @endphp
+                            <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <strong class="text-sm text-slate-100">{{ $feedback['question_id'] }}</strong>
+                                    <span class="badge {{ $correctnessClass }}">{{ $correctnessLabel }}</span>
+                                </div>
+                                @if ($feedback['feedback'])
+                                    <p class="mt-2 text-sm leading-6 text-slate-300">{{ $feedback['feedback'] }}</p>
+                                @endif
+                                @if ($feedback['reasoning_feedback'])
+                                    <div class="mt-2 rounded-xl border border-violet-300/15 bg-violet-300/[0.04] p-3">
+                                        <p class="text-[11px] font-bold text-violet-200">思考過程フィードバック</p>
+                                        <p class="mt-1 text-xs leading-5 text-slate-300">{{ $feedback['reasoning_feedback'] }}</p>
+                                    </div>
+                                @endif
+                                @if (collect($feedback['misconceptions'] ?? [])->isNotEmpty())
+                                    <p class="mt-2 text-xs leading-5 text-amber-100">誤解ポイント：{{ collect($feedback['misconceptions'])->implode(' / ') }}</p>
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if ($assessment['evidence_summary'])
+                    <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-4"><p class="text-xs font-bold text-slate-500">評価根拠</p><p class="mt-1 text-sm leading-6 text-slate-300">{{ $assessment['evidence_summary'] }}</p></div>
+                @endif
+                @if ($currentAttempt)
+                    @if ($currentAttempt->applied_at)
+                        <div class="mt-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
+                            <p class="text-sm font-bold text-emerald-100">Taskへ反映済み</p>
+                            <p class="mt-1 text-xs text-slate-400">進捗 {{ $currentAttempt->progress_before_percent ?? '—' }}% → {{ $currentAttempt->progress_after_percent ?? '—' }}%。AI演習だけを理由に、既存の進捗を下げることはありません。</p>
+                        </div>
+                    @else
+                        <form id="practice-apply-result" method="POST" action="{{ route('plans.tasks.study_practice.apply', [$plan, $task]) }}" class="mt-4 scroll-mt-24 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-4" data-mutation-once>
+                            @csrf
+                            <input type="hidden" name="attempt_id" value="{{ $currentAttempt->id }}">
+                            <input type="hidden" name="request_hash" value="{{ $currentAttempt->request_hash }}">
+                            <p class="text-sm font-bold text-cyan-100">この結果をCanoviaへ反映しますか？</p>
+                            <p class="mt-1 text-xs leading-5 text-slate-400">Task進捗は現在値と評価提案の高い方を使うため、演習結果だけで進捗が後退することはありません。評価根拠と次のActionもTaskへ残します。</p>
+                            <button type="submit" class="btn-primary mt-3">この学習結果をTaskへ反映</button>
+                        </form>
+                    @endif
+                @endif
+            </section>
+        @endif
+
         @if ($questions)
-            <section id="practice-questions" class="page-card scroll-mt-24 p-5 sm:p-6">
+            @if (($practiceStage ?? 'answering') === 'result')
+                <details id="practice-questions" class="page-card scroll-mt-24 p-4 sm:p-5">
+                    <summary class="cursor-pointer list-none text-sm font-black text-slate-200">
+                        回答済み {{ count($questions) }}問 · 今回の回答を見直す
+                    </summary>
+                    <div class="mt-4 space-y-3">
+                        @php $questionReviewMap = collect($questions)->keyBy('id'); @endphp
+                        @foreach (($answers ?? []) as $answer)
+                            @php $reviewQuestion = $questionReviewMap->get($answer['question_id'] ?? ''); @endphp
+                            <article class="rounded-2xl border border-slate-800 bg-slate-950/30 p-4">
+                                <p class="text-sm font-bold leading-6 text-slate-100">{{ data_get($reviewQuestion, 'prompt', $answer['question_id'] ?? '問題') }}</p>
+                                <div class="mt-3 space-y-2">
+                                    @foreach (($answer['fields'] ?? []) as $field)
+                                        @php
+                                            $reviewValue = $field['value'] ?? '';
+                                            $reviewText = is_array($reviewValue) ? implode(', ', $reviewValue) : (string) $reviewValue;
+                                        @endphp
+                                        <div class="rounded-xl border border-slate-800/80 bg-slate-950/40 p-3">
+                                            <p class="text-[10px] font-bold text-slate-500">{{ $field['label'] ?? $field['field_id'] ?? '回答' }}</p>
+                                            <p class="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-300">{{ $reviewText !== '' ? $reviewText : '未入力' }}</p>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                </details>
+            @else
+                <details id="practice-questions" class="page-card scroll-mt-24 p-5 sm:p-6" @if (($practiceStage ?? 'answering') === 'answering') open @endif>
+                    <summary class="cursor-pointer list-none {{ ($practiceStage ?? 'answering') === 'answering' ? 'hidden' : '' }}">
+                        <span class="text-sm font-black text-slate-200">回答済み {{ count($questions) }}問 · 回答を見直す</span>
+                    </summary>
+                    <div class="{{ ($practiceStage ?? 'answering') === 'answering' ? '' : 'mt-4' }}">
                 <div class="flex items-center gap-3">
-                    <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">{{ ($currentPracticeSession?->question_provider_mode ?? '') === 'direct' ? '2' : '3' }}</span>
+                    <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">2</span>
                     <div>
                         <h2 class="font-black text-slate-100">{{ $exerciseTitle ?: '演習に回答' }}</h2>
                         <p class="text-xs text-slate-500">
@@ -317,13 +508,19 @@
                     @endforeach
                     <button type="submit" class="btn-primary">回答をまとめて評価へ進む</button>
                 </form>
-            </section>
+                    </div>
+                </details>
+            @endif
         @endif
 
         @if ($evaluationPrompt)
-            <section id="practice-evaluation" class="page-card scroll-mt-24 p-5 sm:p-6">
+            <details id="practice-evaluation" class="page-card scroll-mt-24 p-5 sm:p-6" @if (($practiceStage ?? 'evaluation') === 'evaluation') open @endif>
+                <summary class="cursor-pointer list-none {{ ($practiceStage ?? 'evaluation') === 'evaluation' ? 'hidden' : '' }}">
+                    <span class="text-sm font-black text-slate-200">AI評価の受け渡しを確認する</span>
+                </summary>
+                <div class="{{ ($practiceStage ?? 'evaluation') === 'evaluation' ? '' : 'mt-4' }}">
                 <div class="flex items-center gap-3">
-                    <span class="grid h-8 w-8 place-items-center rounded-full bg-violet-300/10 text-sm font-black text-violet-200">4</span>
+                    <span class="grid h-8 w-8 place-items-center rounded-full bg-violet-300/10 text-sm font-black text-violet-200">3</span>
                     <div>
                         <h2 class="font-black text-slate-100">AIに採点・評価してもらう</h2>
                         <p class="text-xs text-slate-500">問題とあなたの回答はCanoviaが評価依頼へまとめています。原文を読む必要はありません。</p>
@@ -340,7 +537,7 @@
                             <li>・今回出題された問題と回答内容</li>
                             <li>・選択回答とは別に、入力した計算過程・判断理由</li>
                             <li>・Question Bank問題では正答Rule・解説・学習メタデータ</li>
-                            <li>・問題ごとの正誤、弱点、次Actionを返す評価形式</li>
+                            <li>・問題ごとの正誤、弱点、次Actionと構造化next_stepを返す評価形式</li>
                             <li>・正しいPlan / Task IDと進捗反映の安全条件</li>
                         </ul>
                     </details>
@@ -382,99 +579,8 @@
                         </div>
                     @endif
                 </form>
-            </section>
-        @endif
-
-        @if ($assessment)
-            <section id="practice-assessment" class="page-card scroll-mt-24 border-emerald-300/20 p-5 sm:p-6">
-                <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">ASSESSMENT PREVIEW</p>
-                <div class="mt-3 flex flex-wrap items-end gap-4">
-                    <div><p class="text-xs text-slate-500">今回の評価</p><strong class="text-4xl text-slate-50">{{ $assessment['score_percent'] }}%</strong></div>
-                    <div>
-                        <p class="text-xs text-slate-500">{{ ($currentPracticeSession?->assessment_provider ?? '') === 'question_bank_grader' ? 'Task進捗（自動変更なし）' : '評価提案のTask進捗' }}</p>
-                        <strong class="text-2xl text-cyan-200">{{ $assessment['recommended_task_progress_percent'] }}%</strong>
-                    </div>
-                    @if ($currentAttempt?->applied_at)
-                        <span class="badge badge-green">Taskへ反映済み</span>
-                    @else
-                        <span class="badge badge-slate">確認待ち</span>
-                    @endif
                 </div>
-
-                <div class="mt-5 grid gap-4 md:grid-cols-2">
-                    <div class="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
-                        <h3 class="font-bold text-emerald-100">理解できている点</h3>
-                        <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['strengths'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
-                    </div>
-                    <div class="rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-4">
-                        <h3 class="font-bold text-amber-100">補強する点</h3>
-                        <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['weaknesses'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
-                    </div>
-                </div>
-                @if (collect($assessment['question_feedback'] ?? [])->isNotEmpty())
-                    <div class="mt-5 space-y-3">
-                        <h3 class="text-sm font-black text-slate-100">問題ごとのフィードバック</h3>
-                        @foreach ($assessment['question_feedback'] as $feedback)
-                            @php
-                                $correctnessLabel = match ($feedback['correctness'] ?? 'ungraded') {
-                                    'correct' => '正解',
-                                    'partial' => '一部正解',
-                                    'incorrect' => '要復習',
-                                    default => '評価対象外',
-                                };
-                                $correctnessClass = match ($feedback['correctness'] ?? 'ungraded') {
-                                    'correct' => 'badge-green',
-                                    'partial' => 'badge-slate',
-                                    'incorrect' => 'badge-amber',
-                                    default => 'badge-slate',
-                                };
-                            @endphp
-                            <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <strong class="text-sm text-slate-100">{{ $feedback['question_id'] }}</strong>
-                                    <span class="badge {{ $correctnessClass }}">{{ $correctnessLabel }}</span>
-                                </div>
-                                @if ($feedback['feedback'])
-                                    <p class="mt-2 text-sm leading-6 text-slate-300">{{ $feedback['feedback'] }}</p>
-                                @endif
-                                @if ($feedback['reasoning_feedback'])
-                                    <div class="mt-2 rounded-xl border border-violet-300/15 bg-violet-300/[0.04] p-3">
-                                        <p class="text-[11px] font-bold text-violet-200">思考過程フィードバック</p>
-                                        <p class="mt-1 text-xs leading-5 text-slate-300">{{ $feedback['reasoning_feedback'] }}</p>
-                                    </div>
-                                @endif
-                                @if (collect($feedback['misconceptions'] ?? [])->isNotEmpty())
-                                    <p class="mt-2 text-xs leading-5 text-amber-100">誤解ポイント：{{ collect($feedback['misconceptions'])->implode(' / ') }}</p>
-                                @endif
-                            </article>
-                        @endforeach
-                    </div>
-                @endif
-
-                @if ($assessment['evidence_summary'])
-                    <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-4"><p class="text-xs font-bold text-slate-500">評価根拠</p><p class="mt-1 text-sm leading-6 text-slate-300">{{ $assessment['evidence_summary'] }}</p></div>
-                @endif
-                @if ($assessment['next_action'])
-                    <div class="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4"><p class="text-xs font-bold text-cyan-300">次のAction</p><p class="mt-1 text-sm font-semibold text-slate-100">{{ $assessment['next_action'] }}</p></div>
-                @endif
-                @if ($currentAttempt)
-                    @if ($currentAttempt->applied_at)
-                        <div class="mt-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
-                            <p class="text-sm font-bold text-emerald-100">Taskへ反映済み</p>
-                            <p class="mt-1 text-xs text-slate-400">進捗 {{ $currentAttempt->progress_before_percent ?? '—' }}% → {{ $currentAttempt->progress_after_percent ?? '—' }}%。AI演習だけを理由に、既存の進捗を下げることはありません。</p>
-                        </div>
-                    @else
-                        <form method="POST" action="{{ route('plans.tasks.study_practice.apply', [$plan, $task]) }}" class="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-4" data-mutation-once>
-                            @csrf
-                            <input type="hidden" name="attempt_id" value="{{ $currentAttempt->id }}">
-                            <input type="hidden" name="request_hash" value="{{ $currentAttempt->request_hash }}">
-                            <p class="text-sm font-bold text-cyan-100">この結果をCanoviaへ反映しますか？</p>
-                            <p class="mt-1 text-xs leading-5 text-slate-400">Task進捗は現在値と評価提案の高い方を使うため、演習結果だけで進捗が後退することはありません。評価根拠と次のActionもTaskへ残します。</p>
-                            <button type="submit" class="btn-primary mt-3">この学習結果をTaskへ反映</button>
-                        </form>
-                    @endif
-                @endif
-            </section>
+            </details>
         @endif
 
         @if (($recentAttempts ?? collect())->isNotEmpty())
