@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\PlanArtifact;
+use App\Services\BehaviorIdentityService;
 use App\Services\PlanActivityService;
 use App\Services\PlanOwnershipService;
+use App\Services\TaskEvidenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -46,6 +48,8 @@ class PlanArtifactController extends Controller
         Plan $plan,
         PlanOwnershipService $ownership,
         PlanActivityService $activity,
+        BehaviorIdentityService $identity,
+        TaskEvidenceService $evidenceService,
     ) {
         $ownership->authorizeEdit($request, $plan);
         $plan->loadMissing(['user:id,name,email', 'memberships.user:id,name,email']);
@@ -63,10 +67,17 @@ class PlanArtifactController extends Controller
         ]);
 
         $artifact->tasks()->sync($this->taskIds($validated));
+        $artifact->load('tasks');
 
         $activity->record($plan, $request->user(), 'artifact_created', 'plan_artifact', (int) $artifact->id, [
             'artifact_title' => $artifact->title,
         ]);
+        $evidenceService->recordArtifactState(
+            $artifact,
+            'created',
+            userId: $request->user()?->id,
+            actorToken: $identity->resolve($request),
+        );
 
         return redirect()->route('plans.artifacts.index', $plan)
             ->with('success', '制作ファイルを追加しました。');
@@ -78,6 +89,8 @@ class PlanArtifactController extends Controller
         PlanArtifact $artifact,
         PlanOwnershipService $ownership,
         PlanActivityService $activity,
+        BehaviorIdentityService $identity,
+        TaskEvidenceService $evidenceService,
     ) {
         $ownership->authorizeEdit($request, $plan);
         $this->ensureArtifactBelongsToPlan($plan, $artifact);
@@ -94,10 +107,17 @@ class PlanArtifactController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
         $artifact->tasks()->sync($this->taskIds($validated));
+        $artifact->load('tasks');
 
         $activity->record($plan, $request->user(), 'artifact_updated', 'plan_artifact', (int) $artifact->id, [
             'artifact_title' => $artifact->title,
         ]);
+        $evidenceService->recordArtifactState(
+            $artifact,
+            'updated',
+            userId: $request->user()?->id,
+            actorToken: $identity->resolve($request),
+        );
 
         return redirect()->route('plans.artifacts.index', $plan)
             ->with('success', '制作ファイルを更新しました。');
