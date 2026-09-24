@@ -35,6 +35,7 @@ class HomeController extends Controller
         $plans = $ownership->ownedPlans($request, [
             'tasks' => fn ($query) => $query->with(['prerequisite', 'resources', 'artifacts'])->orderBy('sort_order')->orderBy('id'),
             'resources',
+            'artifacts',
             'availabilityRules',
             'availabilityOverrides',
             'workLogs' => fn ($query) => $query->with('task')->latest('worked_on')->latest('id'),
