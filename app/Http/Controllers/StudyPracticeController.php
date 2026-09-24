@@ -54,14 +54,17 @@ class StudyPracticeController extends Controller
                 ->first()
             : null;
 
-        // If the browser/PHP session was interrupted while answering, recover the
-        // newest resumable StudyPracticeSession silently. The answering screen
-        // should feel continuous rather than asking the learner to "resume".
+        // Recover unfinished practice from durable StudyPracticeSession state.
+        // V40.7.1 covered answer drafts; V40.7.3 also restores the handoff/result
+        // stages so a duplicate/reloaded GET cannot make a successful assessment
+        // look as if "nothing happened".
         if (! $currentPracticeSession && empty($state['questions'])) {
             $currentPracticeSession = $this->practiceSessionQuery($request, $plan, $task, $actorToken)
                 ->whereIn('status', [
                     StudyPracticeSession::STATUS_READY,
                     StudyPracticeSession::STATUS_IN_PROGRESS,
+                    StudyPracticeSession::STATUS_ANSWERED,
+                    StudyPracticeSession::STATUS_ASSESSED,
                 ])
                 ->whereNotNull('questions_snapshot')
                 ->latest('updated_at')
@@ -73,19 +76,71 @@ class StudyPracticeController extends Controller
                 && is_array($currentPracticeSession->questions_snapshot)
                 && $currentPracticeSession->questions_snapshot !== []
             ) {
+                $recoveredAttempt = $currentPracticeSession->status === StudyPracticeSession::STATUS_ASSESSED
+                    ? (clone $attemptQuery)
+                        ->where('study_practice_session_id', $currentPracticeSession->id)
+                        ->latest('created_at')
+                        ->latest('id')
+                        ->first()
+                    : null;
+
                 $state = [
                     'title' => $currentPracticeSession->exercise_title ?: 'AI演習',
                     'questions' => $currentPracticeSession->questions_snapshot,
-                    'answers' => [],
+                    'answers' => $recoveredAttempt && is_array($recoveredAttempt->answers)
+                        ? $recoveredAttempt->answers
+                        : [],
                     'draft_answers' => is_array($currentPracticeSession->draft_answers)
                         ? $currentPracticeSession->draft_answers
                         : [],
-                    'evaluation_prompt' => null,
-                    'assessment' => null,
-                    'attempt_id' => null,
+                    'evaluation_prompt' => $currentPracticeSession->status === StudyPracticeSession::STATUS_ANSWERED
+                        ? (string) data_get($currentPracticeSession->assessment_payload, 'evaluation_prompt', '')
+                        : null,
+                    'assessment' => $recoveredAttempt && is_array($recoveredAttempt->assessment)
+                        ? $recoveredAttempt->assessment
+                        : null,
+                    'attempt_id' => $recoveredAttempt?->id,
                     'attempt_token' => (string) Str::uuid(),
                     'practice_session_id' => $currentPracticeSession->id,
                 ];
+                $currentAttempt = $recoveredAttempt;
+                $request->session()->put($key, $state);
+            }
+        }
+
+        if (
+            $currentPracticeSession
+            && $currentPracticeSession->status === StudyPracticeSession::STATUS_ASSESSED
+            && empty($state['assessment'])
+        ) {
+            $currentAttempt ??= (clone $attemptQuery)
+                ->where('study_practice_session_id', $currentPracticeSession->id)
+                ->latest('created_at')
+                ->latest('id')
+                ->first();
+
+            if ($currentAttempt && is_array($currentAttempt->assessment)) {
+                $state['assessment'] = $currentAttempt->assessment;
+                $state['attempt_id'] = $currentAttempt->id;
+                if (empty($state['answers']) && is_array($currentAttempt->answers)) {
+                    $state['answers'] = $currentAttempt->answers;
+                }
+                $request->session()->put($key, $state);
+            }
+        }
+
+        if (
+            $currentPracticeSession
+            && $currentPracticeSession->status === StudyPracticeSession::STATUS_ANSWERED
+            && empty($state['evaluation_prompt'])
+        ) {
+            $evaluationPrompt = (string) data_get(
+                $currentPracticeSession->assessment_payload,
+                'evaluation_prompt',
+                ''
+            );
+            if ($evaluationPrompt !== '') {
+                $state['evaluation_prompt'] = $evaluationPrompt;
                 $request->session()->put($key, $state);
             }
         }
@@ -216,7 +271,8 @@ class StudyPracticeController extends Controller
 
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
-            ->with('success', count($questions).'問をCanovia Question Bankから準備しました。');
+            ->with('success', count($questions).'問をCanovia Question Bankから準備しました。')
+            ->with('study_practice_scroll_to', 'practice-questions');
     }
 
     public function import(
@@ -289,7 +345,8 @@ class StudyPracticeController extends Controller
 
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
-            ->with('success', count($questions).'問の演習を読み込みました。Canovia上で回答できます。');
+            ->with('success', count($questions).'問の演習を読み込みました。Canovia上で回答できます。')
+            ->with('study_practice_scroll_to', 'practice-questions');
     }
 
     public function saveDraft(
@@ -516,7 +573,8 @@ class StudyPracticeController extends Controller
 
                 return redirect()
                     ->route('plans.tasks.study_practice.show', [$plan, $task])
-                    ->with('success', 'Canovia Question Bankの採点ルールで評価しました。結果を確認できます。');
+                    ->with('success', 'Canovia Question Bankの採点ルールで評価しました。結果を確認できます。')
+                    ->with('study_practice_scroll_to', 'practice-assessment');
             }
 
             $state['evaluation_prompt'] = (string) data_get(
@@ -537,7 +595,8 @@ class StudyPracticeController extends Controller
 
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
-            ->with('success', '回答をまとめました。評価用プロンプトをAIへ送ってください。');
+            ->with('success', '回答をまとめました。評価用プロンプトをAIへ送ってください。')
+            ->with('study_practice_scroll_to', 'practice-evaluation');
     }
 
     public function previewAssessment(
@@ -618,7 +677,8 @@ class StudyPracticeController extends Controller
             ->route('plans.tasks.study_practice.show', [$plan, $task])
             ->with('success', $attempt->wasRecentlyCreated
                 ? 'AIの評価を学習履歴へ保存しました。内容を確認してTaskへ反映できます。'
-                : '同じ評価はすでに保存済みです。既存の学習履歴を開きました。');
+                : '同じ評価はすでに保存済みです。既存の学習履歴を開きました。')
+            ->with('study_practice_scroll_to', 'practice-assessment');
     }
 
     public function applyAssessment(
