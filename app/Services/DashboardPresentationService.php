@@ -61,6 +61,7 @@ class DashboardPresentationService
                 ->whereIn('task_id', $taskIds->all())
                 ->latest('occurred_at')
                 ->latest('id')
+                ->limit(120)
                 ->get()
                 ->groupBy('task_id');
 
