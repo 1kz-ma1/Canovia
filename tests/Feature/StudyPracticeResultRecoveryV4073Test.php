@@ -156,6 +156,41 @@ class StudyPracticeResultRecoveryV4073Test extends TestCase
         $this->assertSame($attempt->id, session("{$key}.attempt_id"));
     }
 
+    public function test_assessment_post_does_not_reopen_an_older_answered_session(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $olderAnswered = $this->answeredSession($user, $plan, $task);
+        $newerSession = $this->answeredSession($user, $plan, $task);
+        $newerSession->update(['status' => StudyPracticeSession::STATUS_ASSESSED]);
+        $key = "study_practice.{$plan->id}.{$task->id}";
+
+        $this->app['session']->forget($key);
+
+        $assessment = [
+            'schema_version' => '1.0',
+            'flow' => 'study_assessment',
+            'target_plan' => ['id' => $plan->id],
+            'target_task' => ['id' => $task->id],
+            'score_percent' => 90,
+            'question_feedback' => [],
+            'strengths' => [],
+            'weaknesses' => [],
+            'recommended_task_progress_percent' => 80,
+            'evidence_summary' => 'stale recovery guard',
+            'next_action' => '次へ',
+        ];
+
+        $this->actingAs($user)
+            ->post(route('plans.tasks.study_practice.assessment', [$plan, $task]), [
+                'assessment_json' => json_encode($assessment, JSON_UNESCAPED_UNICODE),
+            ])
+            ->assertSessionHasErrors('assessment_json');
+
+        $this->assertDatabaseMissing('study_practice_attempts', [
+            'study_practice_session_id' => $olderAnswered->id,
+        ]);
+    }
+
     public function test_study_practice_redirects_expose_the_new_step_for_scroll_reveal(): void
     {
         [$user, $plan, $task] = $this->studyPlan();
