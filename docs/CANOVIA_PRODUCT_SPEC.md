@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-24 / main V40.7.1 + V40.7.2 UI refinement
+更新基準: 2026-09-24 / main V40.7.2 + V40.7.3 reliability patch
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -55,6 +55,7 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - 外部AI Handoff UIの統一（Promptはコピー中心、JSONは1クリック貼り付け＋手動fallback）
 - AI Practice / Question Pack基盤
 - AI Practice途中回答の自動保存・無通知再開
+- AI Practice回答済み・評価済み状態の永続復元と次Step自動Reveal
 - Resource / Project Artifact
 - Future Memo
 - Achievement / Timeline / Release Notes

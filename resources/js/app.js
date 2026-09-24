@@ -2893,6 +2893,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // -----------------------------------------------------------------------------
+// V40.7.3 Study Practice post-action reveal.
+//
+// After JSON import/assessment the browser returns to the same long page. Scroll
+// directly to the newly available step so a successful POST never looks inert.
+// -----------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const root = document.querySelector('[data-study-practice-root]');
+    const targetId = root?.dataset.studyPracticeScrollTo || '';
+    if (!targetId) return;
+
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    window.setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+});
+
+
+// -----------------------------------------------------------------------------
 // V40.7.1 Study Practice draft persistence.
 //
 // The learner should never need a Save or Resume action. Every edit is written

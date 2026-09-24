@@ -2,6 +2,20 @@
 
 return [
     [
+        'version' => 'v40.7.3',
+        'date' => '2026-09-24',
+        'title' => 'AI演習の結果表示と画面遷移を安定化',
+        'summary' => 'AI演習で評価JSONを読み込んだ後に結果が消えたり、画面が変わっていないように見える問題を修正しました。',
+        'highlights' => [
+            'PWAのNavigation PreloadがAI演習などの通常画面へ二重GETを発生させていたため、registration-wideのpreloadを無効化しました。',
+            'AI演習の回答済み・評価済み状態をStudyPracticeSessionとStudyPracticeAttemptから復元し、再読み込みやPHP Session競合でも結果を失いにくくしました。',
+            '評価JSONの読み込み後は評価結果へ、問題JSONの読み込み後は問題欄へ自動で移動し、次に何が起きたか分かるようにしました。',
+            '評価前の外部AI handoffも、保存済みの問題・途中回答・評価Promptから静かに復元できます。',
+            'AI演習・認証・管理画面などInstant Start対象外の画面は、今後1回の通常GETだけで処理されます。',
+        ],
+        'tip' => '評価JSONをCanoviaへ戻したら、そのまま評価結果まで移動します。再読み込みしても未反映の評価結果を復元できます。',
+    ],
+    [
         'version' => 'v40.7.2',
         'date' => '2026-09-24',
         'title' => '初期計画のAI受け渡し画面を刷新',
