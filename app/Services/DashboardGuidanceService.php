@@ -106,12 +106,10 @@ class DashboardGuidanceService
                     }
                 }
 
-                $remaining = $task->remaining_minutes ?? max(
-                    0,
-                    (int) round((int) $task->estimated_minutes * (100 - (int) $task->progress_percent) / 100)
-                );
-
-                return $remaining > 0;
+                // Time is a planning estimate, not proof of progress and not an
+                // eligibility gate. An incomplete Task remains actionable even when
+                // its time estimate is zero or unknown.
+                return true;
             })
             ->sort(function (Task $left, Task $right) {
                 $priority = max(1, min(5, (int) $left->priority))
