@@ -35,9 +35,6 @@ class TaskEvidenceService
         ?string $dedupeKey = null,
     ): TaskEvidence {
         $occurredAt ??= now();
-        $occurredAtString = $occurredAt instanceof CarbonInterface
-            ? $occurredAt->toISOString()
-            : (string) $occurredAt;
 
         $fingerprint = hash('sha256', implode('|', [
             'task-evidence-v1',
@@ -70,7 +67,7 @@ class TaskEvidenceService
                     ? max(0, $observedDurationSeconds)
                     : null,
                 'metadata' => $metadata !== [] ? $metadata : null,
-                'occurred_at' => $occurredAtString,
+                'occurred_at' => $occurredAt,
             ],
         );
     }
