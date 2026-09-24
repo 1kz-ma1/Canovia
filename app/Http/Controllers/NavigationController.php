@@ -8,6 +8,7 @@ use App\Services\BehaviorEventLogger;
 use App\Services\BehaviorIdentityService;
 use App\Services\NavigationFlowService;
 use App\Services\PlanOwnershipService;
+use App\Services\PlanToolService;
 use App\Services\RecommendationService;
 use App\Services\UserBehaviorService;
 use App\Services\UserStateService;
@@ -28,11 +29,13 @@ class NavigationController extends Controller
         UserStateService $stateService,
         NavigationFlowService $flowService,
         RecommendationService $recommendationService,
+        PlanToolService $toolService,
         BehaviorEventLogger $logger,
     ) {
         $actorToken = $identity->resolve($request);
         $plans = $ownership->ownedPlans($request, [
-            'tasks' => fn ($query) => $query->with('prerequisite')->orderBy('sort_order')->orderBy('id'),
+            'tasks' => fn ($query) => $query->with(['prerequisite', 'resources', 'artifacts'])->orderBy('sort_order')->orderBy('id'),
+            'resources',
             'workLogs' => fn ($query) => $query->latest('worked_on')->latest('id'),
         ]);
         $plans = $plans->filter(fn ($plan) => $ownership->canEdit($request, $plan))->values();
@@ -133,6 +136,29 @@ class NavigationController extends Controller
             }
         }
 
+        $executionByTask = $recommendations
+            ->mapWithKeys(function ($candidate) use ($toolService, $request) {
+                $tools = collect($toolService->forTask(
+                    $candidate->plan,
+                    $candidate->task,
+                    true,
+                    $request->user(),
+                ));
+
+                $primary = $tools->first(
+                    fn (array $tool) => (bool) ($tool['primary_eligible'] ?? false)
+                        && (bool) ($tool['recommended'] ?? false)
+                );
+
+                return [
+                    (int) $candidate->task->id => [
+                        'tools' => $tools->values()->all(),
+                        'primary' => $primary,
+                    ],
+                ];
+            })
+            ->all();
+
         return view('navigation.index', [
             'plans' => $plans,
             'state' => $state,
@@ -142,6 +168,7 @@ class NavigationController extends Controller
             'recommendation' => $recommendation,
             'recommendations' => $recommendations,
             'scopePlan' => $scopePlan,
+            'executionByTask' => $executionByTask,
         ]);
     }
 
