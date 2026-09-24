@@ -51,7 +51,7 @@ class PlanSurfaceEngine
                 $modules->push($this->module(
                     'career_interview_focus',
                     'dashboard.surfaces.career-interview-focus',
-                    (bool) ($situation['career_interview_is_current'] ?? false) ? 106 : 96,
+                    96,
                     'primary',
                     '面接・選考Taskが存在する間だけ面接対策を前面に出します。',
                     ['tasks' => $situation['career_interview_tasks'] ?? collect()],
