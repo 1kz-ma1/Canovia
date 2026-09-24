@@ -70,7 +70,7 @@ class PlanToolService
                 'name' => '関連資料',
                 'description' => $resourceDescription,
                 'icon' => '⌘',
-                'recommended' => false,
+                'recommended' => $taskResourceCount > 0,
                 'badge' => $taskResourceCount > 0 ? "Task {$taskResourceCount}件" : ($resourceCount > 0 ? "{$resourceCount}件" : '資料'),
             ];
         }
