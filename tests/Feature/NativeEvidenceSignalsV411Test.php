@@ -109,11 +109,12 @@ class NativeEvidenceSignalsV411Test extends TestCase
 
     public function test_plan_hub_exposes_recent_evidence_without_calling_it_progress(): void
     {
-        $view = file_get_contents(resource_path('views/dashboard/index.blade.php'));
+        $evidenceView = file_get_contents(resource_path('views/dashboard/surfaces/recent-evidence.blade.php'));
+        $currentTaskView = file_get_contents(resource_path('views/dashboard/surfaces/current-task.blade.php'));
 
-        $this->assertStringContainsString('RECENT EVIDENCE', $view);
-        $this->assertStringContainsString('Canoviaが確認できた事実', $view);
-        $this->assertStringContainsString('時間は目安', $view);
+        $this->assertStringContainsString('RECENT EVIDENCE', $evidenceView);
+        $this->assertStringContainsString('Canoviaが確認できた事実', $evidenceView);
+        $this->assertStringContainsString('時間は目安', $currentTaskView);
     }
 
     private function planAndTask(int $progress = 0): array
