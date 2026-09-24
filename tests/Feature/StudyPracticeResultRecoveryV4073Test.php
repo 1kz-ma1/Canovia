@@ -91,6 +91,106 @@ class StudyPracticeResultRecoveryV4073Test extends TestCase
         $this->assertSame(88, data_get(session("{$key}.assessment"), 'score_percent'));
     }
 
+    public function test_assessment_post_recovers_answered_handoff_without_an_intermediate_get(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $practiceSession = $this->answeredSession($user, $plan, $task);
+        $show = route('plans.tasks.study_practice.show', [$plan, $task]);
+        $key = "study_practice.{$plan->id}.{$task->id}";
+
+        // Reproduce the production failure: the durable ANSWERED session exists,
+        // but the PHP session disappeared before the learner pasted assessment JSON.
+        $this->app['session']->forget($key);
+
+        $assessment = [
+            'schema_version' => '1.0',
+            'flow' => 'study_assessment',
+            'target_plan' => ['id' => $plan->id],
+            'target_task' => ['id' => $task->id],
+            'score_percent' => 90,
+            'question_feedback' => [[
+                'question_id' => 'q1',
+                'correctness' => 'correct',
+                'feedback' => 'DNSの役割を説明できています。',
+                'reasoning_feedback' => '名前解決という観点が正しいです。',
+                'misconceptions' => [],
+            ]],
+            'strengths' => ['DNS'],
+            'weaknesses' => ['CNAME'],
+            'recommended_task_progress_percent' => 80,
+            'evidence_summary' => '回答済み状態をDBから復元して評価できます。',
+            'next_action' => 'CNAMEを追加演習する',
+            'next_step' => [
+                'kind' => 'practice',
+                'label' => 'CNAMEを3問演習する',
+                'reason' => 'CNAMEの確認を続けるため。',
+                'focus_topics' => ['DNS', 'CNAME'],
+                'question_count' => 3,
+            ],
+        ];
+
+        $this->actingAs($user)
+            ->post(route('plans.tasks.study_practice.assessment', [$plan, $task]), [
+                'assessment_json' => json_encode($assessment, JSON_UNESCAPED_UNICODE),
+            ])
+            ->assertRedirect($show)
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('study_practice_scroll_to', 'practice-assessment');
+
+        $attempt = StudyPracticeAttempt::where('study_practice_session_id', $practiceSession->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(90, $attempt->score_percent);
+        $this->assertSame('名前解決', data_get($attempt->answers, '0.fields.0.value'));
+        $this->assertSame('practice', data_get($attempt->assessment, 'next_step.kind'));
+        $this->assertSame(
+            StudyPracticeSession::STATUS_ASSESSED,
+            $practiceSession->fresh()->status,
+        );
+        $this->assertSame(
+            'ORIGINAL EVALUATION PROMPT',
+            session("{$key}.evaluation_prompt"),
+        );
+        $this->assertSame($practiceSession->id, session("{$key}.practice_session_id"));
+        $this->assertSame($attempt->id, session("{$key}.attempt_id"));
+    }
+
+    public function test_assessment_post_does_not_reopen_an_older_answered_session(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $olderAnswered = $this->answeredSession($user, $plan, $task);
+        $newerSession = $this->answeredSession($user, $plan, $task);
+        $newerSession->update(['status' => StudyPracticeSession::STATUS_ASSESSED]);
+        $key = "study_practice.{$plan->id}.{$task->id}";
+
+        $this->app['session']->forget($key);
+
+        $assessment = [
+            'schema_version' => '1.0',
+            'flow' => 'study_assessment',
+            'target_plan' => ['id' => $plan->id],
+            'target_task' => ['id' => $task->id],
+            'score_percent' => 90,
+            'question_feedback' => [],
+            'strengths' => [],
+            'weaknesses' => [],
+            'recommended_task_progress_percent' => 80,
+            'evidence_summary' => 'stale recovery guard',
+            'next_action' => '次へ',
+        ];
+
+        $this->actingAs($user)
+            ->post(route('plans.tasks.study_practice.assessment', [$plan, $task]), [
+                'assessment_json' => json_encode($assessment, JSON_UNESCAPED_UNICODE),
+            ])
+            ->assertSessionHasErrors('assessment_json');
+
+        $this->assertDatabaseMissing('study_practice_attempts', [
+            'study_practice_session_id' => $olderAnswered->id,
+        ]);
+    }
+
     public function test_study_practice_redirects_expose_the_new_step_for_scroll_reveal(): void
     {
         [$user, $plan, $task] = $this->studyPlan();

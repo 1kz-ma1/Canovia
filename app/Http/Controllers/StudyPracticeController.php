@@ -658,11 +658,25 @@ class StudyPracticeController extends Controller
 
         $key = $this->sessionKey($plan, $task);
         $state = $request->session()->get($key, []);
+        $actorToken = $identity->resolve($request);
+        $state = $this->recoverAssessmentHandoffState(
+            $request,
+            $plan,
+            $task,
+            $state,
+            $actorToken,
+        );
+
         if (empty($state['evaluation_prompt']) || empty($state['answers'])) {
             throw ValidationException::withMessages([
                 'assessment_json' => '先にCanovia上で問題へ回答し、評価用プロンプトを生成してください。',
             ]);
         }
+
+        // Keep the recovered durable state in the PHP session before persisting
+        // the assessment. A redirect/reload after this POST must see the same
+        // handoff that was used to build the attempt.
+        $request->session()->put($key, $state);
 
         $score = filter_var($decoded['score_percent'] ?? null, FILTER_VALIDATE_INT);
         $recommendedProgress = filter_var($decoded['recommended_task_progress_percent'] ?? null, FILTER_VALIDATE_INT);
@@ -695,7 +709,6 @@ class StudyPracticeController extends Controller
             $assessment['next_action'] = $assessment['next_step']['label'];
         }
 
-        $actorToken = $identity->resolve($request);
         $attempt = $this->persistAssessment(
             $request,
             $plan,
@@ -1361,6 +1374,96 @@ class StudyPracticeController extends Controller
      * @param array<string, mixed> $state
      * @param array<string, mixed> $assessment
      */
+    /**
+     * Recover the answered AI handoff from durable StudyPracticeSession state
+     * when the browser/PHP session was lost before the assessment JSON POST.
+     *
+     * Only STATUS_ANSWERED sessions are eligible here. An already assessed
+     * session is intentionally not reopened, which keeps attempt idempotency
+     * and the completed/result stages authoritative.
+     *
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    private function recoverAssessmentHandoffState(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        array $state,
+        string $actorToken,
+    ): array {
+        if (
+            filled($state['evaluation_prompt'] ?? null)
+            && ! empty($state['answers'])
+        ) {
+            return $state;
+        }
+
+        $query = $this->practiceSessionQuery($request, $plan, $task, $actorToken)
+            ->whereIn('status', [
+                StudyPracticeSession::STATUS_READY,
+                StudyPracticeSession::STATUS_IN_PROGRESS,
+                StudyPracticeSession::STATUS_ANSWERED,
+                StudyPracticeSession::STATUS_ASSESSED,
+            ])
+            ->whereNotNull('questions_snapshot');
+
+        $practiceSession = null;
+
+        if (! empty($state['practice_session_id'])) {
+            $practiceSession = (clone $query)
+                ->whereKey((int) $state['practice_session_id'])
+                ->first();
+        }
+
+        $practiceSession ??= (clone $query)
+            ->latest('updated_at')
+            ->latest('id')
+            ->first();
+
+        if (
+            ! $practiceSession
+            || $practiceSession->status !== StudyPracticeSession::STATUS_ANSWERED
+            || ! is_array($practiceSession->questions_snapshot)
+            || $practiceSession->questions_snapshot === []
+        ) {
+            return $state;
+        }
+
+        $evaluationPrompt = trim((string) data_get(
+            $practiceSession->assessment_payload,
+            'evaluation_prompt',
+            '',
+        ));
+        $draftAnswers = is_array($practiceSession->draft_answers)
+            ? $practiceSession->draft_answers
+            : [];
+        $answers = $this->answersFromDraft(
+            $practiceSession->questions_snapshot,
+            $draftAnswers,
+        );
+
+        if ($evaluationPrompt === '' || $answers === []) {
+            return $state;
+        }
+
+        return array_replace($state, [
+            'title' => filled($state['title'] ?? null)
+                ? (string) $state['title']
+                : ($practiceSession->exercise_title ?: 'AI演習'),
+            'questions' => $practiceSession->questions_snapshot,
+            'answers' => $answers,
+            'draft_answers' => $draftAnswers,
+            'evaluation_prompt' => $evaluationPrompt,
+            'assessment' => null,
+            'attempt_id' => null,
+            'attempt_token' => filled($state['attempt_token'] ?? null)
+                ? (string) $state['attempt_token']
+                : (string) Str::uuid(),
+            'practice_session_id' => $practiceSession->id,
+        ]);
+    }
+
     private function persistAssessment(
         Request $request,
         Plan $plan,
