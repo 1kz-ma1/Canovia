@@ -58,6 +58,19 @@ class DashboardGuidanceV395Test extends TestCase
         $this->assertSame($objective->id, $first['adaptive']?->task->id);
     }
 
+    public function test_incomplete_task_without_a_time_estimate_remains_actionable(): void
+    {
+        $plan = $this->plan('時間未設定でも進める', 1, 20);
+        $task = $this->task($plan, '外部で進めるTask', 1, 'todo', 1, 0, 2);
+
+        $deck = $this->deck([$plan]);
+        $first = $deck->first();
+
+        $this->assertSame($task->id, $first['task']->id);
+        $this->assertNotNull($first['adaptive']);
+        $this->assertGreaterThanOrEqual(5, $first['adaptive']->recommendedMinutes);
+    }
+
     public function test_existing_plan_update_without_priority_preserves_current_priority(): void
     {
         $user = User::factory()->create();
