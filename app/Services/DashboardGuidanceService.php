@@ -55,13 +55,15 @@ class DashboardGuidanceService
 
                 $tools = collect($this->toolService->forTask($plan, $task, true, $actor));
                 $recommendedTool = $tools->first(
-                    fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && ($tool['recommended'] ?? false)
-                ) ?? $tools->first(fn (array $tool) => (bool) ($tool['recommended'] ?? false));
+                    fn (array $tool) => (bool) ($tool['primary_eligible'] ?? false)
+                        && (bool) ($tool['recommended'] ?? false)
+                );
 
                 return [
                     'plan' => $plan,
                     'task' => $task,
                     'adaptive' => $adaptive,
+                    'tools' => $tools->values()->all(),
                     'recommended_tool' => $recommendedTool,
                     'priority_evaluation' => $this->priorityService->evaluate($plan),
                 ];
