@@ -89,7 +89,12 @@ class StudyPracticeController extends Controller
                     'questions' => $currentPracticeSession->questions_snapshot,
                     'answers' => $recoveredAttempt && is_array($recoveredAttempt->answers)
                         ? $recoveredAttempt->answers
-                        : [],
+                        : $this->answersFromDraft(
+                            $currentPracticeSession->questions_snapshot,
+                            is_array($currentPracticeSession->draft_answers)
+                                ? $currentPracticeSession->draft_answers
+                                : [],
+                        ),
                     'draft_answers' => is_array($currentPracticeSession->draft_answers)
                         ? $currentPracticeSession->draft_answers
                         : [],
@@ -876,6 +881,69 @@ class StudyPracticeController extends Controller
         }
 
         return $draft;
+    }
+
+    /**
+     * Rebuild the normalized answer snapshot from durable draft answers.
+     * This is used only for recovery after the browser/PHP session is lost.
+     *
+     * @param array<int, array<string, mixed>> $questions
+     * @param array<string, array<string, mixed>> $draftAnswers
+     * @return array<int, array<string, mixed>>
+     */
+    private function answersFromDraft(array $questions, array $draftAnswers): array
+    {
+        $answers = [];
+
+        foreach ($questions as $question) {
+            if (! is_array($question)) {
+                continue;
+            }
+
+            $questionId = trim((string) ($question['id'] ?? ''));
+            if ($questionId === '') {
+                continue;
+            }
+
+            $questionDraft = is_array($draftAnswers[$questionId] ?? null)
+                ? $draftAnswers[$questionId]
+                : [];
+            $fields = [];
+
+            foreach (($question['response_fields'] ?? []) as $field) {
+                if (! is_array($field)) {
+                    continue;
+                }
+
+                $fieldId = trim((string) ($field['id'] ?? ''));
+                if ($fieldId === '') {
+                    continue;
+                }
+
+                $type = (string) ($field['type'] ?? 'textarea');
+                $value = $questionDraft[$fieldId] ?? ($type === 'multiple_choice' ? [] : '');
+
+                if ($type === 'multiple_choice') {
+                    $value = is_array($value) ? array_values(array_map('strval', $value)) : [];
+                } else {
+                    $value = is_scalar($value) ? (string) $value : '';
+                }
+
+                $fields[] = [
+                    'field_id' => $fieldId,
+                    'type' => $type,
+                    'label' => $field['label'] ?? $fieldId,
+                    'value' => $value,
+                ];
+            }
+
+            $answers[] = [
+                'question_id' => $questionId,
+                'fields' => $fields,
+            ];
+        }
+
+        return $answers;
     }
 
     /**
