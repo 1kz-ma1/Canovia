@@ -386,6 +386,12 @@
                 $primaryRemaining = $primaryTask
                     ? ($primaryTask->remaining_minutes ?? max(0, (int) round((int) $primaryTask->estimated_minutes * (100 - (int) $primaryTask->progress_percent) / 100)))
                     : 0;
+                $primaryRemainingLabel = $primaryTask && (int) $primaryTask->progress_percent < 100 && $primaryRemaining <= 0
+                    ? '未設定'
+                    : $primaryRemaining.'分';
+                $planRemainingLabel = (int) ($item['progress']['total_estimated_minutes'] ?? 0) > 0
+                    ? '約'.round($item['progress']['remaining_minutes'] / 60, 1).'時間'
+                    : '未設定';
                 $primaryNextAction = $primaryTask
                     ? trim((string) ($primaryTask->next_action_note ?: $primaryTask->description))
                     : '';
@@ -405,7 +411,7 @@
                                     <span class="badge badge-slate">{{ $item['progress']['status'] }}</span>
                                     <span>進捗 {{ $item['progress']['weighted_progress_percent'] }}%</span>
                                     <span>期限 {{ $item['plan']->deadline?->format('Y/m/d') ?? '未設定' }}</span>
-                                    <span>残り目安 約{{ round($item['progress']['remaining_minutes'] / 60, 1) }}時間</span>
+                                    <span>残り目安 {{ $planRemainingLabel }}</span>
                                 </div>
                             </div>
                         </div>
@@ -429,7 +435,7 @@
                                 <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
                                     <span class="badge {{ $primaryTask->status === 'doing' ? 'badge-green' : 'badge-slate' }}">{{ $primaryTask->status === 'doing' ? '進行中' : '未着手' }}</span>
                                     <span class="badge badge-slate">進捗 {{ $primaryTask->progress_percent }}%</span>
-                                    <span class="badge badge-slate">残り目安 {{ $primaryRemaining }}分</span>
+                                    <span class="badge badge-slate">残り目安 {{ $primaryRemainingLabel }}</span>
                                     @if ($planRecommendation?->recommendedMinutes)
                                         <span class="badge badge-slate">今回の目安 {{ $planRecommendation->recommendedMinutes }}分</span>
                                     @endif
@@ -488,6 +494,9 @@
                         @forelse ($taskPreview as $taskItem)
                             @php
                                 $taskRemaining = $taskItem->remaining_minutes ?? max(0, (int) round((int) $taskItem->estimated_minutes * (100 - (int) $taskItem->progress_percent) / 100));
+                                $taskRemainingLabel = (int) $taskItem->progress_percent < 100 && $taskRemaining <= 0
+                                    ? '未設定'
+                                    : $taskRemaining.'分';
                                 $isPrimaryTask = $primaryTask && (int) $primaryTask->id === (int) $taskItem->id;
                             @endphp
                             <div class="rounded-2xl border {{ $isPrimaryTask ? 'border-cyan-300/25 bg-cyan-300/[0.045]' : 'border-white/8 bg-white/[0.025]' }} p-3">
@@ -504,7 +513,7 @@
                                     </div>
                                     <div class="shrink-0 text-right">
                                         <strong class="text-sm text-slate-100">{{ $taskItem->progress_percent }}%</strong>
-                                        <small class="mt-1 block text-[10px] text-slate-500">残り目安 {{ $taskRemaining }}分</small>
+                                        <small class="mt-1 block text-[10px] text-slate-500">残り目安 {{ $taskRemainingLabel }}</small>
                                     </div>
                                 </div>
                             </div>
