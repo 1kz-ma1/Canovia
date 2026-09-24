@@ -220,7 +220,7 @@
                                     @elseif (($tool['id'] ?? null) === 'resources')
                                         <a href="{{ route('plans.resources.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">関連資料を開く</a>
                                     @else
-                                        <a href="{{ route('plans.show', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">Taskを確認する</a>
+                                        <span class="flex-1 rounded-xl border border-slate-700/80 bg-slate-950/30 px-3 py-2 text-center text-xs font-semibold text-slate-300">内容を確認したら、そのまま作業へ</span>
                                     @endif
 
                                     <form method="POST" action="{{ route('work_sessions.start') }}" class="flex-1" data-work-start-form>
@@ -452,7 +452,7 @@
                                 @elseif (($recommendedTool['id'] ?? null) === 'resources')
                                     <a href="{{ route('plans.resources.index', $item['plan']) }}" class="btn-primary flex-1 px-4 py-2.5 text-sm lg:flex-none">⌘ 関連資料を開く</a>
                                 @else
-                                    <a href="{{ route('plans.show', $item['plan']) }}" class="btn-primary flex-1 px-4 py-2.5 text-sm lg:flex-none">詳細で確認する</a>
+                                    <span class="flex-1 rounded-xl border border-slate-700/80 bg-slate-950/30 px-4 py-2.5 text-center text-xs font-semibold text-slate-300 lg:flex-none">内容を確認したら、そのまま作業へ</span>
                                 @endif
 
                                 @if ($planCanEdit)
