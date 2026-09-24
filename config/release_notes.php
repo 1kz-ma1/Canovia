@@ -2,6 +2,20 @@
 
 return [
     [
+        'version' => 'v41.1',
+        'date' => '2026-09-24',
+        'title' => 'Canoviaが「進んだ事実」をもっと拾えるように',
+        'summary' => 'AI演習に加えて、Taskに紐づく制作ファイルの登録・更新と集中タイマーの完了もEvidenceとして記録し、Plan Hubから最近のEvidenceを確認できるようにしました。',
+        'highlights' => [
+            'Taskに紐づけた制作ファイルの登録・更新をartifact Evidenceとして自動記録します。',
+            '集中タイマーの完了・中断もactivity Evidenceとして残しますが、時間だけでTask進捗は変更しません。',
+            'オフラインで記録した集中タイマーも接続復帰後に同じEvidenceへ統合します。',
+            'Plan HubのCURRENT TASKに「Canoviaが確認できた事実」として最近のEvidenceを最大3件表示します。',
+            'AI演習・制作ファイル・集中作業を同じTask Evidence基盤へ集約し、将来のGitHub・ファイル・写真・Calendar連携へつなげます。',
+        ],
+        'tip' => 'Evidenceは「作業した事実」と「進捗を変える根拠」を分けて扱います。集中時間だけで進捗が上がることはありません。',
+    ],
+    [
         'version' => 'v41.0',
         'date' => '2026-09-24',
         'title' => '時間ではなく、前進した証拠を中心に',
