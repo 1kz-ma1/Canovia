@@ -6,6 +6,26 @@ use Tests\TestCase;
 
 class AiHandoffUiV4043Test extends TestCase
 {
+    public function test_initial_plan_generation_uses_the_unified_ai_handoff_contract(): void
+    {
+        $view = file_get_contents(resource_path('views/plans/ai_task_assistant.blade.php'));
+
+        $this->assertIsString($view);
+        $this->assertStringNotContainsString('min-h-[360px]', $view);
+        $this->assertStringNotContainsString('min-h-[320px]', $view);
+        $this->assertStringNotContainsString('data-ai-copy-prompt', $view);
+        $this->assertStringContainsString('data-copy-target="#aiPrompt"', $view);
+        $this->assertStringContainsString('この相談文に含まれる情報', $view);
+        $this->assertStringContainsString('data-paste-target="#tasks_json"', $view);
+        $this->assertStringContainsString('data-paste-submit="1"', $view);
+        $this->assertStringContainsString('data-paste-fallback="#initialPlanJsonManualInput"', $view);
+        $this->assertStringContainsString('手動で貼り付ける / JSONを確認する', $view);
+        $this->assertStringContainsString('data-ai-plan-generation-import', $view);
+        $this->assertStringContainsString('data-funnel-event="plan_generation_prompt_copy_clicked"', $view);
+        $this->assertStringContainsString('id="initialPlanJsonRepairPrompt" readonly tabindex="-1" aria-hidden="true" class="sr-only"', $view);
+        $this->assertStringNotContainsString('navigator.clipboard.writeText', $view);
+    }
+
     public function test_plan_update_hides_raw_payloads_and_uses_one_click_paste(): void
     {
         $view = file_get_contents(resource_path('views/plans/review_assistant.blade.php'));
