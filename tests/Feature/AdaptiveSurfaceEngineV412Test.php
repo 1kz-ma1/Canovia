@@ -17,6 +17,18 @@ class AdaptiveSurfaceEngineV412Test extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_common_career_aliases_resolve_to_career_profile_and_icon(): void
+    {
+        $profiles = app(PlanCategoryProfileService::class);
+
+        foreach (['就活', '就職活動', '転職', 'キャリア', '就職・将来'] as $category) {
+            $this->assertSame('career', $profiles->forCategory($category)->key);
+
+            $plan = $this->plan('Career', $category);
+            $this->assertSame('💼', $plan->displayIcon());
+        }
+    }
+
     public function test_category_profiles_choose_different_future_roadmap_renderers(): void
     {
         $profiles = app(PlanCategoryProfileService::class);
