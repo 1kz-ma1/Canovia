@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v41.0',
+        'date' => '2026-09-24',
+        'title' => '時間ではなく「前進」を追う土台へ',
+        'summary' => 'HomeのPlanタブを日常利用のPlan Hubへ作り替え、タイマーを任意の集中ツールへ変更。AI演習からTask Evidenceを自動取得し、将来のGitHub・ファイル・写真・Calendar連携へ広げられる基盤を追加しました。',
+        'highlights' => [
+            'HomeのPlanタブから重複していた大きなロードマップを外し、Plan概要・NEXT ACTION・次に触るTask・Execution Tools・最近のEvidenceを1画面で確認できるPlan Hubへ変更しました。',
+            '集中タイマーをPrimary Actionから外し、時間は進捗の証拠ではなく作業量・負荷・期限判断のための目安として扱うUIへ整理しました。',
+            'task_evidences / task_milestones / task_progress_decisionsを追加し、「観測した事実」「Milestone」「進捗判断」を分離して保存できるようにしました。',
+            'AI演習の評価完了を最初のNative Evidenceとして自動保存し、Taskへ反映した進捗変更もEvidenceに紐づくDecisionとして記録します。',
+            'TaskExecutionRegistryでnative / connected / externalとEvidence取得方法を分離し、GitHub・file・image・calendarを将来接続できるsource vocabularyを予約しました。',
+            'Milestoneは重み付き進捗シグナルを計算できますが、現時点ではTask進捗を勝手に書き換えません。',
+        ],
+        'tip' => '普段はPlanタブのNEXT ACTIONからそのまま進めてください。集中タイマーは時間を測りたいときだけ使えます。',
+    ],
+    [
         'version' => 'v40.7.5',
         'date' => '2026-09-24',
         'title' => 'AI評価JSONの受け戻しをさらに安定化',
