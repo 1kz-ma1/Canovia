@@ -328,7 +328,7 @@ class BehaviorTrackingTest extends TestCase
             ->assertSee('今日やること');
     }
 
-    public function test_navigation_opens_with_an_immediate_recommendation_and_start_action(): void
+    public function test_navigation_opens_with_an_immediate_recommendation_and_execution_options(): void
     {
         $plan = $this->createPlan('Immediate plan');
         $task = $this->createTask($plan, 'Start immediately');
@@ -336,10 +336,12 @@ class BehaviorTrackingTest extends TestCase
         $this->withCookie($this->ownerCookie($plan), $plan->owner_token)
             ->get(route('navigation.index'))
             ->assertOk()
-            ->assertSee('今日のおすすめ')
+            ->assertSee('おすすめ')
             ->assertSee($task->title)
-            ->assertSee('このまま開始')
-            ->assertSee('別のTaskにする')
+            ->assertSee('このTaskの進め方')
+            ->assertSee('内容を確認したら、そのまま作業へ')
+            ->assertSee('集中タイマー（任意）')
+            ->assertDontSee('このまま開始')
             ->assertDontSee('今日はどうしたい？');
 
         $this->assertDatabaseHas('behavior_events', [
