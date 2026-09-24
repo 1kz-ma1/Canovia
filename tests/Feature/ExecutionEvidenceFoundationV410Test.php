@@ -116,13 +116,16 @@ class ExecutionEvidenceFoundationV410Test extends TestCase
     public function test_dashboard_plan_panel_is_a_plan_hub_not_an_embedded_roadmap(): void
     {
         $view = file_get_contents(resource_path('views/dashboard/index.blade.php'));
+        $currentTask = file_get_contents(resource_path('views/dashboard/surfaces/current-task.blade.php'));
+        $planTools = file_get_contents(resource_path('views/dashboard/surfaces/plan-tools.blade.php'));
 
-        $this->assertStringContainsString('CURRENT TASK', $view);
-        $this->assertStringContainsString('PLAN TOOLS', $view);
-        $this->assertStringContainsString('集中タイマー（任意）', $view);
-        $this->assertStringContainsString('時間は目安', $view);
+        $this->assertStringContainsString('$surfaceModules', $view);
+        $this->assertStringContainsString('CURRENT TASK', $currentTask);
+        $this->assertStringContainsString('PLAN TOOLS', $planTools);
+        $this->assertStringContainsString('集中タイマー（任意）', $currentTask);
+        $this->assertStringContainsString('時間は目安', $currentTask);
         $this->assertStringNotContainsString("'roadmapMode' => 'dashboard'", $view);
-        $this->assertStringContainsString("route('roadmap.index', ['plan_id' =>", $view);
+        $this->assertStringContainsString("route('roadmap.index', ['plan_id' =>", $planTools);
     }
 
     private function plan(string $title, string $category): Plan

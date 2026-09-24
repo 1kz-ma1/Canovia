@@ -41,6 +41,7 @@
                 <option value="資格学習">資格学習</option>
                 <option value="個人開発">個人開発</option>
                 <option value="制作活動">制作活動</option>
+                <option value="就活・キャリア">就活・キャリア</option>
                 <option value="ゲーム開発">ゲーム開発</option>
                 <option value="その他">その他</option>
             </select>
