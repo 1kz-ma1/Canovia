@@ -13,6 +13,7 @@ use App\Services\FeatureAccessService;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
+use App\Services\TaskEvidenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
