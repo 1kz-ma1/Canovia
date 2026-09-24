@@ -133,18 +133,38 @@
                                     </ul>
                                 @endif
 
-                                <div class="mt-5 rounded-2xl border border-emerald-400/15 bg-emerald-500/5 px-4 py-4 text-center">
-                                    <p class="text-lg font-black text-slate-100">準備ができたら開始</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-400">開始ボタンを押した瞬間から計測します。まず{{ $recommendation->recommendedMinutes }}分を目安に。</p>
+                                @php
+                                    $recommendationExecution = $executionByTask[(int) $recommendation->task->id] ?? [];
+                                    $recommendationPrimaryTool = $recommendationExecution['primary'] ?? null;
+                                @endphp
+                                <div class="mt-5 rounded-2xl border border-emerald-400/15 bg-emerald-500/5 px-4 py-4">
+                                    <p class="text-sm font-black text-slate-100">このTaskの進め方</p>
+                                    @if ($recommendationPrimaryTool)
+                                        <p class="mt-1 text-xs leading-5 text-slate-400">{{ $recommendationPrimaryTool['name'] }}を使うと、そのまま実行へ進めます。</p>
+                                    @else
+                                        <p class="mt-1 text-xs leading-5 text-slate-400">Canovia外でそのまま作業しても大丈夫です。{{ $recommendation->recommendedMinutes }}分は作業量の目安として使います。</p>
+                                    @endif
                                 </div>
 
-                                <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form class="mobile-sticky-primary mt-4">
-                                    @csrf
-                                    <input type="hidden" name="task_id" value="{{ $recommendation->task->id }}">
-                                    <input type="hidden" name="intended_minutes" value="{{ $recommendation->recommendedMinutes }}">
-                                    <input type="hidden" name="source" value="navigation">
-                                    <button class="pk-v18-start-cta w-full justify-center" data-onboarding-target="today-start">このまま開始</button>
-                                </form>
+                                <div class="mobile-sticky-primary mt-4 grid gap-2 sm:grid-cols-2">
+                                    @if (($recommendationPrimaryTool['id'] ?? null) === 'ai_practice')
+                                        <a href="{{ route('plans.tasks.study_practice.show', [$recommendation->plan, $recommendation->task]) }}" class="pk-v18-start-cta w-full justify-center" data-onboarding-target="today-start">✦ AI演習で進める</a>
+                                    @elseif (($recommendationPrimaryTool['id'] ?? null) === 'artifacts')
+                                        <a href="{{ route('plans.artifacts.index', $recommendation->plan) }}" class="pk-v18-start-cta w-full justify-center" data-onboarding-target="today-start">◇ 制作ファイルを開く</a>
+                                    @elseif (($recommendationPrimaryTool['id'] ?? null) === 'resources')
+                                        <a href="{{ route('plans.resources.index', $recommendation->plan) }}" class="pk-v18-start-cta w-full justify-center" data-onboarding-target="today-start">⌘ 関連資料を開く</a>
+                                    @else
+                                        <a href="{{ route('plans.show', $recommendation->plan) }}" class="pk-v18-start-cta w-full justify-center" data-onboarding-target="today-start">Taskを確認する</a>
+                                    @endif
+
+                                    <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
+                                        @csrf
+                                        <input type="hidden" name="task_id" value="{{ $recommendation->task->id }}">
+                                        <input type="hidden" name="intended_minutes" value="{{ $recommendation->recommendedMinutes }}">
+                                        <input type="hidden" name="source" value="navigation">
+                                        <button class="btn-secondary w-full justify-center">◷ 集中タイマー（任意）</button>
+                                    </form>
+                                </div>
                             </section>
 
                             <div class="mt-4" data-candidate-carousel data-event-url="{{ route('behavior_events.store') }}">
@@ -186,13 +206,28 @@
                                                         </ul>
                                                     @endif
 
-                                                    <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form class="mt-5">
-                                                        @csrf
-                                                        <input type="hidden" name="task_id" value="{{ $candidate->task->id }}">
-                                                        <input type="hidden" name="intended_minutes" value="{{ $candidate->recommendedMinutes }}">
-                                                        <input type="hidden" name="source" value="navigation">
-                                                        <button class="btn-secondary w-full justify-center">これを始める</button>
-                                                    </form>
+                                                    @php
+                                                        $candidateExecution = $executionByTask[(int) $candidate->task->id] ?? [];
+                                                        $candidatePrimaryTool = $candidateExecution['primary'] ?? null;
+                                                    @endphp
+                                                    <div class="mt-5 grid gap-2">
+                                                        @if (($candidatePrimaryTool['id'] ?? null) === 'ai_practice')
+                                                            <a href="{{ route('plans.tasks.study_practice.show', [$candidate->plan, $candidate->task]) }}" class="btn-primary w-full justify-center">AI演習で進める</a>
+                                                        @elseif (($candidatePrimaryTool['id'] ?? null) === 'artifacts')
+                                                            <a href="{{ route('plans.artifacts.index', $candidate->plan) }}" class="btn-primary w-full justify-center">制作ファイルを開く</a>
+                                                        @elseif (($candidatePrimaryTool['id'] ?? null) === 'resources')
+                                                            <a href="{{ route('plans.resources.index', $candidate->plan) }}" class="btn-primary w-full justify-center">関連資料を開く</a>
+                                                        @else
+                                                            <a href="{{ route('plans.show', $candidate->plan) }}" class="btn-primary w-full justify-center">Taskを確認する</a>
+                                                        @endif
+                                                        <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
+                                                            @csrf
+                                                            <input type="hidden" name="task_id" value="{{ $candidate->task->id }}">
+                                                            <input type="hidden" name="intended_minutes" value="{{ $candidate->recommendedMinutes }}">
+                                                            <input type="hidden" name="source" value="navigation">
+                                                            <button class="btn-secondary w-full justify-center">◷ 集中タイマー（任意）</button>
+                                                        </form>
+                                                    </div>
                                                 </article>
                                             @endforeach
                                         </div>
@@ -208,7 +243,7 @@
                             </div>
 
                             <p class="mt-4 text-xs leading-5 text-slate-500">
-                                どの候補を見て、どれを開始したかも次回のおすすめ改善に使われます。
+                                どの候補を見たかや、Canovia内で観測できた実行結果は次回のおすすめ改善に使われます。
                             </p>
                         @else
                             <h2 class="text-xl font-bold text-slate-100">今すぐ始められるタスクが見つかりませんでした</h2>
