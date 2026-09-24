@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class TaskEvidence extends Model
 {
+    protected $table = 'task_evidences';
+
     protected $fillable = [
         'plan_id',
         'task_id',
