@@ -101,11 +101,26 @@ class PlanProgressService
 
     private function calculateWeightedProgressPercent(Collection $tasks): float
     {
-        $totalEstimatedMinutes = $tasks->sum('estimated_minutes');
-        if ($totalEstimatedMinutes <= 0) {
+        if ($tasks->isEmpty()) {
             return 0;
         }
-        $weightedProgress = $tasks->sum(fn ($task) => $task->estimated_minutes * $task->progress_percent);
+
+        $totalEstimatedMinutes = $tasks->sum('estimated_minutes');
+
+        if ($totalEstimatedMinutes <= 0) {
+            // V41: time is a workload estimate, not the authority for progress.
+            // When no Task has a usable time estimate, preserve the observable
+            // Task progress instead of collapsing the whole Plan to 0%.
+            return round((float) $tasks->avg(
+                fn ($task) => max(0, min(100, (int) $task->progress_percent))
+            ), 1);
+        }
+
+        $weightedProgress = $tasks->sum(
+            fn ($task) => max(0, (int) $task->estimated_minutes)
+                * max(0, min(100, (int) $task->progress_percent))
+        );
+
         return round($weightedProgress / $totalEstimatedMinutes, 1);
     }
 
