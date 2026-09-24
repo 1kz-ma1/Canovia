@@ -9,6 +9,7 @@ use App\Models\StudyPracticeSession;
 use App\Models\Task;
 use App\Services\AiJsonInputNormalizer;
 use App\Services\BehaviorIdentityService;
+use App\Services\EvidenceProgressService;
 use App\Services\FeatureAccessService;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticeOrchestrator;
@@ -746,6 +747,7 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         BehaviorIdentityService $identity,
+        EvidenceProgressService $evidenceProgress,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -757,7 +759,7 @@ class StudyPracticeController extends Controller
         $actorToken = $identity->resolve($request);
         $alreadyApplied = false;
 
-        DB::transaction(function () use ($request, $plan, $task, $validated, $actorToken, &$alreadyApplied) {
+        DB::transaction(function () use ($request, $plan, $task, $validated, $actorToken, $evidenceProgress, &$alreadyApplied) {
             $attempt = $this->attemptQuery($request, $plan, $task, $actorToken)
                 ->whereKey((int) $validated['attempt_id'])
                 ->where('request_hash', $validated['request_hash'])
@@ -800,7 +802,14 @@ class StudyPracticeController extends Controller
             }
 
             $progressBefore = (int) $lockedTask->progress_percent;
-            $progressAfter = max($progressBefore, (int) $attempt->recommended_task_progress_percent);
+            $evidence = $lockedTask->evidences()
+                ->where('source', 'native')
+                ->where('external_key', 'study-practice-attempt:'.$attempt->id)
+                ->first();
+            $progressAfter = $evidence
+                ? $evidenceProgress->recommendPercent($lockedTask, $evidence)
+                : null;
+            $progressAfter ??= max($progressBefore, (int) $attempt->recommended_task_progress_percent);
             $remainingAfter = $progressAfter >= 100 ? 0 : $lockedTask->remaining_minutes;
             $statusAfter = match (true) {
                 $progressAfter >= 100 => 'done',
