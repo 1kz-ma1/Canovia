@@ -399,7 +399,7 @@
                                 <p class="pk-v18-card-kicker">PLAN HUB</p>
                                 <h2 class="mt-1 text-lg font-black text-slate-100 sm:text-xl">{{ $item['plan']->title }}</h2>
                                 @if (filled($item['plan']->description))
-                                    <p class="mt-2 max-w-3xl text-xs leading-5 text-slate-400">{{ IlluminateSupportStr::limit($item['plan']->description, 180) }}</p>
+                                    <p class="mt-2 max-w-3xl text-xs leading-5 text-slate-400">{{ \Illuminate\Support\Str::limit($item['plan']->description, 180) }}</p>
                                 @endif
                                 <div class="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
                                     <span class="badge badge-slate">{{ $item['progress']['status'] }}</span>
