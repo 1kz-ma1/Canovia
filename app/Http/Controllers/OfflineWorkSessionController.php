@@ -9,6 +9,7 @@ use App\Models\WorkSession;
 use App\Services\BehaviorEventLogger;
 use App\Services\BehaviorIdentityService;
 use App\Services\PlanOwnershipService;
+use App\Services\TaskEvidenceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class OfflineWorkSessionController extends Controller
         BehaviorIdentityService $identity,
         BehaviorEventLogger $logger,
         PlanOwnershipService $ownership,
+        TaskEvidenceService $evidenceService,
     ) {
         $validated = $request->validate([
             'client_session_id' => ['required', 'uuid'],
@@ -119,6 +121,14 @@ class OfflineWorkSessionController extends Controller
         });
 
         if ($created) {
+            $evidenceService->recordFocusSession($session, [
+                'actual_minutes' => $actualMinutes,
+                'active_seconds' => $actualSeconds,
+                'wall_seconds' => $wallSeconds,
+                'paused_seconds' => max(0, $wallSeconds - $actualSeconds),
+                'ended_at' => $endedAt,
+            ], 'completed');
+
             $logger->record($actorToken, BehaviorEventType::WorkCompleted, $request, $task->plan, $task, [
                 'work_session_id' => $session->id,
                 'duration_seconds' => $actualSeconds,
