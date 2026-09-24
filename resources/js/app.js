@@ -2091,10 +2091,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'today-start': {
             selector: '[data-onboarding-target="today-start"]',
             number: 7,
-            title: 'あとは始めるだけ',
-            copy: 'このまま開始するとタイマーへ移動します。作業した時間はあとで実績として残せます。',
-            event: 'click',
-            next: 'timer',
+            title: 'Taskに合う方法で進めます',
+            copy: 'AI演習などCanoviaで完結できる作業は、そのまま専用画面へ進めます。外部で行うTaskは内容を確認して作業へ。時間を測りたいときだけ集中タイマーを使えます。',
+            actionLabel: '完了',
+            next: null,
         },
         'timer': {
             selector: '[data-onboarding-target="work-timer"]',
@@ -2108,7 +2108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selector: '[data-onboarding-target="today-nav"]',
             number: 1,
             title: '「今日」',
-            copy: '今やることを決めて、そのまま作業を始める場所です。',
+            copy: '今やることを決めて、そのTaskに合う実行方法へ進む場所です。',
             actionLabel: '次へ',
             next: 'replay-roadmap',
         },
