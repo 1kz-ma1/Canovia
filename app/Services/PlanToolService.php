@@ -26,10 +26,10 @@ class PlanToolService
             [
                 'id' => 'timer',
                 'name' => '集中タイマー',
-                'description' => '作業時間を計り、終了後の実績をこのTaskへ残します。',
+                'description' => '時間を区切って集中したいときだけ使います。時間は進捗の証拠ではなく目安として扱います。',
                 'icon' => '◷',
-                'recommended' => ! $this->isStudyPlan($plan),
-                'badge' => '標準',
+                'recommended' => false,
+                'badge' => '任意',
             ],
         ];
 
