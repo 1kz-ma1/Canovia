@@ -93,10 +93,8 @@ class AdaptiveSurfaceEngineV412Test extends TestCase
 
         $this->assertContains('career_pipeline', $modules->pluck('id')->all());
         $this->assertContains('career_interview_focus', $modules->pluck('id')->all());
-        $this->assertLessThan(
-            $modules->firstWhere('id', 'career_interview_focus')->priority,
-            $modules->firstWhere('id', 'current_task')->priority,
-        );
+        $this->assertSame('current_task', $modules->get(0)->id);
+        $this->assertSame('career_interview_focus', $modules->get(1)->id);
 
         $interview->update(['status' => 'done', 'progress_percent' => 100]);
         $research->refresh();
