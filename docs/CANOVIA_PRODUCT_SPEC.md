@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-24 / main V40.7.3 + V40.7.4 guided learning flow + V40.7.5 assessment POST recovery
+更新基準: 2026-09-24 / V41.0 Plan Hub + Evidence-first execution foundation
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -11,19 +11,19 @@ Canoviaは、**頑張りたいけれど、頑張り方が分からない・や�
 中核となる体験は次の循環である。
 
 ```text
-Plan
+Plan / Roadmap
   ↓
-Task / Roadmap
+Task / Next Action
   ↓
-Today / Recommendation
+Execution（Canovia内 / 外部Tool / 現実世界）
   ↓
-実行 / WorkSession / Timer
+Evidence（観測できた状態変化）
   ↓
-振り返り / WorkLog
+Progress / Milestone
   ↓
-AI支援 / 計画更新 / 学習
-  ↓
-次の行動
+次のAction / 計画最適化
+
+Focus Timer / WorkSessionは必要なときだけ使う補助実行手段
 ```
 
 Canoviaは「完璧な計画を守らせる」より、現実の行動・発見・制約に合わせて計画を育て直すことを重視する。
@@ -40,12 +40,14 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 8. **DeployとReleaseを分離できる構造を目指す。** ただしApp Reviewを迂回するために使わない。
 9. **ユーザーの声は需要シグナルとして使い、単純多数決でプロダクトを作らない。**
 10. **将来機能のために現在のUXを複雑にしない。**
+11. **時間ではなく状態変化を進捗の中心に置く。** 時間は計画・負荷見積もりの目安であり、それだけでTaskが進んだとは判断しない。
+12. **実行環境を囲い込まない。** Canovia内で完結できる作業はNative Toolで支援し、既存の優れた外部ToolはEvidence/Connectorでつなぐ。
 
 ## 3. Now / Next / Future
 
 ### Now
 
-現在実装済み、またはV40.7で基盤を持つ領域。
+現在実装済み、またはV41.0で基盤を持つ領域。
 
 - Guest / Account、所有権、共同計画
 - Plan / Task / Roadmap / Today / Recommendation
@@ -58,6 +60,12 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - AI Practice回答済み・評価済み状態の永続復元と次Step自動Reveal
 - AI Practice評価JSON POST時のanswered状態durable recovery（PHP Session欠落時もDBから復元）
 - AI Practiceのcurrent-step UIと構造化next_stepによる「次にやること」導線
+- Home Plan Hub（Plan概要 / NEXT ACTION / Task短縮一覧 / Execution Tools / Recent Evidence）
+- Focus Timerを任意ツールとして扱うExecution UI
+- Task Evidence / Task Milestone / Progress Decisionの分離データモデル
+- AI Practice評価完了のNative Evidence自動保存
+- Milestoneの重み付きprogress signal（自動Task更新はしない）
+- TaskExecutionRegistryによるnative / connected / external実行境界
 - Resource / Project Artifact
 - Future Memo
 - Achievement / Timeline / Release Notes
@@ -73,6 +81,11 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 iOS正式公開準備や、現行基盤を実運用へ接続する近い将来。
 
 - iOSアプリ化とApp Store Review運用
+- GitHub commit / PR / merge / issueをTask Evidenceへ変換するConnected Adapter
+- Drive / OneDrive / Dropbox等のファイル生成・更新Evidence
+- 写真Evidenceのアップロードと画像理解による紙作業の状態抽出
+- Calendar / mail等から予定・提出・選考イベントを観測するEvidence source
+- EvidenceからMilestone / Progressを提案し、確度に応じて自動反映または確認へ分岐するDecision policy
 - server-backed Feature Flag保存とAdmin操作
 - platform / minimum app versionを使った公開制御
 - Roadmap候補のAdmin管理（表示、投票受付、threshold、priority、status）
