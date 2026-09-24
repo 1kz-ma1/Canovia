@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v41.0',
+        'date' => '2026-09-24',
+        'title' => '時間ではなく、前進した証拠を中心に',
+        'summary' => 'HomeのPlanタブを日常利用用Plan Hubへ再設計し、Focus Timerを任意Toolへ変更。AI演習を最初のTask Evidenceとして自動記録できる基盤を追加しました。',
+        'highlights' => [
+            'HomeのPlanタブから大きなRoadmap再表示を外し、Plan概要・CURRENT TASK・Task短縮一覧・Plan Tools・最近の活動を直接確認できるようにしました。',
+            'TaskのPrimary ActionはAI演習・制作ファイル・関連資料などTaskに合うToolを優先し、集中タイマーは必要なときだけ使う任意Actionに変更しました。',
+            'estimated_minutes / remaining_minutesは進捗の証拠ではなく、Taskの重さや期限判断に使う「時間の目安」として扱います。',
+            'TaskEvidence基盤を追加し、source / type / confidence / metadata / external_keyを持つ観測事実をidempotentに保存できます。',
+            'AI演習の評価完了をnative Evidenceとして自動保存し、score・弱点・推奨進捗・next_stepをTaskへ紐付けます。',
+            'ExecutionAdapter、EvidenceProgressService、TaskMilestoneを追加し、GitHub・ファイル・写真・Calendar・将来AIへ拡張できる境界を用意しました。',
+        ],
+        'tip' => '普段はPlanタブの「次に進めること」からそのTaskに合うToolを開いてください。時間を測りたいときだけ集中タイマーを使えます。',
+    ],
+    [
         'version' => 'v40.7.5',
         'date' => '2026-09-24',
         'title' => 'AI評価JSONの受け戻しをさらに安定化',
