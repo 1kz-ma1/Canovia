@@ -64,7 +64,12 @@ self.addEventListener('activate', (event) => {
         );
 
         if (self.registration.navigationPreload) {
-            await self.registration.navigationPreload.enable().catch(() => {});
+            // Navigation Preload is registration-wide. Enabling it while only
+            // consuming preloadResponse on Instant Start routes causes every
+            // other navigation (AI practice, auth, admin, etc.) to hit Laravel
+            // twice: once as an unused preload and once as the normal request.
+            // Keep it disabled so network-only routes truly make one GET.
+            await self.registration.navigationPreload.disable().catch(() => {});
         }
 
         await self.clients.claim();
