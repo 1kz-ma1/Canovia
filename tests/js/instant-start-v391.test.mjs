@@ -84,6 +84,8 @@ function testWorkerBoundaries() {
     assert.match(swSource, /_canovia_network/);
     assert.match(swSource, /navigationNetworkResponse/);
     assert.match(swSource, /STATIC_ASSETS\.includes\(url\.pathname\)/);
+    assert.match(swSource, /navigationPreload\.disable\(\)/);
+    assert.doesNotMatch(swSource, /navigationPreload\.enable\(\)/);
 
     // Capability/auth/admin paths must not be part of the Instant Start allowlist.
     const allowlistBlock = swSource.match(/INSTANT_START_PATHS = new Set\(\[(.*?)\]\);/s)?.[1] || '';
