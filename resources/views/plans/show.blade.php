@@ -391,7 +391,7 @@
             ->values();
     @endphp
 
-    <section class="mb-8 page-card p-6 hidden md:block">
+    <section id="task-list" class="mb-8 page-card p-6 hidden md:block scroll-mt-24">
         <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
                 <h2 class="text-2xl font-bold text-slate-900">タスク一覧</h2>
@@ -435,7 +435,7 @@
                         };
                     @endphp
 
-                    <article class="rounded-xl border border-slate-200 p-4 {{ $task->status === 'cancelled' ? 'opacity-70' : '' }}">
+                    <article id="task-{{ $task->id }}" class="scroll-mt-24 rounded-xl border border-slate-200 p-4 {{ $task->status === 'cancelled' ? 'opacity-70' : '' }}">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2">
@@ -472,7 +472,7 @@
                                             @csrf
                                             <input type="hidden" name="task_id" value="{{ $task->id }}">
                                             <input type="hidden" name="source" value="plan">
-                                            <button type="submit" class="btn-primary px-3 py-2 text-sm">このタスクを始める</button>
+                                            <button type="submit" class="btn-secondary px-3 py-2 text-sm">◷ 集中タイマー</button>
                                         </form>
                                     @endif
 
@@ -491,8 +491,8 @@
                         @endif
 
                         <div class="mt-4 mobile-metric-strip md:grid md:grid-cols-6">
-                            <div class="metric-card"><p class="text-xs text-slate-500">総想定時間</p><p class="font-semibold text-slate-900">{{ $task->estimated_minutes }}分</p></div>
-                            <div class="metric-card"><p class="text-xs text-slate-500">残り時間</p><p class="font-semibold text-slate-900">{{ $task->remaining_minutes ?? 0 }}分</p></div>
+                            <div class="metric-card"><p class="text-xs text-slate-500">作業量の目安</p><p class="font-semibold text-slate-900">{{ $task->estimated_minutes }}分</p></div>
+                            <div class="metric-card"><p class="text-xs text-slate-500">残り目安</p><p class="font-semibold text-slate-900">{{ $task->remaining_minutes ?? 0 }}分</p></div>
                             <div class="metric-card"><p class="text-xs text-slate-500">進捗率</p><p class="font-semibold text-slate-900">{{ $task->progress_percent }}%</p></div>
                             <div class="metric-card"><p class="text-xs text-slate-500">開始ハードル</p><p class="font-semibold text-slate-900">{{ $task->activation_cost ?? 3 }}/5</p></div>
                             <div class="metric-card"><p class="text-xs text-slate-500">状態</p><p class="font-semibold text-slate-900">{{ $taskStatusLabel }}</p></div>
