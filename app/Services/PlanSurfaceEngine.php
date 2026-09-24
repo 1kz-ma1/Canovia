@@ -130,6 +130,110 @@ class PlanSurfaceEngine
             ->values();
     }
 
+    /**
+     * Safe input contract for a future AI surface policy.
+     *
+     * The AI receives module ids and reasons, never Blade view paths. It can
+     * later return ordered_module_ids / hidden_module_ids, which are applied
+     * through applyDecision() against the registered module set.
+     *
+     * @param array<string,mixed> $situation
+     * @param Collection<int,PlanSurfaceModuleData> $modules
+     * @return array<string,mixed>
+     */
+    public function policyContext(
+        Plan $plan,
+        PlanCategoryProfileData $profile,
+        array $situation,
+        Collection $modules,
+    ): array {
+        return [
+            'schema_version' => 1,
+            'plan' => [
+                'id' => (int) $plan->id,
+                'title' => (string) $plan->title,
+                'category' => (string) ($plan->category ?? ''),
+            ],
+            'category_profile' => $profile->toArray(),
+            'situation' => collect($situation)->only([
+                'active_task_count',
+                'done_task_count',
+                'has_current_task',
+                'deadline_days',
+                'deadline_soon',
+                'deadline_overdue',
+                'recent_evidence_count',
+                'has_recent_evidence',
+                'has_artifacts',
+                'has_resources',
+                'has_ai_practice',
+                'career_stage',
+                'career_has_interview',
+                'career_interview_is_current',
+                'career_application_count',
+                'career_interview_count',
+                'study_has_assessment',
+                'study_latest_score',
+                'study_weaknesses',
+                'study_next_action',
+                'delivery_artifact_count',
+                'delivery_has_artifact_evidence',
+            ])->all(),
+            'available_modules' => $modules
+                ->map(fn (PlanSurfaceModuleData $module) => [
+                    'id' => $module->id,
+                    'default_priority' => $module->priority,
+                    'default_visibility' => $module->visibility,
+                    'reason' => $module->reason,
+                ])
+                ->values()
+                ->all(),
+            'allowed_output' => [
+                'ordered_module_ids' => 'array<string>',
+                'hidden_module_ids' => 'array<string>',
+            ],
+            'protected_module_ids' => ['current_task', 'plan_tools'],
+        ];
+    }
+
+    /**
+     * Apply a future rules/AI decision without allowing arbitrary UI modules.
+     *
+     * Unknown ids are ignored and protected modules cannot be hidden.
+     *
+     * @param Collection<int,PlanSurfaceModuleData> $modules
+     * @param array<string,mixed> $decision
+     * @return Collection<int,PlanSurfaceModuleData>
+     */
+    public function applyDecision(Collection $modules, array $decision): Collection
+    {
+        $registered = $modules->keyBy(fn (PlanSurfaceModuleData $module) => $module->id);
+        $protected = collect(['current_task', 'plan_tools']);
+
+        $hidden = collect($decision['hidden_module_ids'] ?? [])
+            ->filter(fn ($id) => is_string($id) && $registered->has($id) && ! $protected->contains($id))
+            ->unique()
+            ->values();
+
+        $remaining = $registered->reject(fn (PlanSurfaceModuleData $module) => $hidden->contains($module->id));
+
+        $orderedIds = collect($decision['ordered_module_ids'] ?? [])
+            ->filter(fn ($id) => is_string($id) && $remaining->has($id))
+            ->unique()
+            ->values();
+
+        $ordered = $orderedIds
+            ->map(fn (string $id) => $remaining->get($id))
+            ->filter();
+
+        $fallback = $remaining
+            ->reject(fn (PlanSurfaceModuleData $module) => $orderedIds->contains($module->id))
+            ->sortByDesc(fn (PlanSurfaceModuleData $module) => $module->priority)
+            ->values();
+
+        return $ordered->concat($fallback)->values();
+    }
+
     private function module(
         string $id,
         string $view,
