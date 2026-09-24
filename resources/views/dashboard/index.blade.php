@@ -221,12 +221,18 @@
                                         <a href="{{ route('plans.resources.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">関連資料を開く</a>
                                     @endif
 
+                                    @if (! $tool)
+                                        <button type="button" class="btn-primary flex-1 px-3 py-2 text-xs" data-open-dashboard-tab="plan-{{ $guidancePlan->id }}" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
+                                            次のActionを見る
+                                        </button>
+                                    @endif
+
                                     <form method="POST" action="{{ route('work_sessions.start') }}" class="flex-1" data-work-start-form>
                                         @csrf
                                         <input type="hidden" name="task_id" value="{{ $guidanceTask->id }}">
                                         <input type="hidden" name="source" value="dashboard">
-                                        <button type="submit" class="{{ $tool && ($tool['id'] ?? null) !== 'timer' ? 'btn-secondary' : 'btn-primary' }} w-full px-3 py-2 text-xs" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
-                                            ▶ {{ $guidanceTask->status === 'doing' ? '続きを始める' : 'このTaskを始める' }}
+                                        <button type="submit" class="btn-secondary w-full px-3 py-2 text-xs">
+                                            ◷ 集中タイマー（任意）
                                         </button>
                                     </form>
                                 </div>
@@ -324,7 +330,7 @@
                 <section class="page-card pk-v18-section-card p-4 sm:p-5">
                     <div class="flex flex-wrap items-end justify-between gap-3">
                         <div><p class="pk-v18-card-kicker">YOUR WORLDS</p><h2 class="text-base font-black text-slate-100 sm:text-lg">進行中の計画</h2></div>
-                        <p class="text-xs text-slate-400">残り 約{{ round($dashboard['remaining_minutes'] / 60, 1) }}時間</p>
+                        <p class="text-xs text-slate-400">残り目安 約{{ round($dashboard['remaining_minutes'] / 60, 1) }}時間</p>
                     </div>
                     <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                         @foreach ($dashboard['plan_tabs'] as $item)
