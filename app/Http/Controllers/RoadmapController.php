@@ -22,6 +22,7 @@ class RoadmapController extends Controller
         RecommendationService $recommendationService,
         RoadmapService $roadmapService,
         ContinuityService $continuityService,
+        PlanCategoryProfileService $categoryProfiles,
     ) {
         $plans = $ownership->ownedPlans($request, [
             'tasks' => fn ($query) => $query->with(['prerequisite', 'resources'])->orderBy('sort_order')->orderBy('id'),
@@ -38,6 +39,7 @@ class RoadmapController extends Controller
         $canEdit = false;
         $canManage = false;
         $collaborationRole = null;
+        $roadmapPresentation = null;
 
         if ($plan) {
             $canEdit = $ownership->canEdit($request, $plan);
@@ -48,6 +50,12 @@ class RoadmapController extends Controller
                 $previousPlan = $planIndex > 0 ? $plans->values()->get($planIndex - 1) : null;
                 $nextPlan = $planIndex < ($plans->count() - 1) ? $plans->values()->get($planIndex + 1) : null;
             }
+
+            $profile = $categoryProfiles->forPlan($plan);
+            $roadmapPresentation = [
+                ...$profile->toArray(),
+                'active_renderer' => 'task_flow',
+            ];
 
             $actorToken = $identity->resolve($request);
             $baseline = $behaviorService->baseline($actorToken);
@@ -77,6 +85,7 @@ class RoadmapController extends Controller
             'canEdit',
             'canManage',
             'collaborationRole',
+            'roadmapPresentation',
         ));
     }
 }
