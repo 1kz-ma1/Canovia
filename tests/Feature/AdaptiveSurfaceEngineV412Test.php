@@ -153,7 +153,7 @@ class AdaptiveSurfaceEngineV412Test extends TestCase
 
         $this->assertStringContainsString('CAREER PIPELINE', $career);
         $this->assertStringContainsString('INTERVIEW FOCUS', $interview);
-        $this->assertStringContainsString('面接Taskがなくなれば', $interview);
+        $this->assertStringContainsString('面接対策が落ち着けば', $interview);
     }
 
     public function test_future_ai_decision_can_only_reorder_registered_surfaces(): void
