@@ -9,7 +9,7 @@
             <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">応募・選考の流れ</h2>
             <p class="mt-1 text-xs leading-5 text-slate-500">Taskの内容から、今ある就活タスクを段階別に整理しています。</p>
         </div>
-        <span class="badge badge-slate">ルールベース</span>
+        <span class="badge badge-slate">Taskから自動整理</span>
     </div>
 
     <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -33,5 +33,5 @@
         @endforeach
     </div>
 
-    <p class="mt-3 text-[11px] leading-5 text-slate-500">将来は応募先ごとのPipelineへ置き換えられるよう、Surface自体を独立Moduleとして扱っています。</p>
+    <p class="mt-3 text-[11px] leading-5 text-slate-500">応募や面接のTaskが増えると、ここで選考全体の偏りや次に必要な準備を確認できます。</p>
 </section>
