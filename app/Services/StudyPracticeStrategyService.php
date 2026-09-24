@@ -18,6 +18,15 @@ class StudyPracticeStrategyService
 
         $latest = $recentAttempts->first();
         $latestScore = $latest ? (int) $latest->score_percent : null;
+        $guidedNextStep = is_array(data_get($latest?->assessment, 'next_step'))
+            ? data_get($latest?->assessment, 'next_step')
+            : [];
+        $guidedPractice = ($guidedNextStep['kind'] ?? null) === 'practice';
+        $guidedFocusTopics = $guidedPractice
+            ? collect($guidedNextStep['focus_topics'] ?? [])
+                ->filter(fn ($item) => is_string($item) && trim($item) !== '')
+                ->map(fn ($item) => trim($item))
+            : collect();
 
         $latestWeaknesses = collect($latest?->weaknesses ?? [])
             ->filter(fn ($item) => is_string($item) && trim($item) !== '')
@@ -49,7 +58,8 @@ class StudyPracticeStrategyService
         // attempt, or when it repeatedly appears across recent attempts.
         // One old mistake should not permanently lock the learner into
         // weakness_reinforcement after it has been resolved.
-        $focusTopics = $latestWeaknesses
+        $focusTopics = $guidedFocusTopics
+            ->merge($latestWeaknesses)
             ->merge($latestMisconceptions)
             ->merge($repeatedSignals)
             ->unique()
@@ -64,7 +74,9 @@ class StudyPracticeStrategyService
         } elseif ($focusTopics !== []) {
             $key = 'weakness_reinforcement';
             $label = '弱点補強';
-            $reason = '直近の演習で見つかった弱点・誤解を優先して再確認します。';
+            $reason = $guidedPractice
+                ? '前回の評価で次に補強すると決めた内容を、そのまま次の演習へ引き継ぎます。'
+                : '直近の演習で見つかった弱点・誤解を優先して再確認します。';
         } elseif ($latestScore !== null && $latestScore >= 85) {
             $key = 'retention_and_transfer';
             $label = '定着・応用確認';
@@ -81,7 +93,9 @@ class StudyPracticeStrategyService
             'label' => $label,
             'reason' => $reason,
             'focus_topics' => $focusTopics,
-            'target_question_count' => 10,
+            'target_question_count' => $guidedPractice
+                ? max(1, min(20, (int) ($guidedNextStep['question_count'] ?? 5)))
+                : 10,
             'history_sample_count' => $recentAttempts->count(),
             'latest_score_percent' => $latestScore,
             'task_snapshot' => [
