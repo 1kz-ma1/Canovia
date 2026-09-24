@@ -2,6 +2,19 @@
 
 return [
     [
+        'version' => 'v40.7.5',
+        'date' => '2026-09-24',
+        'title' => 'AI評価JSONの受け戻しをさらに安定化',
+        'summary' => '回答済みの演習データがDBに残っているのにPHP Sessionだけ失われた場合でも、評価JSONをそのまま受け取れるようにしました。',
+        'highlights' => [
+            '評価JSONのPOST時にもStudyPracticeSessionのanswered状態から問題・回答・評価Promptを復元します。',
+            '画面を一度GETし直さなくても、保存済みの回答状態から評価結果を学習履歴へ保存できます。',
+            '復元対象は本人のPlan / Task / actorに紐づくansweredセッションだけに限定し、評価済みセッションを再オープンしません。',
+            'V40.7.4のnext_step、Task反映確認、進捗を勝手に下げないルール、既存のattempt idempotencyを維持します。',
+        ],
+        'tip' => '評価JSONを貼り付けたときに画面状態が一時的に失われても、回答済みデータが保存されていればそのまま評価へ進めます。',
+    ],
+    [
         'version' => 'v40.7.4',
         'date' => '2026-09-24',
         'title' => 'AI演習を「次にやること」まで一本道に',
