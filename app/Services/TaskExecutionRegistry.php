@@ -21,8 +21,8 @@ class TaskExecutionRegistry
             ],
             'timer' => [
                 'execution_mode' => 'native',
-                'evidence_mode' => 'automatic',
-                'evidence_source' => 'focus_timer',
+                'evidence_mode' => 'context_only',
+                'evidence_source' => null,
                 'primary_eligible' => false,
             ],
             'artifacts' => [
@@ -54,7 +54,7 @@ class TaskExecutionRegistry
     public function evidenceSources(): array
     {
         return [
-            'native' => ['automatic' => true, 'examples' => ['study_practice', 'focus_timer']],
+            'native' => ['automatic' => true, 'examples' => ['study_practice']],
             'github' => ['automatic' => true, 'examples' => ['commit', 'pull_request', 'merge', 'issue']],
             'file' => ['automatic' => true, 'examples' => ['created', 'updated', 'exported']],
             'image' => ['automatic' => false, 'examples' => ['photo_evidence']],
