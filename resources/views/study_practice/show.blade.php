@@ -3,7 +3,11 @@
 @section('title', 'AI演習 | Canovia')
 
 @section('content')
-    <div class="mx-auto max-w-5xl space-y-5">
+    <div
+        class="mx-auto max-w-5xl space-y-5"
+        data-study-practice-root
+        data-study-practice-scroll-to="{{ session('study_practice_scroll_to') }}"
+    >
         <section class="page-card border-cyan-300/20 p-5 sm:p-6">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -225,7 +229,7 @@
         @endif
 
         @if ($questions)
-            <section class="page-card p-5 sm:p-6">
+            <section id="practice-questions" class="page-card scroll-mt-24 p-5 sm:p-6">
                 <div class="flex items-center gap-3">
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">{{ ($currentPracticeSession?->question_provider_mode ?? '') === 'direct' ? '2' : '3' }}</span>
                     <div>
@@ -317,7 +321,7 @@
         @endif
 
         @if ($evaluationPrompt)
-            <section class="page-card p-5 sm:p-6">
+            <section id="practice-evaluation" class="page-card scroll-mt-24 p-5 sm:p-6">
                 <div class="flex items-center gap-3">
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-violet-300/10 text-sm font-black text-violet-200">4</span>
                     <div>
@@ -382,7 +386,7 @@
         @endif
 
         @if ($assessment)
-            <section class="page-card border-emerald-300/20 p-5 sm:p-6">
+            <section id="practice-assessment" class="page-card scroll-mt-24 border-emerald-300/20 p-5 sm:p-6">
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">ASSESSMENT PREVIEW</p>
                 <div class="mt-3 flex flex-wrap items-end gap-4">
                     <div><p class="text-xs text-slate-500">今回の評価</p><strong class="text-4xl text-slate-50">{{ $assessment['score_percent'] }}%</strong></div>
