@@ -176,6 +176,23 @@ class StudyPracticeController extends Controller
         $prepareRequestId = old('prepare_request_id')
             ?: ($currentPracticeSession?->prepare_request_id ?? (string) Str::uuid());
         $draftAnswers = $this->draftAnswersForView($state, $currentPracticeSession);
+        $assessmentForView = is_array($state['assessment'] ?? null) ? $state['assessment'] : null;
+
+        if ($assessmentForView && ! is_array($assessmentForView['next_step'] ?? null)) {
+            $assessmentForView['next_step'] = $this->normalizeNextStep(null, $task, $assessmentForView);
+            if (! filled($assessmentForView['next_action'] ?? null)) {
+                $assessmentForView['next_action'] = $assessmentForView['next_step']['label'];
+            }
+            $state['assessment'] = $assessmentForView;
+            $request->session()->put($key, $state);
+        }
+
+        $practiceStage = match (true) {
+            $assessmentForView !== null => 'result',
+            filled($state['evaluation_prompt'] ?? null) => 'evaluation',
+            ! empty($state['questions']) => 'answering',
+            default => 'setup',
+        };
 
         return view('study_practice.show', [
             'plan' => $plan,
@@ -190,7 +207,9 @@ class StudyPracticeController extends Controller
             'answers' => $state['answers'] ?? [],
             'draftAnswers' => $draftAnswers,
             'evaluationPrompt' => $state['evaluation_prompt'] ?? null,
-            'assessment' => $state['assessment'] ?? null,
+            'assessment' => $assessmentForView,
+            'nextStep' => $assessmentForView['next_step'] ?? null,
+            'practiceStage' => $practiceStage,
             'currentAttempt' => $currentAttempt,
             'recentAttempts' => $recentAttempts,
         ]);
@@ -562,6 +581,15 @@ class StudyPracticeController extends Controller
                     ]);
                 }
 
+                $assessment['next_step'] = $this->normalizeNextStep(
+                    $assessment['next_step'] ?? null,
+                    $task,
+                    $assessment,
+                );
+                if (! filled($assessment['next_action'] ?? null)) {
+                    $assessment['next_action'] = $assessment['next_step']['label'];
+                }
+
                 $state['evaluation_prompt'] = null;
                 $state['assessment'] = $assessment;
                 $attempt = $this->persistAssessment(
@@ -658,6 +686,14 @@ class StudyPracticeController extends Controller
             'evidence_summary' => mb_substr(trim((string) ($decoded['evidence_summary'] ?? '')), 0, 2000),
             'next_action' => mb_substr(trim((string) ($decoded['next_action'] ?? '')), 0, 1000),
         ];
+        $assessment['next_step'] = $this->normalizeNextStep(
+            $decoded['next_step'] ?? null,
+            $task,
+            $assessment,
+        );
+        if (! filled($assessment['next_action'])) {
+            $assessment['next_action'] = $assessment['next_step']['label'];
+        }
 
         $actorToken = $identity->resolve($request);
         $attempt = $this->persistAssessment(
@@ -787,7 +823,8 @@ class StudyPracticeController extends Controller
             ->route('plans.tasks.study_practice.show', [$plan, $task])
             ->with('success', $alreadyApplied
                 ? 'この学習結果はすでにTaskへ反映済みです。重複反映は行いませんでした。'
-                : '学習結果をTaskへ反映しました。弱点と次のActionは次回のAI演習にも引き継がれます。');
+                : '学習結果をTaskへ反映しました。次にやることへそのまま進めます。')
+            ->with('study_practice_scroll_to', 'practice-assessment');
     }
 
     public function reset(
@@ -1234,6 +1271,70 @@ class StudyPracticeController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Normalize the AI's recommendation into one deterministic next step that
+     * Canovia can turn into a primary action. Old assessments without next_step
+     * remain compatible through a conservative fallback.
+     *
+     * @param array<string, mixed> $assessment
+     * @return array<string, mixed>
+     */
+    private function normalizeNextStep(mixed $raw, Task $task, array $assessment): array
+    {
+        $allowedKinds = ['practice', 'review', 'continue_task', 'complete_task', 'plan_update'];
+        $weaknesses = $this->stringList($assessment['weaknesses'] ?? []);
+        $recommendedProgress = max(0, min(100, (int) ($assessment['recommended_task_progress_percent'] ?? $task->progress_percent)));
+        $legacyAction = mb_substr(trim((string) ($assessment['next_action'] ?? '')), 0, 1000);
+
+        $fallbackKind = match (true) {
+            $recommendedProgress >= 100 => 'complete_task',
+            $weaknesses !== [] => 'practice',
+            default => 'continue_task',
+        };
+
+        $data = is_array($raw) ? $raw : [];
+        $kind = trim((string) ($data['kind'] ?? $fallbackKind));
+        if (! in_array($kind, $allowedKinds, true)) {
+            $kind = $fallbackKind;
+        }
+
+        $fallbackLabel = match ($kind) {
+            'practice' => $legacyAction !== '' ? $legacyAction : '今回の弱点をもう一度演習する',
+            'review' => $legacyAction !== '' ? $legacyAction : '今回の弱点を復習する',
+            'complete_task' => $legacyAction !== '' ? $legacyAction : 'このTaskの学習結果を反映して完了を確認する',
+            'plan_update' => $legacyAction !== '' ? $legacyAction : '学習結果をもとに計画を見直す',
+            default => $legacyAction !== '' ? $legacyAction : 'このTaskの学習を続ける',
+        };
+
+        $label = mb_substr(trim((string) ($data['label'] ?? $fallbackLabel)), 0, 240);
+        if ($label === '') {
+            $label = $fallbackLabel;
+        }
+
+        $reason = mb_substr(trim((string) ($data['reason'] ?? '')), 0, 1000);
+        if ($reason === '' && $weaknesses !== []) {
+            $reason = '今回の評価で「'.implode(' / ', array_slice($weaknesses, 0, 3)).'」を補強する必要があるため。';
+        }
+
+        $focusTopics = array_slice($this->stringList($data['focus_topics'] ?? []), 0, 6);
+        if ($kind === 'practice' && $focusTopics === []) {
+            $focusTopics = array_slice($weaknesses, 0, 6);
+        }
+
+        $questionCountRaw = filter_var($data['question_count'] ?? null, FILTER_VALIDATE_INT);
+        $questionCount = $kind === 'practice'
+            ? ($questionCountRaw !== false ? max(1, min(20, $questionCountRaw)) : 5)
+            : null;
+
+        return [
+            'kind' => $kind,
+            'label' => $label,
+            'reason' => $reason,
+            'focus_topics' => $focusTopics,
+            'question_count' => $questionCount,
+        ];
     }
 
     /**
