@@ -156,6 +156,12 @@ class DashboardPresentationService
                 $situation,
                 $currentTask,
             );
+            $surfacePolicyContext = $this->surfaceEngine->policyContext(
+                $plan,
+                $categoryProfile,
+                $situation,
+                $surfaceModules,
+            );
 
             return [
                 'plan' => $plan,
@@ -174,6 +180,7 @@ class DashboardPresentationService
                 'category_profile' => $categoryProfile,
                 'situation' => $situation,
                 'surface_modules' => $surfaceModules,
+                'surface_policy_context' => $surfacePolicyContext,
             ];
         })->values();
 
