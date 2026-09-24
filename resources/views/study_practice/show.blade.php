@@ -134,7 +134,7 @@
             $assessmentJsonRepairPrompt = $assessmentJsonError ? implode("\n", [
                 'CanoviaのAI演習・評価JSONでエラーが発生しました。',
                 '下の「元のCanovia評価プロンプト」を仕様と対象Plan・Taskの唯一の正として扱ってください。',
-                'エラー解消に必要な箇所だけ修正し、採点結果・question_feedback・思考過程フィードバック・強み・弱点・評価根拠・次のActionなど正しい内容はできるだけ保持してください。',
+                'エラー解消に必要な箇所だけ修正し、採点結果・question_feedback・思考過程フィードバック・強み・弱点・評価根拠・next_action・next_stepなど正しい内容はできるだけ保持してください。',
                 'schema_versionは"1.0"、flowは"study_assessment"のままにしてください。',
                 'target_plan.idは '.$plan->id.'、target_task.idは '.$task->id.' のままにし、別のIDを推測・生成しないでください。',
                 'score_percentとrecommended_task_progress_percentは0〜100の整数にしてください。',
@@ -289,6 +289,7 @@
                             @elseif ($currentAttempt?->applied_at && ($nextStep['kind'] ?? '') === 'practice')
                                 <form method="POST" action="{{ route('plans.tasks.study_practice.reset', [$plan, $task]) }}">
                                     @csrf
+                                    <input type="hidden" name="continue" value="1">
                                     <button type="submit" class="btn-primary">この内容で次の演習へ</button>
                                 </form>
                             @elseif ($currentAttempt?->applied_at && ($nextStep['kind'] ?? '') === 'plan_update')
@@ -421,7 +422,7 @@
                     </summary>
                     <div class="{{ ($practiceStage ?? 'answering') === 'answering' ? '' : 'mt-4' }}">
                 <div class="flex items-center gap-3">
-                    <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">{{ ($currentPracticeSession?->question_provider_mode ?? '') === 'direct' ? '2' : '3' }}</span>
+                    <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">2</span>
                     <div>
                         <h2 class="font-black text-slate-100">{{ $exerciseTitle ?: '演習に回答' }}</h2>
                         <p class="text-xs text-slate-500">
@@ -519,7 +520,7 @@
                 </summary>
                 <div class="{{ ($practiceStage ?? 'evaluation') === 'evaluation' ? '' : 'mt-4' }}">
                 <div class="flex items-center gap-3">
-                    <span class="grid h-8 w-8 place-items-center rounded-full bg-violet-300/10 text-sm font-black text-violet-200">4</span>
+                    <span class="grid h-8 w-8 place-items-center rounded-full bg-violet-300/10 text-sm font-black text-violet-200">3</span>
                     <div>
                         <h2 class="font-black text-slate-100">AIに採点・評価してもらう</h2>
                         <p class="text-xs text-slate-500">問題とあなたの回答はCanoviaが評価依頼へまとめています。原文を読む必要はありません。</p>
@@ -536,7 +537,7 @@
                             <li>・今回出題された問題と回答内容</li>
                             <li>・選択回答とは別に、入力した計算過程・判断理由</li>
                             <li>・Question Bank問題では正答Rule・解説・学習メタデータ</li>
-                            <li>・問題ごとの正誤、弱点、次Actionを返す評価形式</li>
+                            <li>・問題ごとの正誤、弱点、次Actionと構造化next_stepを返す評価形式</li>
                             <li>・正しいPlan / Task IDと進捗反映の安全条件</li>
                         </ul>
                     </details>
