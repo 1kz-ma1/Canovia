@@ -10,6 +10,7 @@ use App\Models\WorkSession;
 use App\Services\BehaviorEventLogger;
 use App\Services\BehaviorIdentityService;
 use App\Services\PlanOwnershipService;
+use App\Services\TaskEvidenceService;
 use App\Services\WorkSessionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -189,6 +190,7 @@ class WorkSessionController extends Controller
         BehaviorEventLogger $logger,
         PlanOwnershipService $ownership,
         WorkSessionService $sessions,
+        TaskEvidenceService $evidenceService,
     ) {
         $this->authorizeSession($request, $workSession, $identity, $ownership);
         $workSession->load(['plan', 'task']);
@@ -197,7 +199,7 @@ class WorkSessionController extends Controller
         $preview = $sessions->previewFinish($workSession, $finishOptions);
         $this->guardLongDuration($workSession, $preview['active_seconds'], $durationConfirmed, $sessions);
 
-        $metrics = DB::transaction(function () use ($request, $workSession, $actorToken, $logger, $sessions, $finishOptions, $timerMetadata) {
+        $metrics = DB::transaction(function () use ($request, $workSession, $actorToken, $logger, $sessions, $evidenceService, $finishOptions, $timerMetadata) {
             $metrics = $sessions->finish($workSession, 'completed', $finishOptions);
             $metadata = $this->appendTimerMetadata($workSession->metadata, $timerMetadata, $metrics);
             $workSession->forceFill([
@@ -224,6 +226,10 @@ class WorkSessionController extends Controller
                         'outcome' => '作業セッションを終了',
                     ]
                 );
+            }
+
+            if ($workSession->task) {
+                $evidenceService->recordFocusSession($workSession, $metrics, 'completed');
             }
 
             $logger->record($actorToken, BehaviorEventType::WorkCompleted, $request, $workSession->plan, $workSession->task, [
@@ -299,6 +305,7 @@ class WorkSessionController extends Controller
         BehaviorEventLogger $logger,
         PlanOwnershipService $ownership,
         WorkSessionService $sessions,
+        TaskEvidenceService $evidenceService,
     ) {
         $this->authorizeSession($request, $workSession, $identity, $ownership);
         $workSession->load(['plan', 'task']);
@@ -307,7 +314,7 @@ class WorkSessionController extends Controller
         $preview = $sessions->previewFinish($workSession, $finishOptions);
         $this->guardLongDuration($workSession, $preview['active_seconds'], $durationConfirmed, $sessions);
 
-        $metrics = DB::transaction(function () use ($request, $workSession, $actorToken, $logger, $sessions, $finishOptions, $timerMetadata) {
+        $metrics = DB::transaction(function () use ($request, $workSession, $actorToken, $logger, $sessions, $evidenceService, $finishOptions, $timerMetadata) {
             $metrics = $sessions->finish($workSession, 'interrupted', $finishOptions);
             $metadata = $this->appendTimerMetadata($workSession->metadata, $timerMetadata, $metrics);
             if (($metrics['actual_minutes'] ?? 0) >= 2) {
@@ -338,6 +345,10 @@ class WorkSessionController extends Controller
                         'outcome' => '作業を中断',
                     ]
                 );
+            }
+
+            if ($workSession->task && ($metrics['actual_minutes'] ?? 0) >= 2) {
+                $evidenceService->recordFocusSession($workSession, $metrics, 'interrupted');
             }
 
             $logger->record($actorToken, BehaviorEventType::WorkInterrupted, $request, $workSession->plan, $workSession->task, [

@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-24 / main V40.7.5 + V41.0 Execution / Evidence foundation
+更新基準: 2026-09-24 / main V41.0 + V41.1 Native Evidence Signals
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -64,6 +64,8 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - Focus Timerの任意Tool化と「時間=計画上の目安」方針
 - TaskEvidence / TaskMilestone / ExecutionAdapter基盤
 - AI Practice assessmentのnative Evidence自動記録
+- Artifact / Focus Timerのnative Evidence自動記録
+- Home Plan HubでCURRENT TASKのRecent Evidenceを表示
 - Resource / Project Artifact
 - Future Memo
 - Achievement / Timeline / Release Notes
@@ -350,5 +352,7 @@ Plan
 Focus TimerはExecution Actionの一つであり任意。正確な作業時間を取得できない外部作業でも、GitHubのPR、ファイル更新、写真、Calendar、Canovia内部イベントなどのEvidenceからTaskの状態変化を扱える設計を目指す。
 
 V41では `TaskEvidence`、`TaskMilestone`、`ExecutionAdapter`、保守的な `EvidenceProgressService` を基盤として追加する。AI Practice assessmentは最初のnative Evidenceとして自動保存する。
+
+V41.1ではnative EvidenceをTask-linked Artifactの登録・更新とFocus Timer完了/中断へ拡張する。Artifactは中程度のconfidence、Focus Timerは低confidenceのactivity Evidenceとして保存し、どちらも単独ではprogressを変更しない。Plan HubではCURRENT TASKに最近のEvidenceを最大3件表示し、ユーザーへ「Canoviaが確認できた事実」を返す。
 
 EvidenceからProgressやPlanを自動変更するPolicyは別責務とし、V41ではEvidenceProgressServiceは進捗提案のみを返す。将来AIが導入された場合も、Evidence収集・意味解釈・Progress変更・Plan最適化を分離し、確度の低い判断や大きな計画変更を無確認で適用しない。

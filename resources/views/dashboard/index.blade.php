@@ -386,6 +386,7 @@
                 $hubTasks = collect($item['hub_tasks'] ?? []);
                 $executionTools = collect($item['execution_tools'] ?? []);
                 $primaryExecutionTool = $item['primary_execution_tool'] ?? null;
+                $recentEvidence = collect($item['recent_evidence'] ?? []);
                 $timerTool = $executionTools->first(fn ($tool) => ($tool['id'] ?? null) === 'timer');
                 $activeTaskCount = $item['plan']->tasks
                     ->filter(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true) && (int) $task->progress_percent < 100)
@@ -464,6 +465,26 @@
 
                             @if (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
                                 <p class="mt-3 text-[11px] leading-5 text-cyan-200/80">AI演習は回答・評価結果をCanoviaが自動でEvidenceとして残します。</p>
+                            @endif
+
+                            @if ($recentEvidence->isNotEmpty())
+                                <div class="mt-4 border-t border-white/8 pt-3">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">RECENT EVIDENCE</p>
+                                        <span class="text-[10px] text-slate-500">Canoviaが確認できた事実</span>
+                                    </div>
+                                    <div class="mt-2 space-y-2">
+                                        @foreach ($recentEvidence as $evidence)
+                                            <div class="rounded-xl border border-white/8 bg-slate-950/25 px-3 py-2.5">
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <p class="text-[11px] font-bold text-slate-200">{{ $evidence['type_label'] }}</p>
+                                                    <span class="text-[10px] text-slate-500">{{ $evidence['source_label'] }} · {{ $evidence['occurred_at']?->diffForHumans() }}</span>
+                                                </div>
+                                                <p class="mt-1 text-[11px] leading-5 text-slate-400">{{ $evidence['summary'] }}</p>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             @endif
                         </div>
                     @else

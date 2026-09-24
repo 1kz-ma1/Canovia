@@ -134,6 +134,13 @@ class BehaviorTrackingTest extends TestCase
             'actual_minutes' => 10,
             'outcome' => '作業セッションを終了',
         ]);
+        $this->assertDatabaseHas('task_evidences', [
+            'task_id' => $task->id,
+            'source' => 'native',
+            'type' => 'focus_session_completed',
+            'external_key' => 'work-session:'.$session->id.':completed',
+        ]);
+        $this->assertSame(0, $task->fresh()->progress_percent, 'Focus Timer EvidenceだけでTask進捗を変更しない');
 
         Carbon::setTestNow();
     }

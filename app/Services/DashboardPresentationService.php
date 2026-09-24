@@ -123,6 +123,21 @@ class DashboardPresentationService
                 })
                 ->first();
 
+            $recentEvidence = $currentTask
+                ? $currentTask->evidences()
+                    ->take(3)
+                    ->get()
+                    ->map(fn ($evidence) => [
+                        'id' => (int) $evidence->id,
+                        'source_label' => $evidence->sourceLabel(),
+                        'type_label' => $evidence->typeLabel(),
+                        'summary' => $evidence->summary(),
+                        'confidence' => (float) $evidence->confidence,
+                        'occurred_at' => $evidence->occurred_at,
+                    ])
+                    ->values()
+                : collect();
+
             return [
                 'plan' => $plan,
                 'progress' => $progress,
@@ -136,6 +151,7 @@ class DashboardPresentationService
                 'hub_tasks' => $hubTasks,
                 'execution_tools' => $executionTools,
                 'primary_execution_tool' => $primaryExecutionTool,
+                'recent_evidence' => $recentEvidence,
             ];
         })->values();
 
