@@ -11,6 +11,7 @@ class PlanToolService
 {
     public function __construct(
         private readonly FeatureAccessService $featureAccess,
+        private readonly TaskExecutionRegistry $executionRegistry,
     ) {}
 
     /**
@@ -26,10 +27,10 @@ class PlanToolService
             [
                 'id' => 'timer',
                 'name' => '集中タイマー',
-                'description' => '作業時間を計り、終了後の実績をこのTaskへ残します。',
+                'description' => '必要なときだけ使う任意の集中モードです。時間は進捗の証拠ではなく、作業量を振り返る補助情報として扱います。',
                 'icon' => '◷',
-                'recommended' => ! $this->isStudyPlan($plan),
-                'badge' => '標準',
+                'recommended' => false,
+                'badge' => '任意',
             ],
         ];
 
@@ -95,6 +96,10 @@ class PlanToolService
         }
 
         return collect($tools)
+            ->map(fn (array $tool) => array_merge(
+                $tool,
+                $this->executionRegistry->descriptor((string) ($tool['id'] ?? '')),
+            ))
             ->sortByDesc(fn (array $tool) => $tool['recommended'] ? 1 : 0)
             ->values()
             ->all();
