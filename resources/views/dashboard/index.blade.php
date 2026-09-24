@@ -387,6 +387,8 @@
                 $executionTools = collect($item['execution_tools'] ?? []);
                 $primaryExecutionTool = $item['primary_execution_tool'] ?? null;
                 $recentEvidence = collect($item['recent_evidence'] ?? []);
+                $categoryProfile = $item['category_profile'];
+                $surfaceModules = collect($item['surface_modules'] ?? []);
                 $timerTool = $executionTools->first(fn ($tool) => ($tool['id'] ?? null) === 'timer');
                 $activeTaskCount = $item['plan']->tasks
                     ->filter(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true) && (int) $task->progress_percent < 100)
@@ -398,7 +400,7 @@
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="plan-identity-icon" aria-hidden="true">{{ $item['plan']->displayIcon() }}</span>
                             <div class="min-w-0">
-                                <p class="text-xs font-bold text-slate-400">{{ $item['progress']['status'] }}・進捗 {{ $item['progress']['weighted_progress_percent'] }}%</p>
+                                <p class="text-xs font-bold text-slate-400">{{ $categoryProfile->label }}・{{ $item['progress']['status'] }}・進捗 {{ $item['progress']['weighted_progress_percent'] }}%</p>
                                 <h2 class="mt-1 text-lg font-black text-slate-100 sm:text-xl">{{ $item['plan']->title }}</h2>
                                 @if (filled($item['plan']->description))
                                     <p class="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-slate-300">{{ $item['plan']->description }}</p>
@@ -415,154 +417,9 @@
                     </div>
                 </section>
 
-                <section class="page-card pk-v18-section-card p-4 sm:p-5 plan-identity-shell" data-plan-accent="{{ $item['plan']->accentKey() }}" data-plan-hub-current>
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300">CURRENT TASK</p>
-                            <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">次に進めること</h2>
-                        </div>
-                        <span class="badge badge-slate">時間は目安</span>
-                    </div>
-
-                    @if ($hubCurrentTask)
-                        <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4">
-                            <div class="flex flex-wrap items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <h3 class="text-base font-black leading-6 text-white">{{ $hubCurrentTask->title }}</h3>
-                                    <p class="mt-2 text-sm leading-6 text-slate-300">
-                                        {{ $hubCurrentTask->next_action_note ?: ($hubCurrentTask->description ?: 'このTaskを少し前へ進めましょう。') }}
-                                    </p>
-                                </div>
-                                <span class="badge {{ $hubCurrentTask->status === 'doing' ? 'badge-green' : 'badge-slate' }}">{{ $hubCurrentTask->status === 'doing' ? '進行中' : '未着手' }}</span>
-                            </div>
-
-                            <div class="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
-                                <span>進捗 {{ (int) $hubCurrentTask->progress_percent }}%</span>
-                                <span>残り目安 {{ (int) ($hubCurrentTask->remaining_minutes ?? 0) }}分</span>
-                                <span>優先度 {{ (int) $hubCurrentTask->priority }}</span>
-                            </div>
-
-                            <div class="mt-4 flex flex-wrap gap-2">
-                                @if (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
-                                    <a href="{{ route('plans.tasks.study_practice.show', [$item['plan'], $hubCurrentTask]) }}" class="btn-primary px-3 py-2 text-xs">✦ AI演習で進める</a>
-                                @elseif (($primaryExecutionTool['id'] ?? null) === 'artifacts')
-                                    <a href="{{ route('plans.artifacts.index', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">◇ 制作ファイルを開く</a>
-                                @elseif (($primaryExecutionTool['id'] ?? null) === 'resources')
-                                    <a href="{{ route('plans.resources.index', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">⌘ 関連資料を開く</a>
-                                @else
-                                    <a href="{{ route('plans.show', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">Taskを確認</a>
-                                @endif
-
-                                @if ($planCanEdit && $timerTool)
-                                    <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
-                                        @csrf
-                                        <input type="hidden" name="task_id" value="{{ $hubCurrentTask->id }}">
-                                        <input type="hidden" name="source" value="dashboard">
-                                        <button type="submit" class="btn-secondary px-3 py-2 text-xs">◷ 集中タイマー（任意）</button>
-                                    </form>
-                                @endif
-                            </div>
-
-                            @if (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
-                                <p class="mt-3 text-[11px] leading-5 text-cyan-200/80">AI演習は回答・評価結果をCanoviaが自動でEvidenceとして残します。</p>
-                            @endif
-
-                            @if ($recentEvidence->isNotEmpty())
-                                <div class="mt-4 border-t border-white/8 pt-3">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <p class="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">RECENT EVIDENCE</p>
-                                        <span class="text-[10px] text-slate-500">Canoviaが確認できた事実</span>
-                                    </div>
-                                    <div class="mt-2 space-y-2">
-                                        @foreach ($recentEvidence as $evidence)
-                                            <div class="rounded-xl border border-white/8 bg-slate-950/25 px-3 py-2.5">
-                                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                                    <p class="text-[11px] font-bold text-slate-200">{{ $evidence['type_label'] }}</p>
-                                                    <span class="text-[10px] text-slate-500">{{ $evidence['source_label'] }} · {{ $evidence['occurred_at']?->diffForHumans() }}</span>
-                                                </div>
-                                                <p class="mt-1 text-[11px] leading-5 text-slate-400">{{ $evidence['summary'] }}</p>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-                    @else
-                        <div class="mt-4 rounded-2xl border border-dashed border-slate-700/80 bg-slate-950/25 p-4">
-                            <p class="text-sm font-bold text-slate-200">現在進めるTaskはありません</p>
-                            <p class="mt-1 text-xs leading-5 text-slate-500">完了状況を確認するか、計画を更新して次のTaskを決められます。</p>
-                        </div>
-                    @endif
-                </section>
-
-                <section class="page-card pk-v18-section-card p-4 sm:p-5">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300">TASKS</p>
-                            <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">このPlanの現在地</h2>
-                        </div>
-                        <a href="{{ route('plans.show', $item['plan']) }}" class="text-xs font-bold text-sky-300">全Taskを見る →</a>
-                    </div>
-
-                    <div class="mt-4 space-y-2">
-                        @forelse ($hubTasks as $hubTask)
-                            <div class="rounded-xl border {{ $hubCurrentTask && (int) $hubTask->id === (int) $hubCurrentTask->id ? 'border-cyan-300/20 bg-cyan-300/[0.035]' : 'border-white/8 bg-white/[0.025]' }} px-3 py-3">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="truncate text-sm font-bold text-slate-100">
-                                            @if ($hubCurrentTask && (int) $hubTask->id === (int) $hubCurrentTask->id)<span class="mr-1 text-cyan-300">●</span>@else<span class="mr-1 text-slate-600">○</span>@endif
-                                            {{ $hubTask->title }}
-                                        </p>
-                                        <p class="mt-1 text-[11px] text-slate-500">進捗 {{ (int) $hubTask->progress_percent }}% · 残り目安 {{ (int) ($hubTask->remaining_minutes ?? 0) }}分</p>
-                                    </div>
-                                    <span class="shrink-0 text-xs font-bold text-slate-300">{{ (int) $hubTask->progress_percent }}%</span>
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-sm text-slate-500">未完了Taskはありません。</p>
-                        @endforelse
-                    </div>
-
-                    @if ($activeTaskCount > $hubTasks->count())
-                        <p class="mt-3 text-center text-[11px] text-slate-500">ほか {{ $activeTaskCount - $hubTasks->count() }}件はPlan詳細で確認できます。</p>
-                    @endif
-                </section>
-
-                <section class="page-card pk-v18-section-card p-4 sm:p-5">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-[0.18em] text-violet-300">PLAN TOOLS</p>
-                            <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">進めるための入口</h2>
-                            <p class="mt-1 text-xs leading-5 text-slate-500">作業環境は外部に任せ、CanoviaはTask・Evidence・次のActionをつなぎます。</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        @if ($planCanEdit)
-                            <a href="{{ route('plans.review_assistant.show', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">計画を更新</a>
-                        @endif
-                        <a href="{{ route('plans.resources.index', $item['plan']) }}" class="btn-secondary px-3 py-2 text-xs">関連資料{{ $item['plan']->resources->isNotEmpty() ? ' · '.$item['plan']->resources->count() : '' }}</a>
-                        <a href="{{ route('plans.artifacts.index', $item['plan']) }}" class="btn-secondary px-3 py-2 text-xs">制作ファイル{{ $item['plan']->artifacts->isNotEmpty() ? ' · '.$item['plan']->artifacts->count() : '' }}</a>
-                        <a href="{{ route('roadmap.index', ['plan_id' => $item['plan']->id]) }}" class="btn-secondary px-3 py-2 text-xs">ロードマップ</a>
-                        <a href="{{ route('plans.show', $item['plan']) }}" class="btn-secondary px-3 py-2 text-xs">詳細・履歴</a>
-                    </div>
-                </section>
-
-                <section class="page-card p-5">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h2 class="text-lg font-black text-slate-100">最近の活動</h2>
-                        <div class="flex flex-wrap gap-2">
-                            <a href="{{ route('plans.review_assistant.show', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">計画を更新</a>
-                            <a href="{{ route('timeline.index') }}" class="btn-secondary px-3 py-2 text-xs">タイムライン</a>
-                        </div>
-                    </div>
-                    <div class="mt-4 space-y-2 text-sm text-slate-400">
-                        @forelse ($item['recent_logs'] as $log)
-                            <p>{{ $log->worked_on?->format('m/d') }}・{{ $log->task?->title ?? $log->task_title_snapshot ?? '計画全体' }}・{{ $log->actual_minutes }}分</p>
-                        @empty
-                            <p>まだ記録はありません。</p>
-                        @endforelse
-                    </div>
-                </section>
+                @foreach ($surfaceModules as $surface)
+                    @include($surface->view, ['surface' => $surface])
+                @endforeach
             </section>
         @endforeach
 
