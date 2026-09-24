@@ -221,7 +221,7 @@
                         @csrf
                         <input type="hidden" name="task_id" value="{{ $continuity['task_id'] }}">
                         <input type="hidden" name="source" value="plan">
-                        <button type="submit" class="btn-primary">続きから開始</button>
+                        <button type="submit" class="btn-secondary">◷ 集中タイマーで続ける</button>
                     </form>
                 @endif
                 @if ($continuity['needs_plan_update'] && ($canManage ?? false))
@@ -467,15 +467,6 @@
 
                             @if ($canEdit ?? false)
                                 <div class="flex flex-wrap gap-2">
-                                    @if (! in_array($task->status, ['done', 'cancelled'], true))
-                                        <form method="POST" action="{{ route('work_sessions.start') }}">
-                                            @csrf
-                                            <input type="hidden" name="task_id" value="{{ $task->id }}">
-                                            <input type="hidden" name="source" value="plan">
-                                            <button type="submit" class="btn-secondary px-3 py-2 text-sm">◷ 集中タイマー</button>
-                                        </form>
-                                    @endif
-
                                     <a href="{{ route('tasks.edit', $task) }}" class="btn-secondary px-3 py-2 text-sm">編集</a>
                                 </div>
                             @endif
