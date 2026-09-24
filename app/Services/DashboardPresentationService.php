@@ -20,6 +20,9 @@ class DashboardPresentationService
         private readonly DashboardGuidanceService $guidanceService,
         private readonly RoadmapService $roadmapService,
         private readonly PlanToolService $toolService,
+        private readonly PlanCategoryProfileService $categoryProfiles,
+        private readonly PlanSituationResolver $situationResolver,
+        private readonly PlanSurfaceEngine $surfaceEngine,
     ) {}
 
     public function build(
@@ -123,20 +126,36 @@ class DashboardPresentationService
                 })
                 ->first();
 
-            $recentEvidence = $currentTask
-                ? $currentTask->evidences()
-                    ->take(3)
-                    ->get()
-                    ->map(fn ($evidence) => [
-                        'id' => (int) $evidence->id,
-                        'source_label' => $evidence->sourceLabel(),
-                        'type_label' => $evidence->typeLabel(),
-                        'summary' => $evidence->summary(),
-                        'confidence' => (float) $evidence->confidence,
-                        'occurred_at' => $evidence->occurred_at,
-                    ])
-                    ->values()
+            $recentEvidenceModels = $currentTask
+                ? $currentTask->evidences()->take(8)->get()
                 : collect();
+
+            $recentEvidence = $recentEvidenceModels
+                ->take(3)
+                ->map(fn ($evidence) => [
+                    'id' => (int) $evidence->id,
+                    'source_label' => $evidence->sourceLabel(),
+                    'type_label' => $evidence->typeLabel(),
+                    'summary' => $evidence->summary(),
+                    'confidence' => (float) $evidence->confidence,
+                    'occurred_at' => $evidence->occurred_at,
+                ])
+                ->values();
+
+            $categoryProfile = $this->categoryProfiles->forPlan($plan);
+            $situation = $this->situationResolver->resolve(
+                $plan,
+                $categoryProfile,
+                $currentTask,
+                $recentEvidenceModels,
+                $executionTools,
+            );
+            $surfaceModules = $this->surfaceEngine->build(
+                $plan,
+                $categoryProfile,
+                $situation,
+                $currentTask,
+            );
 
             return [
                 'plan' => $plan,
@@ -152,6 +171,9 @@ class DashboardPresentationService
                 'execution_tools' => $executionTools,
                 'primary_execution_tool' => $primaryExecutionTool,
                 'recent_evidence' => $recentEvidence,
+                'category_profile' => $categoryProfile,
+                'situation' => $situation,
+                'surface_modules' => $surfaceModules,
             ];
         })->values();
 
