@@ -46,4 +46,53 @@ class TaskEvidence extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function sourceLabel(): string
+    {
+        return match ($this->source) {
+            EvidenceSource::Native => 'Canovia',
+            EvidenceSource::GitHub => 'GitHub',
+            EvidenceSource::File => 'ファイル',
+            EvidenceSource::Image => '写真',
+            EvidenceSource::Calendar => 'カレンダー',
+            EvidenceSource::External => '外部',
+        };
+    }
+
+    public function typeLabel(): string
+    {
+        return match ($this->type) {
+            'study_practice_assessed' => 'AI演習',
+            'artifact_state_observed' => '制作ファイル',
+            'focus_session_completed' => '集中作業',
+            'focus_session_interrupted' => '集中作業を中断',
+            default => '活動',
+        };
+    }
+
+    public function summary(): string
+    {
+        return match ($this->type) {
+            'study_practice_assessed' => sprintf(
+                'AI演習 %d%% · %s',
+                (int) data_get($this->metadata, 'score_percent', 0),
+                trim((string) data_get($this->metadata, 'evidence_summary', '評価結果を保存しました。')),
+            ),
+            'artifact_state_observed' => sprintf(
+                '「%s」を%sしました。',
+                (string) data_get($this->metadata, 'title', '制作ファイル'),
+                data_get($this->metadata, 'action') === 'created' ? '登録' : '更新',
+            ),
+            'focus_session_completed' => sprintf(
+                '集中タイマーで%d分取り組みました。時間は進捗ではなく補助情報です。',
+                (int) data_get($this->metadata, 'actual_minutes', 0),
+            ),
+            'focus_session_interrupted' => sprintf(
+                '集中タイマーを%d分で中断しました。取り組んだ事実だけを記録しています。',
+                (int) data_get($this->metadata, 'actual_minutes', 0),
+            ),
+            default => 'Taskに関する活動を確認しました。',
+        };
+    }
+
 }
