@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Plan;
 use App\Models\StudyPracticeAttempt;
 use App\Models\StudyPracticeSession;
+use App\Models\TaskEvidence;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -75,6 +76,16 @@ class StudyPracticeResultRecoveryV4073Test extends TestCase
             StudyPracticeSession::STATUS_ASSESSED,
             $practiceSession->fresh()->status,
         );
+
+        $evidence = TaskEvidence::query()
+            ->where('task_id', $task->id)
+            ->where('source', 'native')
+            ->where('type', 'study_practice_assessed')
+            ->where('external_key', 'study-practice-attempt:'.$attempt->id)
+            ->firstOrFail();
+
+        $this->assertSame(88, (int) data_get($evidence->metadata, 'score_percent'));
+        $this->assertSame(75, (int) data_get($evidence->metadata, 'recommended_task_progress_percent'));
 
         // Simulate another navigation/session race after the assessment POST.
         $this->app['session']->forget($key);

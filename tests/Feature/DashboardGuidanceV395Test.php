@@ -97,6 +97,21 @@ class DashboardGuidanceV395Test extends TestCase
         $this->assertSame('auto', $fresh->priority_mode);
     }
 
+    public function test_zero_remaining_time_does_not_hide_an_unfinished_task(): void
+    {
+        $plan = $this->plan('時間は目安', 1, 20);
+        $task = $this->task($plan, '時間見積りが古いTask', 1, 'doing', 1);
+        $task->update([
+            'remaining_minutes' => 0,
+            'progress_percent' => 60,
+        ]);
+
+        $plan->load('tasks');
+        $deck = $this->deck([$plan]);
+
+        $this->assertSame($task->id, $deck->first()['task']->id);
+    }
+
     public function test_study_task_surfaces_ai_practice_as_the_specialized_tool(): void
     {
         $plan = $this->plan('応用情報技術者試験', 1, 30, '資格学習');

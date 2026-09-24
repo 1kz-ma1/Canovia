@@ -19,6 +19,7 @@ class DashboardPresentationService
         private readonly RecommendationService $recommendationService,
         private readonly DashboardGuidanceService $guidanceService,
         private readonly RoadmapService $roadmapService,
+        private readonly PlanToolService $toolService,
     ) {}
 
     public function build(
@@ -48,7 +49,7 @@ class DashboardPresentationService
             $editablePlanIds->keys()->all(),
             $actor,
         );
-        $planTabs = $plans->map(function ($plan) use ($previousSessions, $editablePlanIds, $guidanceDeck) {
+        $planTabs = $plans->map(function ($plan) use ($previousSessions, $editablePlanIds, $guidanceDeck, $actor) {
             $progress = $this->progressService->calculate($plan);
             $todayMinutes = (int) $plan->workLogs
                 ->filter(fn ($log) => $log->worked_on?->isToday())
@@ -65,6 +66,63 @@ class DashboardPresentationService
                 $previousSession?->task_id,
             );
 
+            $currentTask = data_get($planGuidance, 'task');
+            if (! $currentTask) {
+                $currentTask = $plan->tasks
+                    ->filter(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true) && (int) $task->progress_percent < 100)
+                    ->sort(function ($left, $right) {
+                        $doing = ($left->status === 'doing' ? 0 : 1) <=> ($right->status === 'doing' ? 0 : 1);
+                        if ($doing !== 0) {
+                            return $doing;
+                        }
+
+                        $priority = (int) $left->priority <=> (int) $right->priority;
+                        if ($priority !== 0) {
+                            return $priority;
+                        }
+
+                        return (int) ($left->sort_order ?? PHP_INT_MAX) <=> (int) ($right->sort_order ?? PHP_INT_MAX);
+                    })
+                    ->first();
+            }
+
+            $hubTasks = $plan->tasks
+                ->filter(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true) && (int) $task->progress_percent < 100)
+                ->sort(function ($left, $right) use ($currentTask) {
+                    $current = ((int) $left->id === (int) ($currentTask?->id ?? 0) ? 0 : 1)
+                        <=> ((int) $right->id === (int) ($currentTask?->id ?? 0) ? 0 : 1);
+                    if ($current !== 0) {
+                        return $current;
+                    }
+
+                    $doing = ($left->status === 'doing' ? 0 : 1) <=> ($right->status === 'doing' ? 0 : 1);
+                    if ($doing !== 0) {
+                        return $doing;
+                    }
+
+                    $priority = (int) $left->priority <=> (int) $right->priority;
+                    if ($priority !== 0) {
+                        return $priority;
+                    }
+
+                    return (int) ($left->sort_order ?? PHP_INT_MAX) <=> (int) ($right->sort_order ?? PHP_INT_MAX);
+                })
+                ->take(4)
+                ->values();
+
+            $executionTools = $currentTask && $canEdit
+                ? collect($this->toolService->forTask($plan, $currentTask, true, $actor))
+                : collect();
+            $primaryExecutionTool = $executionTools
+                ->filter(fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && (bool) ($tool['recommended'] ?? false))
+                ->sortBy(fn (array $tool) => match ($tool['id'] ?? null) {
+                    'ai_practice' => 0,
+                    'artifacts' => 1,
+                    'resources' => 2,
+                    default => 9,
+                })
+                ->first();
+
             return [
                 'plan' => $plan,
                 'progress' => $progress,
@@ -74,6 +132,10 @@ class DashboardPresentationService
                 'recommendation' => $recommendation,
                 'roadmap' => $roadmap,
                 'can_edit' => $canEdit,
+                'hub_current_task' => $currentTask,
+                'hub_tasks' => $hubTasks,
+                'execution_tools' => $executionTools,
+                'primary_execution_tool' => $primaryExecutionTool,
             ];
         })->values();
 

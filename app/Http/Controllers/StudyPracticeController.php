@@ -9,10 +9,12 @@ use App\Models\StudyPracticeSession;
 use App\Models\Task;
 use App\Services\AiJsonInputNormalizer;
 use App\Services\BehaviorIdentityService;
+use App\Services\EvidenceProgressService;
 use App\Services\FeatureAccessService;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
+use App\Services\TaskEvidenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -444,6 +446,7 @@ class StudyPracticeController extends Controller
         StudyPracticePromptService $promptService,
         StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
+        TaskEvidenceService $evidenceService,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -601,6 +604,7 @@ class StudyPracticeController extends Controller
                     $actorToken,
                 );
                 $state['attempt_id'] = $attempt->id;
+                $evidenceService->recordStudyPracticeAssessment($attempt);
                 $practiceSession->update(['status' => StudyPracticeSession::STATUS_ASSESSED]);
                 $request->session()->put($key, $state);
 
@@ -639,6 +643,7 @@ class StudyPracticeController extends Controller
         PlanOwnershipService $ownership,
         AiJsonInputNormalizer $normalizer,
         BehaviorIdentityService $identity,
+        TaskEvidenceService $evidenceService,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -719,6 +724,7 @@ class StudyPracticeController extends Controller
         );
         $state['assessment'] = $assessment;
         $state['attempt_id'] = $attempt->id;
+        $evidenceService->recordStudyPracticeAssessment($attempt);
         $request->session()->put($key, $state);
 
         if (! empty($state['practice_session_id'])) {
@@ -741,6 +747,7 @@ class StudyPracticeController extends Controller
         Task $task,
         PlanOwnershipService $ownership,
         BehaviorIdentityService $identity,
+        EvidenceProgressService $evidenceProgress,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -752,7 +759,7 @@ class StudyPracticeController extends Controller
         $actorToken = $identity->resolve($request);
         $alreadyApplied = false;
 
-        DB::transaction(function () use ($request, $plan, $task, $validated, $actorToken, &$alreadyApplied) {
+        DB::transaction(function () use ($request, $plan, $task, $validated, $actorToken, $evidenceProgress, &$alreadyApplied) {
             $attempt = $this->attemptQuery($request, $plan, $task, $actorToken)
                 ->whereKey((int) $validated['attempt_id'])
                 ->where('request_hash', $validated['request_hash'])
@@ -795,7 +802,14 @@ class StudyPracticeController extends Controller
             }
 
             $progressBefore = (int) $lockedTask->progress_percent;
-            $progressAfter = max($progressBefore, (int) $attempt->recommended_task_progress_percent);
+            $evidence = $lockedTask->evidences()
+                ->where('source', 'native')
+                ->where('external_key', 'study-practice-attempt:'.$attempt->id)
+                ->first();
+            $progressAfter = $evidence
+                ? $evidenceProgress->recommendPercent($lockedTask, $evidence)
+                : null;
+            $progressAfter ??= max($progressBefore, (int) $attempt->recommended_task_progress_percent);
             $remainingAfter = $progressAfter >= 100 ? 0 : $lockedTask->remaining_minutes;
             $statusAfter = match (true) {
                 $progressAfter >= 100 => 'done',

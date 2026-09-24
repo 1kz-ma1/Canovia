@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-24 / main V40.7.3 + V40.7.4 guided learning flow + V40.7.5 assessment POST recovery
+更新基準: 2026-09-24 / main V40.7.5 + V41.0 Execution / Evidence foundation
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -40,6 +40,8 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 8. **DeployとReleaseを分離できる構造を目指す。** ただしApp Reviewを迂回するために使わない。
 9. **ユーザーの声は需要シグナルとして使い、単純多数決でプロダクトを作らない。**
 10. **将来機能のために現在のUXを複雑にしない。**
+11. **時間の経過そのものをProgressの証拠にしない。** 時間はTask負荷・期限・今日の実行可能性を判断する目安として使い、進捗はTask状態・Milestone・Evidenceを優先する。
+12. **実行環境をすべて内蔵しない。** Canoviaは外部ツールを置き換えるのではなく、Execution ActionとEvidenceを通じて現実の作業とPlanを接続する。
 
 ## 3. Now / Next / Future
 
@@ -58,6 +60,10 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - AI Practice回答済み・評価済み状態の永続復元と次Step自動Reveal
 - AI Practice評価JSON POST時のanswered状態durable recovery（PHP Session欠落時もDBから復元）
 - AI Practiceのcurrent-step UIと構造化next_stepによる「次にやること」導線
+- Home Plan Hub（CURRENT TASK / Task短縮一覧 / Plan Tools / 最近の活動）
+- Focus Timerの任意Tool化と「時間=計画上の目安」方針
+- TaskEvidence / TaskMilestone / ExecutionAdapter基盤
+- AI Practice assessmentのnative Evidence自動記録
 - Resource / Project Artifact
 - Future Memo
 - Achievement / Timeline / Release Notes
@@ -326,3 +332,23 @@ Social候補はFutureとして保持し、需要が確認された機能だけ�
 - Roadmap statusからFeature Flagへの自動同期
 
 これらは仕様上Future/Nextとして保持し、需要とiOS要件が具体化してから実装する。
+
+
+## 13. V41 Execution / Evidence Foundation
+
+Canoviaの実行支援は `Task -> Timer -> WorkLog` だけを正規経路としない。
+
+```text
+Plan
+  -> Task
+  -> Execution Action
+  -> Evidence
+  -> Progress
+  -> Next Action
+```
+
+Focus TimerはExecution Actionの一つであり任意。正確な作業時間を取得できない外部作業でも、GitHubのPR、ファイル更新、写真、Calendar、Canovia内部イベントなどのEvidenceからTaskの状態変化を扱える設計を目指す。
+
+V41では `TaskEvidence`、`TaskMilestone`、`ExecutionAdapter`、保守的な `EvidenceProgressService` を基盤として追加する。AI Practice assessmentは最初のnative Evidenceとして自動保存する。
+
+EvidenceからProgressやPlanを自動変更するPolicyは別責務とし、V41ではEvidenceProgressServiceは進捗提案のみを返す。将来AIが導入された場合も、Evidence収集・意味解釈・Progress変更・Plan最適化を分離し、確度の低い判断や大きな計画変更を無確認で適用しない。

@@ -54,9 +54,15 @@ class DashboardGuidanceService
                 );
 
                 $tools = collect($this->toolService->forTask($plan, $task, true, $actor));
-                $recommendedTool = $tools->first(
-                    fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && ($tool['recommended'] ?? false)
-                ) ?? $tools->first(fn (array $tool) => (bool) ($tool['recommended'] ?? false));
+                $recommendedTool = $tools
+                    ->filter(fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && (bool) ($tool['recommended'] ?? false))
+                    ->sortBy(fn (array $tool) => match ($tool['id'] ?? null) {
+                        'ai_practice' => 0,
+                        'artifacts' => 1,
+                        'resources' => 2,
+                        default => 9,
+                    })
+                    ->first();
 
                 return [
                     'plan' => $plan,
@@ -104,12 +110,10 @@ class DashboardGuidanceService
                     }
                 }
 
-                $remaining = $task->remaining_minutes ?? max(
-                    0,
-                    (int) round((int) $task->estimated_minutes * (100 - (int) $task->progress_percent) / 100)
-                );
-
-                return $remaining > 0;
+                // Time is a planning estimate, not proof that the Task is complete.
+                // A stale/zero remaining_minutes value must not hide an otherwise
+                // unfinished Task from objective guidance.
+                return true;
             })
             ->sort(function (Task $left, Task $right) {
                 $priority = max(1, min(5, (int) $left->priority))

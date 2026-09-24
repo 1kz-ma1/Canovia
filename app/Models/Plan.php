@@ -107,6 +107,11 @@ class Plan extends Model
         return $this->hasMany(StudyPracticeAttempt::class);
     }
 
+    public function taskEvidences()
+    {
+        return $this->hasMany(TaskEvidence::class);
+    }
+
     public function availabilityRules()
     {
         return $this->hasMany(PlanAvailabilityRule::class);

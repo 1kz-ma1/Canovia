@@ -64,6 +64,16 @@ class Task extends Model
         return $this->hasMany(StudyPracticeAttempt::class);
     }
 
+    public function evidences()
+    {
+        return $this->hasMany(TaskEvidence::class)->latest('occurred_at')->latest('id');
+    }
+
+    public function milestones()
+    {
+        return $this->hasMany(TaskMilestone::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function continuationOf()
     {
         return $this->belongsTo(self::class, 'continuation_of_task_id');

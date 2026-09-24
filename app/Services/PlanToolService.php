@@ -26,10 +26,10 @@ class PlanToolService
             [
                 'id' => 'timer',
                 'name' => '集中タイマー',
-                'description' => '作業時間を計り、終了後の実績をこのTaskへ残します。',
+                'description' => '時間を区切って集中したいときだけ使います。時間は進捗の証拠ではなく目安として扱います。',
                 'icon' => '◷',
-                'recommended' => ! $this->isStudyPlan($plan),
-                'badge' => '標準',
+                'recommended' => false,
+                'badge' => '任意',
             ],
         ];
 
@@ -69,7 +69,7 @@ class PlanToolService
                 'name' => '関連資料',
                 'description' => $resourceDescription,
                 'icon' => '⌘',
-                'recommended' => false,
+                'recommended' => $taskResourceCount > 0 || ($resourceCount > 0 && $this->resourceFriendly($task)),
                 'badge' => $taskResourceCount > 0 ? "Task {$taskResourceCount}件" : ($resourceCount > 0 ? "{$resourceCount}件" : '資料'),
             ];
         }
@@ -129,6 +129,13 @@ class PlanToolService
         $text = mb_strtolower(trim($task->title.' '.($task->description ?? '')));
 
         return preg_match('/演習|問題|過去問|復習|理解|確認|計算|暗記|対策|学習|sql|ネットワーク|データベース/u', $text) === 1;
+    }
+
+    private function resourceFriendly(Task $task): bool
+    {
+        $text = mb_strtolower(trim($task->title.' '.($task->description ?? '')));
+
+        return preg_match('/資料|読む|読解|調査|確認|参照|リサーチ|research|document|ドキュメント/u', $text) === 1;
     }
 
     private function projectWorkFriendly(Task $task): bool
