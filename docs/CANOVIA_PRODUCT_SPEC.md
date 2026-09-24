@@ -334,7 +334,7 @@ Social候補はFutureとして保持し、需要が確認された機能だけ�
 これらは仕様上Future/Nextとして保持し、需要とiOS要件が具体化してから実装する。
 
 
-## 11. V41 Execution / Evidence Foundation
+## 13. V41 Execution / Evidence Foundation
 
 Canoviaの実行支援は `Task -> Timer -> WorkLog` だけを正規経路としない。
 
