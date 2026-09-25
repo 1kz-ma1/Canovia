@@ -73,12 +73,17 @@ class AdminEconomyController extends Controller
             return redirect()->route('admin.login');
         }
 
+        $expiresRules = ['nullable', 'date'];
+        if ($request->filled('starts_at')) {
+            $expiresRules[] = 'after:starts_at';
+        }
+
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'product_key' => ['required', Rule::enum(ProductKey::class)],
             'source' => ['required', Rule::in(['manual', 'subscription', 'gift', 'sponsor', 'migration'])],
             'starts_at' => ['nullable', 'date'],
-            'expires_at' => ['nullable', 'date', 'after:starts_at'],
+            'expires_at' => $expiresRules,
         ]);
 
         UserProductGrant::create([
