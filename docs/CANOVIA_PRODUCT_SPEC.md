@@ -75,7 +75,7 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - FeatureKey一元管理
 - FeatureFlagServiceの最小公開可否境界
 - Canovia Future / Roadmap Votingの最小データモデルとSupport UI
-- V41.5 Economy Catalog / Product Grant / ProductGrantEntitlementResolver
+- V41.5 Economy Catalog / Product Grant / source-specific Product Grant Entitlement resolvers
 - AI Capacityの独立境界（standard / boosted）
 - 決定論的Economy RecommendationとAdmin Economy Inspector
 
@@ -153,7 +153,7 @@ $user->coin_balance
 $user->has_gift
 ```
 
-V41.5では `ProductKey` / `config/economy.php` / `user_product_grants` を追加し、Provider非依存のProduct Grantを `ProductGrantEntitlementResolver` から既存の `FeatureAccessService` へ流す。
+V41.5では `ProductKey` / `config/economy.php` / `user_product_grants` を追加し、Provider非依存のProduct GrantをPremium / Gift / Sponsorそれぞれのresolverから既存の `FeatureAccessService` へ流す。
 
 ```text
 Billing / Manual / Gift / Sponsor
@@ -162,7 +162,8 @@ Billing / Manual / Gift / Sponsor
               ↓
         Economy Catalog
               ↓
-ProductGrantEntitlementResolver
+Premium / Gift / Sponsor
+Product Grant resolvers
               ↓
      FeatureAccessService
 ```
