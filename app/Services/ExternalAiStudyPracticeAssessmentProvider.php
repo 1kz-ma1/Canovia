@@ -21,7 +21,7 @@ class ExternalAiStudyPracticeAssessmentProvider implements StudyPracticeAssessme
         return 'handoff';
     }
 
-    public function prepare(Plan $plan, Task $task, array $questions, array $answers): array
+    public function prepare(Plan $plan, Task $task, array $questions, array $answers, ?int $actorUserId = null, ?int $studyPracticeSessionId = null): array
     {
         $sourceIds = collect($questions)
             ->pluck('source_question_id')
