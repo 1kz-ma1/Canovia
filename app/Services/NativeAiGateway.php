@@ -49,6 +49,10 @@ class NativeAiGateway
         Plan $plan,
         Task $task,
         ?int $maxOutputTokens = null,
+        ?int $userId = null,
+        ?int $studyPracticeSessionId = null,
+        string $capacityTier = 'standard',
+        array $metadata = [],
     ): array {
         if (! $this->isConfigured()) {
             throw new NativeAiExecutionException(
@@ -67,12 +71,15 @@ class NativeAiGateway
 
         $model = $this->model();
         $run = NativeAiRun::query()->create([
+            'user_id' => $userId,
             'plan_id' => $plan->id,
             'task_id' => $task->id,
+            'study_practice_session_id' => $studyPracticeSessionId,
             'feature_key' => FeatureKey::AutomaticAiExecution->value,
             'purpose' => $purpose,
             'provider' => $driver,
             'model' => $model,
+            'capacity_tier' => $capacityTier,
             'status' => 'running',
             'request_hash' => hash('sha256', $purpose."\n".$model."\n".$prompt),
             'started_at' => now(),
@@ -118,8 +125,10 @@ class NativeAiGateway
                 'output_tokens' => $this->nullablePositiveInt($usage['output_tokens'] ?? null),
                 'total_tokens' => $this->nullablePositiveInt($usage['total_tokens'] ?? null),
                 'metadata' => [
+                    ...$metadata,
                     'response_status' => $body['status'] ?? null,
                     'schema_name' => $schemaName,
+                    'capacity_tier' => $capacityTier,
                 ],
                 'completed_at' => now(),
             ]);
@@ -160,6 +169,14 @@ class NativeAiGateway
                 'user_id' => $userId,
                 'study_practice_session_id' => $session->id,
             ]);
+    }
+
+    public function markRunFailed(int $runId, string $code, string $message): void
+    {
+        $run = NativeAiRun::query()->find($runId);
+        if ($run) {
+            $this->markFailed($run, $code, $message);
+        }
     }
 
     private function callOpenAi(
