@@ -28,16 +28,50 @@
             <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300">CanoviaがTaskと学習履歴から今回の演習方針を決め、問題ソースを自動選択します。Question Bankで十分にカバーできる場合はCanovia内で直接出題・採点し、不足する場合だけ外部AIへ引き継ぎます。</p>
 
             <div class="mt-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4" data-guide-target="practice-strategy">
+                @php
+                    $examProfile = is_array($practiceStrategy['exam_profile'] ?? null) ? $practiceStrategy['exam_profile'] : [];
+                    $weaknessPriority = is_array($practiceStrategy['weakness_priority'] ?? null) ? $practiceStrategy['weakness_priority'] : [];
+                    $questionMix = is_array($practiceStrategy['question_mix'] ?? null) ? $practiceStrategy['question_mix'] : [];
+                    $primaryTopics = collect($weaknessPriority['primary_topics'] ?? []);
+                    $secondaryTopics = collect($weaknessPriority['secondary_topics'] ?? []);
+                    $monitorTopics = collect($weaknessPriority['monitor_topics'] ?? []);
+                @endphp
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-300">PRACTICE STRATEGY</p>
                         <h2 class="mt-1 text-base font-black text-slate-100">{{ $practiceStrategy['label'] ?? 'Task理解度確認' }}</h2>
                         <p class="mt-1 text-xs leading-5 text-slate-400">{{ $practiceStrategy['reason'] ?? '' }}</p>
                     </div>
-                    <span class="badge badge-slate">{{ (int) ($practiceStrategy['target_question_count'] ?? 10) }}問目安</span>
+                    <div class="flex flex-wrap gap-2">
+                        @if (! empty($examProfile['label']))
+                            <span class="badge badge-slate">{{ $examProfile['label'] }}</span>
+                        @endif
+                        <span class="badge badge-slate">{{ (int) ($practiceStrategy['target_question_count'] ?? 10) }}問目安</span>
+                    </div>
                 </div>
 
-                @if (collect($practiceStrategy['focus_topics'] ?? [])->isNotEmpty())
+                @if (($practiceStrategy['key'] ?? null) === 'weakness_reinforcement')
+                    <div class="mt-4 grid gap-2 sm:grid-cols-3">
+                        <div class="rounded-xl border border-cyan-300/10 bg-slate-950/20 px-3 py-2">
+                            <p class="text-[10px] font-black text-cyan-300">重点弱点</p>
+                            <p class="mt-1 text-sm font-bold text-slate-100">{{ (int) ($questionMix['primary'] ?? 0) }}問</p>
+                            <p class="mt-1 text-[10px] leading-4 text-slate-500">{{ $primaryTopics->isNotEmpty() ? $primaryTopics->implode(' / ') : '単発ミスは重点固定しない' }}</p>
+                        </div>
+                        <div class="rounded-xl border border-white/8 bg-slate-950/20 px-3 py-2">
+                            <p class="text-[10px] font-black text-slate-400">他の弱点・再確認</p>
+                            <p class="mt-1 text-sm font-bold text-slate-100">{{ (int) ($questionMix['secondary'] ?? 0) }}問</p>
+                            <p class="mt-1 text-[10px] leading-4 text-slate-500">{{ $secondaryTopics->isNotEmpty() ? $secondaryTopics->implode(' / ') : 'なし' }}</p>
+                        </div>
+                        <div class="rounded-xl border border-white/8 bg-slate-950/20 px-3 py-2">
+                            <p class="text-[10px] font-black text-slate-400">横断診断</p>
+                            <p class="mt-1 text-sm font-bold text-slate-100">{{ (int) ($questionMix['diagnostic'] ?? 0) }}問</p>
+                            <p class="mt-1 text-[10px] leading-4 text-slate-500">別の弱点が隠れていないか確認</p>
+                        </div>
+                    </div>
+                    @if ($monitorTopics->isNotEmpty())
+                        <p class="mt-3 text-[11px] leading-5 text-slate-500">監視中：{{ $monitorTopics->implode(' / ') }}。最近の出題量や確度を見て、必要なら後の演習で再確認します。</p>
+                    @endif
+                @elseif (collect($practiceStrategy['focus_topics'] ?? [])->isNotEmpty())
                     <div class="mt-3 flex flex-wrap gap-2">
                         @foreach (($practiceStrategy['focus_topics'] ?? []) as $topic)
                             <span class="badge badge-slate">{{ $topic }}</span>
@@ -341,11 +375,25 @@
                                     'incorrect' => 'badge-amber',
                                     default => 'badge-slate',
                                 };
+                                $errorTypeLabel = match ($feedback['error_type'] ?? 'none') {
+                                    'knowledge_gap' => '知識不足',
+                                    'concept_gap' => '概念理解',
+                                    'reasoning_gap' => '推論',
+                                    'condition_reading' => '条件読解',
+                                    'unit_error' => '単位ミス',
+                                    'calculation_slip' => '計算ミス',
+                                    'careless' => 'ケアレス',
+                                    'unknown' => '原因未確定',
+                                    default => null,
+                                };
                             @endphp
                             <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <strong class="text-sm text-slate-100">{{ $feedback['question_id'] }}</strong>
                                     <span class="badge {{ $correctnessClass }}">{{ $correctnessLabel }}</span>
+                                    @if ($errorTypeLabel)
+                                        <span class="badge badge-slate">{{ $errorTypeLabel }}</span>
+                                    @endif
                                 </div>
                                 @if ($feedback['feedback'])
                                     <p class="mt-2 text-sm leading-6 text-slate-300">{{ $feedback['feedback'] }}</p>
@@ -355,6 +403,9 @@
                                         <p class="text-[11px] font-bold text-violet-200">思考過程フィードバック</p>
                                         <p class="mt-1 text-xs leading-5 text-slate-300">{{ $feedback['reasoning_feedback'] }}</p>
                                     </div>
+                                @endif
+                                @if (collect($feedback['weakness_topics'] ?? [])->isNotEmpty())
+                                    <p class="mt-2 text-xs leading-5 text-slate-400">弱点候補：{{ collect($feedback['weakness_topics'])->implode(' / ') }}</p>
                                 @endif
                                 @if (collect($feedback['misconceptions'] ?? [])->isNotEmpty())
                                     <p class="mt-2 text-xs leading-5 text-amber-100">誤解ポイント：{{ collect($feedback['misconceptions'])->implode(' / ') }}</p>

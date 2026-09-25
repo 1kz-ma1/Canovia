@@ -14,11 +14,10 @@ class StudyPracticePromptService
         ?Collection $recentAttempts = null,
         array $strategy = [],
     ): string {
-
         $planDescription = trim((string) ($plan->description ?? '')) ?: '未設定';
         $taskDescription = trim((string) ($task->description ?? '')) ?: '未設定';
         $history = collect($recentAttempts ?? [])
-            ->take(5)
+            ->take(8)
             ->map(function ($attempt) {
                 $weaknesses = collect($attempt->weaknesses ?? [])->filter()->implode(' / ');
                 $strengths = collect($attempt->strengths ?? [])->filter()->implode(' / ');
@@ -41,6 +40,53 @@ class StudyPracticePromptService
         $focusTopics = collect($strategy['focus_topics'] ?? [])->filter()->implode(' / ');
         $focusTopics = $focusTopics !== '' ? $focusTopics : 'Task全体';
         $targetQuestionCount = max(1, min(20, (int) ($strategy['target_question_count'] ?? 10)));
+
+        $examProfile = is_array($strategy['exam_profile'] ?? null) ? $strategy['exam_profile'] : [];
+        $examProfileLabel = trim((string) ($examProfile['label'] ?? '資格学習'));
+        $preferredType = trim((string) ($examProfile['preferred_response_type'] ?? '')) ?: 'single_choice';
+        $isApSubjectA = ($examProfile['key'] ?? null) === 'ap_subject_a_exam';
+
+        $weaknessPriority = is_array($strategy['weakness_priority'] ?? null)
+            ? $strategy['weakness_priority']
+            : [];
+        $priorityLines = collect($weaknessPriority['ranked'] ?? [])
+            ->filter(fn ($item) => is_array($item) && ($item['state'] ?? '') !== 'resolved')
+            ->take(6)
+            ->map(function (array $item) {
+                return sprintf(
+                    '- %s | tier:%s | state:%s | error:%s | confidence:%.2f | saturation:%.2f',
+                    (string) ($item['topic'] ?? '不明'),
+                    (string) ($item['tier'] ?? 'monitor'),
+                    (string) ($item['state'] ?? 'monitoring'),
+                    (string) ($item['dominant_error_type'] ?? 'unknown'),
+                    (float) ($item['confidence'] ?? 0),
+                    (float) ($item['saturation'] ?? 0),
+                );
+            })
+            ->implode("\n");
+        $priorityLines = $priorityLines !== '' ? $priorityLines : '- 現在、重点固定する弱点はありません';
+
+        $mix = is_array($strategy['question_mix'] ?? null) ? $strategy['question_mix'] : [];
+        $primaryCount = max(0, (int) ($mix['primary'] ?? 0));
+        $secondaryCount = max(0, (int) ($mix['secondary'] ?? 0));
+        $diagnosticCount = max(0, (int) ($mix['diagnostic'] ?? $targetQuestionCount));
+        $primaryTopics = collect($weaknessPriority['primary_topics'] ?? [])->filter()->implode(' / ');
+        $secondaryTopics = collect($weaknessPriority['secondary_topics'] ?? [])->filter()->implode(' / ');
+        $monitorTopics = collect($weaknessPriority['monitor_topics'] ?? [])->filter()->implode(' / ');
+
+        $examFormatRules = $isApSubjectA
+            ? implode("\n", [
+                '- AP科目Aの本番想定として、原則はsingle_choiceの4択にする。',
+                '- 計算問題でも最終回答は4択を優先し、number入力を難易度上昇の手段として乱用しない。',
+                '- 数値は、考え方が正しければ過度な筆算をせず選択肢を判別できる値を優先する。',
+                '- 小数・百分率を使う場合も、不要に桁数の多い値や割り切れない値を並べて計算精度だけを試さない。',
+                '- 難易度を上げる場合は、条件判断・概念の組合せ・式の選択・単位の理解などで上げ、面倒な算術だけで上げない。',
+                '- reasoning欄は診断価値がある場合だけ任意で追加し、本番形式のanswer自体は4択を維持する。',
+            ])
+            : implode("\n", [
+                '- 資格試験として不必要な算術負荷を避け、理解・判断を測る難易度にする。',
+                '- 数値問題は意味のある丸めや扱いやすい値を優先し、計算量だけで難しくしない。',
+            ]);
 
         return <<<PROMPT
 あなたはCanoviaの学習演習作成AIです。
@@ -67,16 +113,32 @@ task_id: {$task->id}
 【Canoviaが決めた今回の演習方針】
 方針: {$strategyLabel}
 理由: {$strategyReason}
-重点: {$focusTopics}
+重点候補: {$focusTopics}
 目安問題数: {$targetQuestionCount}問
+試験プロファイル: {$examProfileLabel}
 ※この方針はCanoviaが学習履歴とTask状態から決めたものです。外部AI側で別の学習方針へ置き換えないでください。
+
+【弱点優先度】
+{$priorityLines}
+
+【今回の出題配分】
+- 重点弱点: {$primaryCount}問 / topics: {$primaryTopics}
+- 他の弱点・再確認: {$secondaryCount}問 / topics: {$secondaryTopics}
+- 横断診断・未発見弱点の探索: {$diagnosticCount}問
+- 監視中: {$monitorTopics}
+※同じ系統へ全問を寄せないでください。単発の誤答・軽微な計算ミスだけで、その系統を演習全体の中心にしないでください。
+※横断診断はPlan・Taskの試験範囲内から選び、既知弱点に隠れている別の弱点を発見できるようにしてください。
+
+【試験形式・難易度キャリブレーション】
+{$examFormatRules}
 
 【目的】
 - このTaskの達成に直接役立つ問題を{$targetQuestionCount}問前後作る
-- 過去のAI演習でweaknessesがある場合は、その弱点を優先して再確認する
-- すでに安定して正解できている内容だけを同じ形で繰り返さず、弱点補強と定着確認の比重を高める
-- 単なる暗記だけでなく、可能なら理解・判断・計算も含める
-- 難易度は現在のTask内容に合わせる
+- 繰り返し確認された弱点を優先する一方、単発ミスだけで出題を固定しない
+- 過去のAI演習でweaknessesがある場合でも、Canoviaの優先度・出題配分に従い、全問をその弱点だけへ寄せない
+- 重点弱点・他の弱点・横断診断を上記の配分に近づける
+- すでに安定して正解できている内容だけを同じ形で繰り返さない
+- 難易度は「理解・判断・条件整理」の深さで調整し、無意味に複雑な手計算では調整しない
 - 問題文だけで解答に必要な条件が分かるようにする
 - 過去問・定番問題の構造を参考にする場合は、元の意味領域・業務文脈・専門用語を不自然に抽象化しない
 - 数値や固有名詞を変更して類題化しても、元問題で自然だった状況設定はできるだけ維持する
@@ -93,7 +155,7 @@ flow、plan_id、task_idは下記から変更しないでください。
 各questionにはresponse_fieldsを1〜4件付けてください。AIは問題に必要な回答欄を自由に組み合わせられます。
 response_fields.typeは single_choice / multiple_choice / number / short_text / textarea のいずれかです。
 - single_choice / multiple_choice: choicesを2〜6件付ける
-- number: 数値回答
+- number: 数値回答。{$examProfileLabel}では必要な場合だけ使い、合理的な丸め条件を問題文に明示する
 - short_text: 短い記述回答
 - textarea: 記述問題・説明・計算過程・思考過程など長めの入力
 各fieldには英数字・_・-だけの重複しないid、分かりやすいlabel、requiredを付けてください。
@@ -114,16 +176,18 @@ response_fields.typeは single_choice / multiple_choice / number / short_text / 
   "questions": [
     {
       "id": "q1",
-      "prompt": "最も適切なものを選び、判断理由も説明してください。",
+      "prompt": "最も適切なものを選んでください。",
       "response_fields": [
         {
           "id": "answer",
-          "type": "single_choice",
+          "type": "{$preferredType}",
           "label": "回答",
           "required": true,
           "choices": [
             {"id": "A", "label": "選択肢A"},
-            {"id": "B", "label": "選択肢B"}
+            {"id": "B", "label": "選択肢B"},
+            {"id": "C", "label": "選択肢C"},
+            {"id": "D", "label": "選択肢D"}
           ]
         },
         {
@@ -175,14 +239,20 @@ task_id: {$task->id}
 - question_feedbackには各questionごとの評価を入れ、question_idは出題内容のIDを変更せず使う
 - correctnessは correct / partial / incorrect / ungraded のいずれか
 - feedbackはその問題への簡潔なフィードバック、reasoning_feedbackは思考過程がある場合だけ具体的に書く
-- misconceptionsには誤解している概念を短い文字列で入れる
+- error_typeは none / knowledge_gap / concept_gap / reasoning_gap / condition_reading / unit_error / calculation_slip / careless / unknown のいずれか
+- 正解ならerror_typeはnone。誤答でも原因を回答内容から判断できない場合はunknownにし、推測でconcept_gap等へ決めつけない
+- calculation_slipは「式・考え方は正しいが算術だけを誤った」と確認できる場合に使う
+- carelessは知識不足ではなく明確な転記・選択・読み落とし等だと回答過程から判断できる場合だけ使う
+- weakness_topicsには、その誤答が本当に補強対象になり得る知識・概念だけを短く入れる
+- misconceptionsには具体的な誤解内容を短い文字列で入れる
+- 単発の計算ミスやcarelessだけを、恒常的な「弱点」と断定しない。Canoviaが履歴と合わせて優先度を決める
 - score_percentは0〜100の整数
-- strengths / weaknesses は具体的な知識・思考内容を書く
+- strengths / weaknesses は具体的な知識・思考内容を書く。ただしweaknessesを一回の軽微なミスだけで過剰に増やさない
 - recommended_task_progress_percentは、今回の結果だけでなく現在進捗も踏まえた0〜100の整数
 - next_actionは次に取るべき具体的な学習Actionを1つに絞る
 - next_stepは「この評価を見た直後にCanovia上で何をすべきか」を構造化して必ず返す
 - next_step.kindは practice / review / continue_task / complete_task / plan_update のいずれか
-- practiceを選ぶ場合はfocus_topicsとquestion_countも具体化し、今回見つかった弱点を優先する
+- practiceを選ぶ場合はfocus_topicsとquestion_countも具体化する。ただしこれは候補であり、次回はCanoviaが他の弱点・横断診断と再配分する
 - labelはユーザーがそのまま次の行動として読める具体的な一文にする
 - reasonはなぜそれを次に行うのかを今回の結果に結び付けて簡潔に書く
 - evidence_summaryには正答状況や判断根拠を簡潔に残す
@@ -203,10 +273,12 @@ JSONのキーと文字列を囲む引用符には半角ダブルクォート（"
   "question_feedback": [
     {
       "question_id": "q1",
-      "correctness": "correct",
+      "correctness": "incorrect",
       "feedback": "回答へのフィードバック",
       "reasoning_feedback": "思考過程へのフィードバック。なければ空文字",
-      "misconceptions": []
+      "error_type": "concept_gap",
+      "weakness_topics": ["DNS"],
+      "misconceptions": ["CNAMEとMXの役割を混同"]
     }
   ],
   "strengths": ["理解できている点"],
@@ -216,9 +288,9 @@ JSONのキーと文字列を囲む引用符には半角ダブルクォート（"
   "next_action": "次に行う具体的な学習",
   "next_step": {
     "kind": "practice",
-    "label": "CNAMEとAレコードの使い分けを5問演習する",
+    "label": "DNSレコードの使い分けを確認する",
     "reason": "レコード種別の使い分けに混同が残っているため",
-    "focus_topics": ["DNS", "CNAME"],
+    "focus_topics": ["DNS"],
     "question_count": 5
   }
 }
