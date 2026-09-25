@@ -12,9 +12,9 @@ return [
     | It does NOT decide whether a feature is publicly exposed. Feature rollout
     | and beta visibility remain the responsibility of config/features.php.
     |
-    | V40.6 intentionally keeps every current feature free. Monetization may
-    | later set individual "free" values to false and add Premium/Coin/Gift/
-    | Sponsor resolvers without changing feature code.
+    | Existing user-facing capabilities remain free. V41.5 adds capability-level
+    | keys for future Premium/Packs while keeping Feature code independent from
+    | Product, billing, Gift, and Sponsor details.
     |
     */
 
@@ -40,6 +40,18 @@ return [
         FeatureKey::AutomaticAiExecution->value => [
             'label' => 'Automatic AI Execution',
             'free' => true,
+        ],
+        FeatureKey::StudyLongTermWeaknessProfile->value => [
+            'label' => 'Study Long-term Weakness Profile',
+            'free' => false,
+        ],
+        FeatureKey::CareerNativeCaptureAnalysis->value => [
+            'label' => 'Career Native Capture Analysis',
+            'free' => false,
+        ],
+        FeatureKey::DeveloperGithubEvidence->value => [
+            'label' => 'Developer GitHub Evidence',
+            'free' => false,
         ],
     ],
 ];
