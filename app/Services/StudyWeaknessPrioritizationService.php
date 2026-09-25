@@ -204,6 +204,7 @@ class StudyWeaknessPrioritizationService
                 $examRelevance = str_contains($scope, mb_strtolower($topic['topic'])) ? 1.15 : 1.0;
                 $expectedGain = min(1.0, (0.60 * $severity) + (0.40 * $confidence));
                 $transferValue = min(1.15, 0.90 + (0.08 * max(0, $weakAttemptCount - 1)));
+                $valuePerCost = $expectedGain / max(0.45, $recoveryCost);
 
                 $priority = $resolved
                     ? 0.0
@@ -228,6 +229,7 @@ class StudyWeaknessPrioritizationService
                     'confidence' => round($confidence, 3),
                     'expected_gain' => round($expectedGain, 3),
                     'recovery_cost' => round($recoveryCost, 3),
+                    'value_per_cost' => round($valuePerCost, 3),
                     'saturation' => round($saturation, 3),
                     'exam_relevance' => round($examRelevance, 3),
                     'dominant_error_type' => $dominantError,
