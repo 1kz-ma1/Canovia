@@ -127,30 +127,39 @@ class RoadmapFeedbackV13Test extends TestCase
         $this->assertSame($user->id, $feedback->user_id);
     }
 
-    public function test_canovia_admin_login_opens_a_hub_for_feedback_and_telemetry(): void
+    public function test_canovia_super_admin_account_opens_a_hub_for_feedback_and_telemetry(): void
     {
-        config(['canovia.admin_password' => 'test-secret']);
+        $admin = User::factory()->create();
+        config(['canovia.super_admin_user_id' => $admin->id]);
 
         $this->get(route('admin.feedback.index'))
+            ->assertForbidden();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('admin.feedback.index'))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('admin.feedback.login'))
             ->assertRedirect(route('admin.login'));
 
-        $this->get(route('admin.feedback.login'))
-            ->assertRedirect(route('admin.login'));
+        $this->actingAs($admin)
+            ->get(route('admin.login'))
+            ->assertRedirect(route('admin.dashboard'));
 
-        $this->post(route('admin.authenticate'), [
-            'password' => 'test-secret',
-        ])->assertRedirect(route('admin.dashboard'));
-
-        $this->get(route('admin.dashboard'))
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
             ->assertOk()
             ->assertSee('フィードバック管理')
             ->assertSee('計画作成・更新の診断');
 
-        $this->get(route('admin.feedback.index'))
+        $this->actingAs($admin)
+            ->get(route('admin.feedback.index'))
             ->assertOk()
             ->assertSee('概要');
 
-        $this->get(route('admin.telemetry.index'))
+        $this->actingAs($admin)
+            ->get(route('admin.telemetry.index'))
             ->assertOk()
             ->assertSee('概要');
     }
