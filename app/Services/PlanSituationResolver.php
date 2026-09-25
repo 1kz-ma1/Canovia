@@ -128,6 +128,10 @@ class PlanSituationResolver
                 'career_review_due_event' => $reviewDue,
                 'career_result_waiting_events' => $resultWaiting,
                 'career_result_waiting_count' => $resultWaiting->count(),
+                'career_review_due' => (bool) $reviewDue,
+                'career_review_due_company' => $reviewDue?->application?->company_name,
+                'career_next_interview_at' => $nextInterview?->scheduled_at?->toIso8601String(),
+                'career_next_interview_company' => $nextInterview?->application?->company_name,
             ];
         }
 
@@ -177,6 +181,10 @@ class PlanSituationResolver
             'career_review_due_event' => null,
             'career_result_waiting_events' => collect(),
             'career_result_waiting_count' => 0,
+            'career_review_due' => false,
+            'career_review_due_company' => null,
+            'career_next_interview_at' => null,
+            'career_next_interview_company' => null,
         ];
     }
 
