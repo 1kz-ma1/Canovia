@@ -61,7 +61,7 @@ class CareerWorkspaceController extends Controller
         ]);
 
         $file = $request->file('screenshot');
-        $bytes = $file?->get();
+        $bytes = $file ? file_get_contents($file->getRealPath()) : null;
 
         $captureService->record(
             $plan,
@@ -295,6 +295,7 @@ class CareerWorkspaceController extends Controller
             'stage' => $validated['stage'],
             'status' => 'active',
             'next_event_at' => $event->scheduled_at,
+            'result' => null,
         ]);
 
         return redirect()
