@@ -66,23 +66,28 @@ class StudyWeaknessPrioritizationService
                     continue;
                 }
 
-                $correctness = (string) ($feedback['correctness'] ?? 'ungraded');
+                $feedbackTopics = $this->strings($feedback['weakness_topics'] ?? []);
+                if ($feedbackTopics === []) {
+                    $feedbackTopics = $this->strings($feedback['misconceptions'] ?? []);
+                }
+
+                $correctness = (string) ($feedback['correctness'] ?? '');
                 $correctnessWeight = match ($correctness) {
                     'incorrect' => 1.0,
                     'partial' => 0.60,
+                    // V40-era attempts can contain misconceptions without the
+                    // newer correctness/error_type fields. Keep those as a
+                    // modest historical signal instead of discarding them.
+                    '' => $feedbackTopics !== [] ? 0.45 : 0.0,
                     default => 0.0,
                 };
 
-                if ($correctnessWeight <= 0) {
+                if ($correctnessWeight <= 0 || $feedbackTopics === []) {
                     continue;
                 }
 
                 $errorType = $this->normalizeErrorType((string) ($feedback['error_type'] ?? 'unknown'));
                 $errorWeight = self::ERROR_WEIGHTS[$errorType] ?? self::ERROR_WEIGHTS['unknown'];
-                $feedbackTopics = $this->strings($feedback['weakness_topics'] ?? []);
-                if ($feedbackTopics === []) {
-                    $feedbackTopics = $this->strings($feedback['misconceptions'] ?? []);
-                }
 
                 foreach ($feedbackTopics as $topic) {
                     $this->putSignal(
