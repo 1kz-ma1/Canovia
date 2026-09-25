@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('purpose', 64);
             $table->string('provider', 32);
             $table->string('model', 120);
+            $table->string('capacity_tier', 24)->default('standard');
             $table->string('status', 24)->default('running');
             $table->string('request_hash', 64)->nullable();
             $table->string('provider_response_id', 160)->nullable();
