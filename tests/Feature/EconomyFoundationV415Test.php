@@ -58,6 +58,21 @@ class EconomyFoundationV415Test extends TestCase
         $this->assertSame($enumKeys, $configuredKeys);
     }
 
+    public function test_product_catalog_matches_product_enum_and_coin_is_not_a_direct_entitlement_source(): void
+    {
+        $enumKeys = collect(ProductKey::cases())->map(fn (ProductKey $key) => $key->value)->sort()->values()->all();
+        $configuredKeys = collect(array_keys(config('economy.products', [])))->sort()->values()->all();
+
+        $this->assertSame($enumKeys, $configuredKeys);
+        $this->assertNotContains('coin', collect(EntitlementSource::cases())->map->value->all());
+
+        foreach (config('economy.products', []) as $product) {
+            foreach ((array) ($product['feature_keys'] ?? []) as $featureKey) {
+                $this->assertNotNull(FeatureKey::tryFrom((string) $featureKey));
+            }
+        }
+    }
+
     public function test_pack_requires_premium_core_and_grants_only_its_mapped_capability(): void
     {
         $user = User::factory()->create();
