@@ -16,7 +16,6 @@ use App\Services\PlanSituationResolver;
 use App\Services\PlanSurfaceEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -28,9 +27,6 @@ class CareerCaptureInterviewReviewV413Test extends TestCase
     {
         $user = User::factory()->create();
         $plan = $this->plan($user);
-        $disk = (string) config('filesystems.default', 'local');
-        Storage::fake($disk);
-
         $response = $this->actingAs($user)->post(route('plans.career.captures.store', $plan), [
             'source_type' => 'screenshot',
             'screenshot' => UploadedFile::fake()->image('application.png', 900, 1600),
@@ -44,7 +40,10 @@ class CareerCaptureInterviewReviewV413Test extends TestCase
         $this->assertSame('pending', $capture->status);
         $this->assertNull($capture->career_application_id);
         $this->assertDatabaseCount('career_applications', 0);
-        $this->assertTrue(Storage::disk($disk)->exists($capture->screenshot_path));
+        $this->assertDatabaseHas('career_capture_payloads', [
+            'career_capture_id' => $capture->id,
+        ]);
+        $this->assertNull($capture->screenshot_path);
 
         $this->actingAs($user)
             ->get(route('plans.career.captures.screenshot', [$plan, $capture]))
