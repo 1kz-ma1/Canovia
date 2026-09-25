@@ -87,7 +87,7 @@ Route::delete('/feedback/future/{roadmapFeature}/support', [CanoviaFutureControl
 Route::post('/feedback', [FeedbackController::class, 'store'])->middleware('throttle:12,1')->name('feedback.store');
 Route::post('/onboarding/complete', [OnboardingController::class, 'complete'])->middleware('throttle:30,1')->name('onboarding.complete');
 Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->middleware('throttle:30,1')->name('onboarding.skip');
-Route::middleware(['auth', 'admin.access'])->group(function () {
+Route::middleware('admin.access')->group(function () {
     Route::get('/admin/login', [AdminFeedbackController::class, 'login'])->name('admin.login');
     Route::post('/admin/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.authenticate');
     Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
