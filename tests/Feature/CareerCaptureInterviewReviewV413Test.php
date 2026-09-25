@@ -322,6 +322,74 @@ class CareerCaptureInterviewReviewV413Test extends TestCase
         $this->assertNotContains('career_result_waiting', $modules->pluck('id')->all());
     }
 
+    public function test_cancelled_interview_does_not_keep_review_surface_visible(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan($user);
+        $application = CareerApplication::create([
+            'plan_id' => $plan->id,
+            'company_name' => 'A社',
+            'stage' => 'interview',
+            'status' => 'active',
+            'next_event_at' => now()->subHour(),
+        ]);
+        $event = CareerSelectionEvent::create([
+            'career_application_id' => $application->id,
+            'type' => 'interview',
+            'stage' => 'interview',
+            'status' => 'scheduled',
+            'scheduled_at' => now()->subHour(),
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('plans.career.events.cancel', [$plan, $event]))
+            ->assertRedirect(route('plans.career.index', $plan));
+
+        $this->assertSame('cancelled', $event->fresh()->status);
+        $this->assertNull($application->fresh()->next_event_at);
+
+        [, $modules] = $this->careerSurfaceState($plan->fresh());
+        $this->assertNotContains('career_interview_review', $modules->pluck('id')->all());
+    }
+
+    public function test_review_after_known_result_does_not_return_event_to_result_waiting(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan($user);
+        $task = $this->task($plan, 'A社 一次面接', progress: 30);
+        $application = CareerApplication::create([
+            'plan_id' => $plan->id,
+            'company_name' => 'A社',
+            'stage' => 'interview',
+            'status' => 'active',
+            'result' => 'passed',
+        ]);
+        $event = CareerSelectionEvent::create([
+            'career_application_id' => $application->id,
+            'task_id' => $task->id,
+            'type' => 'interview',
+            'stage' => 'interview',
+            'status' => 'completed',
+            'result' => 'passed',
+            'scheduled_at' => now()->subDay(),
+            'completed_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('plans.career.interview_reviews.store', [$plan, $event]), [
+                'action' => 'complete',
+                'answers' => [
+                    'best_moment' => '具体例を話せた',
+                    'next_focus' => '次回は逆質問を深める',
+                ],
+            ])
+            ->assertRedirect(route('plans.career.interview_reviews.show', [$plan, $event]));
+
+        $this->assertSame('completed', $event->fresh()->status);
+        $this->assertSame('passed', $event->fresh()->result);
+        $this->assertSame('active', $application->fresh()->status);
+    }
+
     public function test_non_career_plan_cannot_open_career_workspace(): void
     {
         $user = User::factory()->create();
