@@ -302,6 +302,33 @@ class CareerWorkspaceController extends Controller
             ->with('success', '面接予定を追加しました。');
     }
 
+    public function cancelSelectionEvent(
+        Request $request,
+        Plan $plan,
+        CareerSelectionEvent $event,
+        PlanOwnershipService $ownership,
+        PlanCategoryProfileService $profiles,
+    ) {
+        $ownership->authorizeEdit($request, $plan);
+        $this->authorizeCareerPlan($plan, $profiles);
+        $event->load('application');
+        abort_unless((int) $event->application?->plan_id === (int) $plan->id, 404);
+
+        $event->update(['status' => 'cancelled']);
+
+        if (
+            $event->application->next_event_at
+            && $event->scheduled_at
+            && $event->application->next_event_at->equalTo($event->scheduled_at)
+        ) {
+            $event->application->update(['next_event_at' => null]);
+        }
+
+        return redirect()
+            ->route('plans.career.index', $plan)
+            ->with('success', '面接予定を中止しました。');
+    }
+
     public function updateSelectionEventResult(
         Request $request,
         Plan $plan,
