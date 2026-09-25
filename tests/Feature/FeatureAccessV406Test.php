@@ -20,16 +20,22 @@ class FeatureAccessV406Test extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_every_declared_feature_is_currently_free_for_guest_and_user(): void
+    public function test_existing_v406_features_remain_free_for_guest_and_user(): void
     {
         $service = app(FeatureAccessService::class);
         $user = User::factory()->create();
 
-        foreach (FeatureKey::cases() as $feature) {
+        foreach ([
+            FeatureKey::AiPractice,
+            FeatureKey::AdvancedAnalytics,
+            FeatureKey::QuestionPack,
+            FeatureKey::ProjectArtifact,
+            FeatureKey::AutomaticAiExecution,
+        ] as $feature) {
             foreach ([null, $user] as $actor) {
                 $decision = $service->resolveAccess($actor, $feature);
 
-                $this->assertTrue($decision->allowed, $feature->value.' must remain usable in V40.6');
+                $this->assertTrue($decision->allowed, $feature->value.' must remain usable for the existing Free path');
                 $this->assertSame(EntitlementSource::Free, $decision->source);
                 $this->assertSame('free_access', $decision->reason);
             }
