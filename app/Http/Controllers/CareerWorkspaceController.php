@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EvidenceSource;
 use App\Models\CareerApplication;
 use App\Models\CareerCapture;
 use App\Models\CareerSelectionEvent;
@@ -10,7 +11,9 @@ use App\Services\BehaviorIdentityService;
 use App\Services\CareerCaptureService;
 use App\Services\PlanCategoryProfileService;
 use App\Services\PlanOwnershipService;
+use App\Services\TaskEvidenceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -171,6 +174,7 @@ class CareerWorkspaceController extends Controller
             'stage' => $validated['stage'],
             'status' => 'active',
             'source' => $capture?->source_type ?? 'manual',
+            'applied_at' => in_array($validated['stage'], ['applied', 'screening', 'interview', 'final_interview', 'offer'], true) ? today() : null,
         ]);
 
         if ($capture) {
@@ -295,6 +299,81 @@ class CareerWorkspaceController extends Controller
         return redirect()
             ->route('plans.career.index', $plan)
             ->with('success', '面接予定を追加しました。');
+    }
+
+    public function updateSelectionEventResult(
+        Request $request,
+        Plan $plan,
+        CareerSelectionEvent $event,
+        PlanOwnershipService $ownership,
+        PlanCategoryProfileService $profiles,
+        TaskEvidenceService $evidenceService,
+        BehaviorIdentityService $identity,
+    ) {
+        $ownership->authorizeEdit($request, $plan);
+        $this->authorizeCareerPlan($plan, $profiles);
+        $event->load(['application', 'task']);
+        abort_unless((int) $event->application?->plan_id === (int) $plan->id, 404);
+
+        $validated = $request->validate([
+            'result' => ['required', Rule::in(['passed', 'rejected', 'offer', 'withdrawn'])],
+        ]);
+
+        $actorToken = $identity->resolve($request);
+
+        DB::transaction(function () use ($request, $event, $validated, $evidenceService, $actorToken) {
+            $result = $validated['result'];
+
+            $event->update([
+                'status' => 'completed',
+                'result' => $result,
+                'completed_at' => $event->completed_at ?? now(),
+            ]);
+
+            $applicationValues = [
+                'next_event_at' => null,
+                'result' => $result,
+            ];
+
+            if ($result === 'rejected') {
+                $applicationValues['stage'] = 'closed';
+                $applicationValues['status'] = 'completed';
+            } elseif ($result === 'withdrawn') {
+                $applicationValues['stage'] = 'closed';
+                $applicationValues['status'] = 'withdrawn';
+            } elseif ($result === 'offer') {
+                $applicationValues['stage'] = 'offer';
+                $applicationValues['status'] = 'active';
+            } else {
+                $applicationValues['status'] = 'active';
+            }
+
+            $event->application->update($applicationValues);
+
+            if ($event->task) {
+                $evidenceService->record(
+                    $event->task,
+                    EvidenceSource::Native,
+                    'interview_result_recorded',
+                    [
+                        'career_application_id' => (int) $event->career_application_id,
+                        'career_selection_event_id' => (int) $event->id,
+                        'company_name' => $event->application->company_name,
+                        'stage' => $event->stage,
+                        'result' => $result,
+                    ],
+                    confidence: 1.0,
+                    externalKey: 'career-selection-event:'.$event->id.':result',
+                    userId: $request->user()?->id,
+                    actorToken: $actorToken,
+                    occurredAt: now(),
+                );
+            }
+        });
+
+        return redirect()
+            ->route('plans.career.index', $plan)
+            ->with('success', '選考結果を反映しました。');
     }
 
     private function authorizeCareerPlan(Plan $plan, PlanCategoryProfileService $profiles): void
