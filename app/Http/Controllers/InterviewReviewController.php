@@ -58,7 +58,7 @@ class InterviewReviewController extends Controller
     ) {
         $ownership->authorizeEdit($request, $plan);
         $this->authorizeEvent($plan, $event, $profiles);
-        $event->load(['application', 'task']);
+        $event->load(['application', 'task', 'interviewReview']);
 
         $validated = $request->validate([
             'action' => ['required', 'in:save,complete'],
@@ -79,7 +79,8 @@ class InterviewReviewController extends Controller
         }
 
         $actorToken = $identity->resolve($request);
-        $completed = $validated['action'] === 'complete';
+        $completed = $validated['action'] === 'complete'
+            || $event->interviewReview?->status === InterviewReview::STATUS_COMPLETED;
 
         $review = DB::transaction(function () use (
             $request,
