@@ -44,25 +44,25 @@ class EconomyRecommendationService
 
         $studyAttempts = StudyPracticeAttempt::query()
             ->where('user_id', $user->id)
-            ->whereIn('plan_id', $domainPlanIds['study'])
+            ->whereIn('plan_id', $domainPlanIds['study']->all())
             ->count();
 
         $careerCaptures = CareerCapture::query()
             ->where('user_id', $user->id)
-            ->whereIn('plan_id', $domainPlanIds['career'])
+            ->whereIn('plan_id', $domainPlanIds['career']->all())
             ->count();
 
         $completedInterviewReviews = InterviewReview::query()
-            ->whereIn('plan_id', $domainPlanIds['career'])
+            ->whereIn('plan_id', $domainPlanIds['career']->all())
             ->whereNotNull('completed_at')
             ->count();
 
         $artifactCount = PlanArtifact::query()
-            ->whereIn('plan_id', $domainPlanIds['development'])
+            ->whereIn('plan_id', $domainPlanIds['development']->all())
             ->count();
 
         $githubArtifactCount = PlanArtifact::query()
-            ->whereIn('plan_id', $domainPlanIds['development'])
+            ->whereIn('plan_id', $domainPlanIds['development']->all())
             ->where('provider', 'github')
             ->count();
 
