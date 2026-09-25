@@ -31,21 +31,20 @@ final class ProductGrantEntitlementResolver implements EntitlementResolver
             return null;
         }
 
-        $match = $this->grants->grantForFeature($actor, $feature);
+        $match = $this->grants->grantForFeature(
+            $actor,
+            $feature,
+            ['manual', 'subscription', 'migration'],
+        );
         if (! $match) {
             return null;
         }
 
         $grant = $match['grant'];
-        $source = match ((string) $grant->source) {
-            'gift' => EntitlementSource::Gift,
-            'sponsor' => EntitlementSource::Sponsor,
-            default => EntitlementSource::Premium,
-        };
 
         return FeatureAccessDecision::allow(
             $feature,
-            $source,
+            EntitlementSource::Premium,
             'product_grant',
             [
                 'product_key' => $grant->product_key->value,
