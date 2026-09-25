@@ -25,6 +25,7 @@ use App\Http\Controllers\AdminFeedbackController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminTelemetryController;
 use App\Http\Controllers\AdminQuestionPackController;
+use App\Http\Controllers\AdminEconomyController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\RoadmapController;
 use App\Http\Controllers\TimelineController;
@@ -94,6 +95,9 @@ Route::post('/admin/feedback/login', [AdminFeedbackController::class, 'authentic
 Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
 Route::get('/admin/telemetry', [AdminTelemetryController::class, 'index'])->name('admin.telemetry.index');
 Route::get('/admin/question-packs', [AdminQuestionPackController::class, 'index'])->name('admin.question_packs.index');
+Route::get('/admin/economy', [AdminEconomyController::class, 'index'])->name('admin.economy.index');
+Route::post('/admin/economy/grants', [AdminEconomyController::class, 'storeGrant'])->name('admin.economy.grants.store');
+Route::delete('/admin/economy/grants/{grant}', [AdminEconomyController::class, 'destroyGrant'])->name('admin.economy.grants.destroy');
 Route::post('/admin/question-packs/import', [AdminQuestionPackController::class, 'import'])->name('admin.question_packs.import');
 Route::post('/admin/question-packs/import-bundled', [AdminQuestionPackController::class, 'importBundled'])->name('admin.question_packs.import_bundled');
 Route::patch('/admin/question-packs/{questionPack}/status', [AdminQuestionPackController::class, 'updateStatus'])->name('admin.question_packs.status');
