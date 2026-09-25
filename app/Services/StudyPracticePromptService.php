@@ -43,8 +43,7 @@ class StudyPracticePromptService
 
         $examProfile = is_array($strategy['exam_profile'] ?? null) ? $strategy['exam_profile'] : [];
         $examProfileLabel = trim((string) ($examProfile['label'] ?? '資格学習'));
-        $preferredType = trim((string) ($examProfile['preferred_response_type'] ?? ''));
-        $choiceCount = (int) ($examProfile['preferred_choice_count'] ?? 0);
+        $preferredType = trim((string) ($examProfile['preferred_response_type'] ?? '')) ?: 'single_choice';
         $isApSubjectA = ($examProfile['key'] ?? null) === 'ap_subject_a_exam';
 
         $weaknessPriority = is_array($strategy['weakness_priority'] ?? null)
