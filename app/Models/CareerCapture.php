@@ -45,6 +45,11 @@ class CareerCapture extends Model
         return $this->belongsTo(CareerApplication::class, 'career_application_id');
     }
 
+    public function payload()
+    {
+        return $this->hasOne(CareerCapturePayload::class);
+    }
+
     public function sourceLabel(): string
     {
         return match ($this->source_type) {
