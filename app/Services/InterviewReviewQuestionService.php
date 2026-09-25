@@ -41,6 +41,11 @@ class InterviewReviewQuestionService
             'source' => 'rule',
         ];
         $questions[] = [
+            'key' => 'asked_questions',
+            'prompt' => '覚えている範囲で、実際に聞かれた質問を残しておきますか？',
+            'source' => 'rule',
+        ];
+        $questions[] = [
             'key' => 'difficult_moment',
             'prompt' => '一番答えにくかった質問や、引っかかった場面はどこでしたか？',
             'source' => 'rule',
