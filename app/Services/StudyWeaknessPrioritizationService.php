@@ -46,6 +46,7 @@ class StudyWeaknessPrioritizationService
     ): array {
         $attempts = $recentAttempts->take(8)->values();
         $topics = [];
+        $strengthIndexes = [];
         $totalWeakSignals = 0;
 
         foreach ($attempts as $attemptIndex => $attempt) {
@@ -129,13 +130,15 @@ class StudyWeaknessPrioritizationService
             }
 
             foreach ($strengthKeys as $strengthKey) {
-                if (! isset($topics[$strengthKey])) {
-                    continue;
-                }
+                $strengthIndexes[$strengthKey] = isset($strengthIndexes[$strengthKey])
+                    ? min($strengthIndexes[$strengthKey], $attemptIndex)
+                    : $attemptIndex;
+            }
+        }
 
-                $topics[$strengthKey]['latest_strength_index'] = $topics[$strengthKey]['latest_strength_index'] === null
-                    ? $attemptIndex
-                    : min($topics[$strengthKey]['latest_strength_index'], $attemptIndex);
+        foreach ($strengthIndexes as $strengthKey => $strengthIndex) {
+            if (isset($topics[$strengthKey])) {
+                $topics[$strengthKey]['latest_strength_index'] = $strengthIndex;
             }
         }
 
