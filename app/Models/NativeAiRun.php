@@ -15,6 +15,7 @@ class NativeAiRun extends Model
         'purpose',
         'provider',
         'model',
+        'capacity_tier',
         'status',
         'request_hash',
         'provider_response_id',
