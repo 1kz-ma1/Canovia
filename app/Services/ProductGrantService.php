@@ -28,7 +28,7 @@ class ProductGrantService
     public function directProducts(User $user): Collection
     {
         return $this->activeGrants($user)
-            ->pluck('product_key')
+            ->map(fn (UserProductGrant $grant) => $grant->product_key)
             ->filter(fn ($product) => $product instanceof ProductKey)
             ->unique(fn (ProductKey $product) => $product->value)
             ->values();
