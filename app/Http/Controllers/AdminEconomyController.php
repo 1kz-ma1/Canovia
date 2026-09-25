@@ -12,6 +12,7 @@ use App\Services\EconomyCatalogService;
 use App\Services\EconomyRecommendationService;
 use App\Services\FeatureAccessService;
 use App\Services\ProductGrantService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -28,9 +29,7 @@ class AdminEconomyController extends Controller
 
     public function index(Request $request)
     {
-        if (! $this->access->authorized($request)) {
-            return redirect()->route('admin.login');
-        }
+        abort_unless($this->access->authorized($request), 403);
 
         $users = User::query()->orderBy('id')->limit(100)->get();
         $selectedUser = $request->integer('user_id')
@@ -42,6 +41,8 @@ class AdminEconomyController extends Controller
         $featureDecisions = collect();
         $recommendation = null;
         $capacityPolicy = null;
+        $complimentaryPremium = null;
+        $complimentaryHistory = collect();
 
         if ($selectedUser) {
             $activeGrants = $this->grants->activeGrants($selectedUser);
@@ -52,6 +53,16 @@ class AdminEconomyController extends Controller
             ]);
             $recommendation = $this->recommendations->recommend($selectedUser);
             $capacityPolicy = $this->capacity->policyFor($selectedUser);
+            $complimentaryPremium = $activeGrants->first(
+                fn (UserProductGrant $grant) => $grant->product_key === ProductKey::PremiumCore
+                    && $grant->source === 'complimentary'
+            );
+            $complimentaryHistory = $selectedUser->productGrants()
+                ->where('product_key', ProductKey::PremiumCore->value)
+                ->where('source', 'complimentary')
+                ->latest('id')
+                ->limit(10)
+                ->get();
         }
 
         return view('admin.economy.index', [
@@ -62,16 +73,66 @@ class AdminEconomyController extends Controller
             'featureDecisions' => $featureDecisions,
             'recommendation' => $recommendation,
             'capacityPolicy' => $capacityPolicy,
+            'complimentaryPremium' => $complimentaryPremium,
+            'complimentaryHistory' => $complimentaryHistory,
             'productCases' => ProductKey::cases(),
             'catalog' => $this->catalog,
         ]);
     }
 
+    public function storeComplimentaryPremium(Request $request)
+    {
+        abort_unless($this->access->authorized($request), 403);
+
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'duration' => ['required', Rule::in(['unlimited', '30_days', '90_days', 'custom'])],
+            'custom_expires_at' => ['nullable', 'required_if:duration,custom', 'date', 'after:now'],
+        ]);
+
+        $user = User::query()->findOrFail((int) $validated['user_id']);
+        $now = now();
+        $expiresAt = match ($validated['duration']) {
+            '30_days' => $now->copy()->addDays(30),
+            '90_days' => $now->copy()->addDays(90),
+            'custom' => Carbon::parse((string) $validated['custom_expires_at']),
+            default => null,
+        };
+
+        $this->expireActiveComplimentaryPremium($user, $request);
+
+        UserProductGrant::create([
+            'user_id' => $user->id,
+            'product_key' => ProductKey::PremiumCore,
+            'source' => 'complimentary',
+            'starts_at' => $now,
+            'expires_at' => $expiresAt,
+            'metadata' => [
+                'granted_via' => 'admin_complimentary_premium',
+                'duration' => $validated['duration'],
+                'granted_by_user_id' => $request->user()?->id,
+            ],
+        ]);
+
+        return redirect()
+            ->route('admin.economy.index', ['user_id' => $user->id])
+            ->with('success', 'Premiumを無償付与しました。');
+    }
+
+    public function destroyComplimentaryPremium(Request $request, User $user)
+    {
+        abort_unless($this->access->authorized($request), 403);
+
+        $count = $this->expireActiveComplimentaryPremium($user, $request);
+
+        return redirect()
+            ->route('admin.economy.index', ['user_id' => $user->id])
+            ->with('success', $count > 0 ? '無償Premiumを解除しました。' : '有効な無償Premiumはありませんでした。');
+    }
+
     public function storeGrant(Request $request)
     {
-        if (! $this->access->authorized($request)) {
-            return redirect()->route('admin.login');
-        }
+        abort_unless($this->access->authorized($request), 403);
 
         $expiresRules = ['nullable', 'date'];
         if ($request->filled('starts_at')) {
@@ -81,7 +142,7 @@ class AdminEconomyController extends Controller
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'product_key' => ['required', Rule::enum(ProductKey::class)],
-            'source' => ['required', Rule::in(['manual', 'subscription', 'gift', 'sponsor', 'migration'])],
+            'source' => ['required', Rule::in(['manual', 'subscription', 'complimentary', 'gift', 'sponsor', 'migration'])],
             'starts_at' => ['nullable', 'date'],
             'expires_at' => $expiresRules,
         ]);
@@ -90,6 +151,7 @@ class AdminEconomyController extends Controller
             ...$validated,
             'metadata' => [
                 'granted_via' => 'admin_economy_inspector',
+                'granted_by_user_id' => $request->user()?->id,
             ],
         ]);
 
@@ -100,9 +162,7 @@ class AdminEconomyController extends Controller
 
     public function destroyGrant(Request $request, UserProductGrant $grant)
     {
-        if (! $this->access->authorized($request)) {
-            return redirect()->route('admin.login');
-        }
+        abort_unless($this->access->authorized($request), 403);
 
         $userId = (int) $grant->user_id;
         $grant->delete();
@@ -110,5 +170,29 @@ class AdminEconomyController extends Controller
         return redirect()
             ->route('admin.economy.index', ['user_id' => $userId])
             ->with('success', 'Product Grantを解除しました。');
+    }
+
+    private function expireActiveComplimentaryPremium(User $user, Request $request): int
+    {
+        $active = $user->productGrants()
+            ->active()
+            ->where('product_key', ProductKey::PremiumCore->value)
+            ->where('source', 'complimentary')
+            ->get();
+
+        foreach ($active as $grant) {
+            $metadata = is_array($grant->metadata) ? $grant->metadata : [];
+            $grant->update([
+                'expires_at' => now(),
+                'metadata' => [
+                    ...$metadata,
+                    'revoked_via' => 'admin_complimentary_premium',
+                    'revoked_by_user_id' => $request->user()?->id,
+                    'revoked_at' => now()->toIso8601String(),
+                ],
+            ]);
+        }
+
+        return $active->count();
     }
 }
