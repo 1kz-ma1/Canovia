@@ -26,6 +26,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminTelemetryController;
 use App\Http\Controllers\AdminQuestionPackController;
 use App\Http\Controllers\AdminEconomyController;
+use App\Http\Controllers\AdminPreviewController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\RoadmapController;
 use App\Http\Controllers\TimelineController;
@@ -86,26 +87,32 @@ Route::delete('/feedback/future/{roadmapFeature}/support', [CanoviaFutureControl
 Route::post('/feedback', [FeedbackController::class, 'store'])->middleware('throttle:12,1')->name('feedback.store');
 Route::post('/onboarding/complete', [OnboardingController::class, 'complete'])->middleware('throttle:30,1')->name('onboarding.complete');
 Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->middleware('throttle:30,1')->name('onboarding.skip');
-Route::get('/admin/login', [AdminFeedbackController::class, 'login'])->name('admin.login');
-Route::post('/admin/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.authenticate');
-Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
-// Legacy Feedback Admin login URLs stay valid for existing bookmarks.
-Route::get('/admin/feedback/login', fn () => redirect()->route('admin.login'))->name('admin.feedback.login');
-Route::post('/admin/feedback/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.feedback.authenticate');
-Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
-Route::get('/admin/telemetry', [AdminTelemetryController::class, 'index'])->name('admin.telemetry.index');
-Route::get('/admin/question-packs', [AdminQuestionPackController::class, 'index'])->name('admin.question_packs.index');
-Route::get('/admin/economy', [AdminEconomyController::class, 'index'])->name('admin.economy.index');
-Route::post('/admin/economy/grants', [AdminEconomyController::class, 'storeGrant'])->name('admin.economy.grants.store');
-Route::delete('/admin/economy/grants/{grant}', [AdminEconomyController::class, 'destroyGrant'])->name('admin.economy.grants.destroy');
-Route::post('/admin/question-packs/import', [AdminQuestionPackController::class, 'import'])->name('admin.question_packs.import');
-Route::post('/admin/question-packs/import-bundled', [AdminQuestionPackController::class, 'importBundled'])->name('admin.question_packs.import_bundled');
-Route::patch('/admin/question-packs/{questionPack}/status', [AdminQuestionPackController::class, 'updateStatus'])->name('admin.question_packs.status');
-Route::patch('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('admin.feedback.status');
-Route::patch('/admin/feedback/{feedback}/archive', [AdminFeedbackController::class, 'archive'])->name('admin.feedback.archive');
-Route::patch('/admin/feedback/{feedback}/restore', [AdminFeedbackController::class, 'restore'])->name('admin.feedback.restore');
-Route::post('/admin/feedback/{feedback}/release-note', [AdminFeedbackController::class, 'publishReleaseNote'])->name('admin.feedback.release_note.publish');
-Route::delete('/admin/feedback/{feedback}/release-note/{releaseNote}', [AdminFeedbackController::class, 'unpublishReleaseNote'])->name('admin.feedback.release_note.unpublish');
+Route::middleware(['auth', 'admin.access'])->group(function () {
+    Route::get('/admin/login', [AdminFeedbackController::class, 'login'])->name('admin.login');
+    Route::post('/admin/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.authenticate');
+    Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    // Legacy Feedback Admin login URLs stay valid for existing bookmarks, but
+    // they are protected by the same single-account Admin boundary.
+    Route::get('/admin/feedback/login', fn () => redirect()->route('admin.login'))->name('admin.feedback.login');
+    Route::post('/admin/feedback/login', [AdminFeedbackController::class, 'authenticate'])->middleware('throttle:10,1')->name('admin.feedback.authenticate');
+    Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
+    Route::get('/admin/telemetry', [AdminTelemetryController::class, 'index'])->name('admin.telemetry.index');
+    Route::get('/admin/question-packs', [AdminQuestionPackController::class, 'index'])->name('admin.question_packs.index');
+    Route::get('/admin/economy', [AdminEconomyController::class, 'index'])->name('admin.economy.index');
+    Route::post('/admin/economy/grants', [AdminEconomyController::class, 'storeGrant'])->name('admin.economy.grants.store');
+    Route::delete('/admin/economy/grants/{grant}', [AdminEconomyController::class, 'destroyGrant'])->name('admin.economy.grants.destroy');
+    Route::post('/admin/economy/complimentary-premium', [AdminEconomyController::class, 'storeComplimentaryPremium'])->name('admin.economy.complimentary.store');
+    Route::delete('/admin/economy/complimentary-premium/{user}', [AdminEconomyController::class, 'destroyComplimentaryPremium'])->name('admin.economy.complimentary.destroy');
+    Route::post('/admin/preview', [AdminPreviewController::class, 'update'])->name('admin.preview.update');
+    Route::post('/admin/question-packs/import', [AdminQuestionPackController::class, 'import'])->name('admin.question_packs.import');
+    Route::post('/admin/question-packs/import-bundled', [AdminQuestionPackController::class, 'importBundled'])->name('admin.question_packs.import_bundled');
+    Route::patch('/admin/question-packs/{questionPack}/status', [AdminQuestionPackController::class, 'updateStatus'])->name('admin.question_packs.status');
+    Route::patch('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('admin.feedback.status');
+    Route::patch('/admin/feedback/{feedback}/archive', [AdminFeedbackController::class, 'archive'])->name('admin.feedback.archive');
+    Route::patch('/admin/feedback/{feedback}/restore', [AdminFeedbackController::class, 'restore'])->name('admin.feedback.restore');
+    Route::post('/admin/feedback/{feedback}/release-note', [AdminFeedbackController::class, 'publishReleaseNote'])->name('admin.feedback.release_note.publish');
+    Route::delete('/admin/feedback/{feedback}/release-note/{releaseNote}', [AdminFeedbackController::class, 'unpublishReleaseNote'])->name('admin.feedback.release_note.unpublish');
+});
 
 
 // 共同計画。共有URLは未ログインでも招待内容を確認でき、認証後に元の招待へ戻ります。
