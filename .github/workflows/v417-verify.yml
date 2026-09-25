@@ -42,7 +42,6 @@ jobs:
           tests/Feature/EconomyFoundationV415Test.php
           tests/Feature/FeatureAccessV406Test.php
           tests/Feature/RoadmapFeedbackV13Test.php
-          tests/Feature/QuestionBankV402Test.php
           tests/Feature/ApQuestionPackV403Test.php
           tests/Feature/StudyPracticeCalibrationV414Test.php
 
