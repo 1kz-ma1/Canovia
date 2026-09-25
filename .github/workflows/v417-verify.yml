@@ -1,0 +1,89 @@
+name: V41.7 temporary verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'bootstrap/**'
+      - 'config/**'
+      - 'resources/**'
+      - 'routes/**'
+      - 'tests/**'
+      - 'composer.*'
+      - 'package*.json'
+      - '.github/workflows/v417-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - run: php artisan view:cache
+      - name: V41.7 focused regression
+        run: >
+          php artisan test
+          tests/Feature/AdminPremiumExperienceV417Test.php
+          tests/Feature/EconomyFoundationV415Test.php
+          tests/Feature/FeatureAccessV406Test.php
+          tests/Feature/RoadmapFeedbackV13Test.php
+          tests/Feature/QuestionBankV402Test.php
+          tests/Feature/ApQuestionPackV403Test.php
+          tests/Feature/StudyPracticeCalibrationV414Test.php
+
+  branch-full:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - name: Full suite on V41.7 branch
+        run: php artisan test
+
+  baseline-full:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - name: Full suite on baseline main
+        run: php artisan test
