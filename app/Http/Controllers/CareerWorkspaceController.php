@@ -29,7 +29,7 @@ class CareerWorkspaceController extends Controller
         $this->authorizeCareerPlan($plan, $profiles);
 
         $plan->load([
-            'careerCaptures' => fn ($query) => $query->latest('captured_at')->latest('id'),
+            'careerCaptures' => fn ($query) => $query->with('application')->latest('captured_at')->latest('id'),
             'careerApplications' => fn ($query) => $query->with(['selectionEvents.interviewReview'])->latest('updated_at')->latest('id'),
             'tasks' => fn ($query) => $query->orderBy('sort_order')->orderBy('id'),
         ]);
@@ -107,7 +107,7 @@ class CareerWorkspaceController extends Controller
         $stream = Storage::readStream($capture->screenshot_path);
         abort_unless(is_resource($stream), 404);
 
-        $filename = basename((string) ($capture->screenshot_original_name ?: 'career-capture'));
+        $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', basename((string) ($capture->screenshot_original_name ?: 'career-capture'))) ?: 'career-capture';
 
         return response()->stream(function () use ($stream) {
             fpassthru($stream);
@@ -206,6 +206,14 @@ class CareerWorkspaceController extends Controller
             'result' => ['nullable', 'string', 'max:32'],
         ]);
 
+        if (
+            ! $application->applied_at
+            && in_array($validated['stage'], ['applied', 'screening', 'interview', 'final_interview', 'offer'], true)
+        ) {
+            $validated['applied_at'] = today();
+        }
+
+        $validated['result'] = trim((string) ($validated['result'] ?? '')) ?: null;
         $application->update($validated);
 
         return redirect()
