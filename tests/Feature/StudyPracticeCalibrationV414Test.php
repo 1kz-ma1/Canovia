@@ -124,6 +124,71 @@ class StudyPracticeCalibrationV414Test extends TestCase
         $this->assertGreaterThanOrEqual(0.70, $item['confidence']);
     }
 
+    public function test_priority_exposes_learning_value_per_recovery_cost(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+
+        $latest = $this->attempt($user, $plan, $task, 'value-latest', [
+            'score_percent' => 60,
+            'weaknesses' => [],
+            'question_feedback' => [
+                [
+                    'question_id' => 'q1',
+                    'correctness' => 'incorrect',
+                    'error_type' => 'concept_gap',
+                    'weakness_topics' => ['DNSレコード'],
+                    'misconceptions' => ['MXとCNAMEの役割を混同'],
+                ],
+                [
+                    'question_id' => 'q2',
+                    'correctness' => 'incorrect',
+                    'error_type' => 'calculation_slip',
+                    'weakness_topics' => ['可用性計算'],
+                    'misconceptions' => [],
+                ],
+            ],
+        ]);
+
+        $older = $this->attempt($user, $plan, $task, 'value-older', [
+            'score_percent' => 65,
+            'weaknesses' => [],
+            'question_feedback' => [
+                [
+                    'question_id' => 'q1',
+                    'correctness' => 'incorrect',
+                    'error_type' => 'concept_gap',
+                    'weakness_topics' => ['DNSレコード'],
+                    'misconceptions' => ['AとCNAMEの使い分け'],
+                ],
+                [
+                    'question_id' => 'q2',
+                    'correctness' => 'incorrect',
+                    'error_type' => 'calculation_slip',
+                    'weakness_topics' => ['可用性計算'],
+                    'misconceptions' => [],
+                ],
+            ],
+        ], now()->subDay());
+
+        $result = app(StudyWeaknessPrioritizationService::class)->analyze(
+            $plan,
+            $task,
+            collect([$latest, $older]),
+            [],
+            10,
+        );
+
+        $ranked = collect($result['ranked']);
+        $concept = $ranked->firstWhere('topic', 'DNSレコード');
+        $calculation = $ranked->firstWhere('topic', '可用性計算');
+
+        $this->assertArrayHasKey('value_per_cost', $concept);
+        $this->assertArrayHasKey('value_per_cost', $calculation);
+        $this->assertSame('concept_gap', $concept['dominant_error_type']);
+        $this->assertSame('calculation_slip', $calculation['dominant_error_type']);
+        $this->assertGreaterThan($calculation['priority_score'], $concept['priority_score']);
+    }
+
     public function test_heavily_repeated_topic_gets_saturation_penalty_and_less_than_half_when_needed(): void
     {
         [$user, $plan, $task] = $this->studyPlan();
