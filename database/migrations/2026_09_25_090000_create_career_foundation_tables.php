@@ -47,6 +47,14 @@ return new class extends Migration
             $table->index(['plan_id', 'status', 'captured_at'], 'career_capture_plan_status_idx');
         });
 
+        Schema::create('career_capture_payloads', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('career_capture_id')->unique()->constrained('career_captures')->cascadeOnDelete();
+            $table->mediumText('screenshot_data')->nullable();
+            $table->unsignedInteger('byte_size')->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('career_selection_events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('career_application_id')->constrained('career_applications')->cascadeOnDelete();
@@ -95,6 +103,7 @@ return new class extends Migration
         Schema::dropIfExists('interview_review_answers');
         Schema::dropIfExists('interview_reviews');
         Schema::dropIfExists('career_selection_events');
+        Schema::dropIfExists('career_capture_payloads');
         Schema::dropIfExists('career_captures');
         Schema::dropIfExists('career_applications');
     }
