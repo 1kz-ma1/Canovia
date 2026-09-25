@@ -375,11 +375,25 @@
                                     'incorrect' => 'badge-amber',
                                     default => 'badge-slate',
                                 };
+                                $errorTypeLabel = match ($feedback['error_type'] ?? 'none') {
+                                    'knowledge_gap' => '知識不足',
+                                    'concept_gap' => '概念理解',
+                                    'reasoning_gap' => '推論',
+                                    'condition_reading' => '条件読解',
+                                    'unit_error' => '単位ミス',
+                                    'calculation_slip' => '計算ミス',
+                                    'careless' => 'ケアレス',
+                                    'unknown' => '原因未確定',
+                                    default => null,
+                                };
                             @endphp
                             <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <strong class="text-sm text-slate-100">{{ $feedback['question_id'] }}</strong>
                                     <span class="badge {{ $correctnessClass }}">{{ $correctnessLabel }}</span>
+                                    @if ($errorTypeLabel)
+                                        <span class="badge badge-slate">{{ $errorTypeLabel }}</span>
+                                    @endif
                                 </div>
                                 @if ($feedback['feedback'])
                                     <p class="mt-2 text-sm leading-6 text-slate-300">{{ $feedback['feedback'] }}</p>
