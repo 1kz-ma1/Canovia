@@ -404,6 +404,9 @@
                                         <p class="mt-1 text-xs leading-5 text-slate-300">{{ $feedback['reasoning_feedback'] }}</p>
                                     </div>
                                 @endif
+                                @if (collect($feedback['weakness_topics'] ?? [])->isNotEmpty())
+                                    <p class="mt-2 text-xs leading-5 text-slate-400">弱点候補：{{ collect($feedback['weakness_topics'])->implode(' / ') }}</p>
+                                @endif
                                 @if (collect($feedback['misconceptions'] ?? [])->isNotEmpty())
                                     <p class="mt-2 text-xs leading-5 text-amber-100">誤解ポイント：{{ collect($feedback['misconceptions'])->implode(' / ') }}</p>
                                 @endif
