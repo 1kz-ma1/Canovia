@@ -120,8 +120,9 @@ class DashboardPresentationService
                 ->filter(fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && (bool) ($tool['recommended'] ?? false))
                 ->sortBy(fn (array $tool) => match ($tool['id'] ?? null) {
                     'ai_practice' => 0,
-                    'artifacts' => 1,
-                    'resources' => 2,
+                    'career_workspace' => 1,
+                    'artifacts' => 2,
+                    'resources' => 3,
                     default => 9,
                 })
                 ->first();
