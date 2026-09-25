@@ -167,6 +167,20 @@
                                             {{ $event->interviewReview?->status === 'completed' ? '振り返りを見る →' : '面接を振り返る →' }}
                                         </a>
                                     @endif
+
+                                    @if ($canEdit && $event->status === 'result_waiting')
+                                        <form method="POST" action="{{ route('plans.career.events.result', [$plan, $event]) }}" class="mt-3 flex flex-wrap gap-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <select name="result" class="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950/60 px-2 py-2 text-xs text-slate-100">
+                                                <option value="passed">通過</option>
+                                                <option value="rejected">不通過</option>
+                                                <option value="offer">内定・オファー</option>
+                                                <option value="withdrawn">辞退</option>
+                                            </select>
+                                            <button type="submit" class="btn-secondary px-3 py-2 text-xs">結果を反映</button>
+                                        </form>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
