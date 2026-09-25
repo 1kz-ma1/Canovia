@@ -38,16 +38,29 @@ class PlanSurfaceEngine
         }
 
         if ($profile->key === 'career') {
-            $modules->push($this->module(
-                'career_pipeline',
-                'dashboard.surfaces.career-pipeline',
-                94,
-                'primary',
-                '就活では複数企業・選考段階の現在地を同時に把握する価値が高いためです。',
-                ['pipeline' => $situation['career_pipeline'] ?? collect()],
-            ));
+            $reviewDue = $situation['career_review_due_event'] ?? null;
+            $nextInterview = $situation['career_next_interview_event'] ?? null;
+            $resultWaiting = collect($situation['career_result_waiting_events'] ?? []);
 
-            if ((bool) ($situation['career_has_interview'] ?? false)) {
+            if ($reviewDue) {
+                $modules->push($this->module(
+                    'career_interview_review',
+                    'dashboard.surfaces.career-interview-review',
+                    99,
+                    'primary',
+                    '面接後は記憶が新しいうちに振り返り、次の選考へ学びを残す価値が高いためです。',
+                    ['event' => $reviewDue],
+                ));
+            } elseif ($nextInterview) {
+                $modules->push($this->module(
+                    'career_interview_prep',
+                    'dashboard.surfaces.career-interview-prep',
+                    97,
+                    'primary',
+                    '次の面接が予定されている間だけ、準備を前面に出します。',
+                    ['event' => $nextInterview],
+                ));
+            } elseif ((bool) ($situation['career_has_interview'] ?? false)) {
                 $modules->push($this->module(
                     'career_interview_focus',
                     'dashboard.surfaces.career-interview-focus',
@@ -55,6 +68,41 @@ class PlanSurfaceEngine
                     'primary',
                     '面接・選考Taskが存在する間だけ面接対策を前面に出します。',
                     ['tasks' => $situation['career_interview_tasks'] ?? collect()],
+                ));
+            }
+
+            $modules->push($this->module(
+                'career_pipeline',
+                'dashboard.surfaces.career-pipeline',
+                94,
+                'primary',
+                '就活では複数企業・選考段階の現在地を同時に把握する価値が高いためです。',
+                [
+                    'pipeline' => $situation['career_pipeline'] ?? collect(),
+                    'source' => $situation['career_pipeline_source'] ?? 'tasks',
+                    'application_count' => (int) ($situation['career_application_count'] ?? 0),
+                ],
+            ));
+
+            if ((int) ($situation['career_pending_capture_count'] ?? 0) > 0) {
+                $modules->push($this->module(
+                    'career_capture_inbox',
+                    'dashboard.surfaces.career-capture-inbox',
+                    88,
+                    'supporting',
+                    '取り込んだ求人・応募情報が未整理の間だけCapture Inboxを表示します。',
+                    ['pending_count' => (int) $situation['career_pending_capture_count']],
+                ));
+            }
+
+            if ($resultWaiting->isNotEmpty()) {
+                $modules->push($this->module(
+                    'career_result_waiting',
+                    'dashboard.surfaces.career-result-waiting',
+                    82,
+                    'supporting',
+                    '振り返り完了後は、結果待ちの状態を次の応募や面接対策と分けて確認します。',
+                    ['events' => $resultWaiting->take(3)->values()],
                 ));
             }
         }
@@ -172,6 +220,9 @@ class PlanSurfaceEngine
                 'career_interview_is_current',
                 'career_application_count',
                 'career_interview_count',
+                'career_pending_capture_count',
+                'career_result_waiting_count',
+                'career_pipeline_source',
                 'study_has_assessment',
                 'study_latest_score',
                 'study_weaknesses',
