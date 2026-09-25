@@ -123,6 +123,10 @@ class QuestionBankGrader
                 'feedback' => $model?->explanation
                     ?: ($correct ? '正解です。' : '正答条件を満たしていません。'),
                 'reasoning_feedback' => '',
+                // Deterministic choice grading can prove correctness, but it
+                // cannot safely infer why the learner chose a distractor.
+                'error_type' => $correct ? 'none' : 'unknown',
+                'weakness_topics' => $correct ? [] : $concepts->take(3)->values()->all(),
                 'misconceptions' => $correct ? [] : $concepts->take(3)->values()->all(),
             ];
         }
