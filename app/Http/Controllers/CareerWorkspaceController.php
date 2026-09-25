@@ -56,36 +56,25 @@ class CareerWorkspaceController extends Controller
         $validated = $request->validate([
             'source_type' => ['required', Rule::in(['screenshot', 'url'])],
             'source_url' => ['nullable', 'required_if:source_type,url', 'url', 'max:2048'],
-            'screenshot' => ['nullable', 'required_if:source_type,screenshot', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'screenshot' => ['nullable', 'required_if:source_type,screenshot', 'file', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
             'note' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $file = $request->file('screenshot');
-        $path = null;
+        $bytes = $file?->get();
 
-        if ($file) {
-            $path = $file->store('career-captures/'.$plan->id);
-        }
-
-        try {
-            $captureService->record(
-                $plan,
-                sourceType: $validated['source_type'],
-                sourceUrl: $validated['source_url'] ?? null,
-                screenshotPath: $path,
-                screenshotMime: $file?->getMimeType(),
-                screenshotOriginalName: $file?->getClientOriginalName(),
-                rawText: trim((string) ($validated['note'] ?? '')) ?: null,
-                userId: $request->user()?->id,
-                actorToken: $identity->resolve($request),
-            );
-        } catch (\Throwable $error) {
-            if ($path) {
-                Storage::delete($path);
-            }
-
-            throw $error;
-        }
+        $captureService->record(
+            $plan,
+            sourceType: $validated['source_type'],
+            sourceUrl: $validated['source_url'] ?? null,
+            screenshotMime: $file?->getMimeType(),
+            screenshotOriginalName: $file?->getClientOriginalName(),
+            screenshotData: is_string($bytes) ? base64_encode($bytes) : null,
+            screenshotByteSize: is_string($bytes) ? strlen($bytes) : null,
+            rawText: trim((string) ($validated['note'] ?? '')) ?: null,
+            userId: $request->user()?->id,
+            actorToken: $identity->resolve($request),
+        );
 
         return redirect()
             ->route('plans.career.index', $plan)
@@ -102,17 +91,21 @@ class CareerWorkspaceController extends Controller
         $ownership->authorizeView($request, $plan);
         $this->authorizeCareerPlan($plan, $profiles);
         abort_unless((int) $capture->plan_id === (int) $plan->id, 404);
-        abort_unless(filled($capture->screenshot_path) && Storage::exists($capture->screenshot_path), 404);
+        $capture->loadMissing('payload');
 
-        $stream = Storage::readStream($capture->screenshot_path);
-        abort_unless(is_resource($stream), 404);
+        $bytes = null;
+        if ($capture->payload?->screenshot_data) {
+            $decoded = base64_decode($capture->payload->screenshot_data, true);
+            $bytes = is_string($decoded) ? $decoded : null;
+        } elseif (filled($capture->screenshot_path) && Storage::exists($capture->screenshot_path)) {
+            $bytes = Storage::get($capture->screenshot_path);
+        }
+
+        abort_unless(is_string($bytes) && $bytes !== '', 404);
 
         $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', basename((string) ($capture->screenshot_original_name ?: 'career-capture'))) ?: 'career-capture';
 
-        return response()->stream(function () use ($stream) {
-            fpassthru($stream);
-            fclose($stream);
-        }, 200, [
+        return response($bytes, 200, [
             'Content-Type' => $capture->screenshot_mime ?: 'application/octet-stream',
             'Content-Disposition' => 'inline; filename="'.addslashes($filename).'"',
             'Cache-Control' => 'private, max-age=300',
