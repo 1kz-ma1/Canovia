@@ -51,6 +51,24 @@ class CareerCaptureInterviewReviewV413Test extends TestCase
             ->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 
+    public function test_private_screenshot_cannot_be_opened_by_another_user(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $plan = $this->plan($owner);
+
+        $this->actingAs($owner)->post(route('plans.career.captures.store', $plan), [
+            'source_type' => 'screenshot',
+            'screenshot' => $this->pngUpload('private.png'),
+        ]);
+
+        $capture = CareerCapture::firstOrFail();
+
+        $this->actingAs($other)
+            ->get(route('plans.career.captures.screenshot', [$plan, $capture]))
+            ->assertForbidden();
+    }
+
     public function test_url_capture_can_be_saved_before_company_is_known(): void
     {
         $user = User::factory()->create();
