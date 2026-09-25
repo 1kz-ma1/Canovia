@@ -21,7 +21,12 @@ final class AdminPreviewContext
             return null;
         }
 
-        $mode = request()->session()->get(self::SESSION_KEY);
+        $request = request();
+        if (! $request->hasSession()) {
+            return null;
+        }
+
+        $mode = $request->session()->get(self::SESSION_KEY);
 
         return in_array($mode, ['free', 'premium'], true) ? $mode : null;
     }
