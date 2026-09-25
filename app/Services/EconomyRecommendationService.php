@@ -24,41 +24,45 @@ class EconomyRecommendationService
     public function recommend(User $user): array
     {
         $plans = $user->plans()->get();
-        $planIds = $plans->pluck('id');
-
-        $domainPlanCounts = [
-            'study' => 0,
-            'career' => 0,
-            'development' => 0,
-            'creative' => 0,
+        $domainPlanIds = [
+            'study' => collect(),
+            'career' => collect(),
+            'development' => collect(),
+            'creative' => collect(),
         ];
 
         foreach ($plans as $plan) {
             $key = $this->categoryProfiles->forPlan($plan)->key;
-            if (array_key_exists($key, $domainPlanCounts)) {
-                $domainPlanCounts[$key]++;
+            if (array_key_exists($key, $domainPlanIds)) {
+                $domainPlanIds[$key]->push((int) $plan->id);
             }
         }
 
+        $domainPlanCounts = collect($domainPlanIds)
+            ->map(fn ($ids) => $ids->count())
+            ->all();
+
         $studyAttempts = StudyPracticeAttempt::query()
             ->where('user_id', $user->id)
+            ->whereIn('plan_id', $domainPlanIds['study'])
             ->count();
 
         $careerCaptures = CareerCapture::query()
             ->where('user_id', $user->id)
+            ->whereIn('plan_id', $domainPlanIds['career'])
             ->count();
 
         $completedInterviewReviews = InterviewReview::query()
-            ->whereIn('plan_id', $planIds)
+            ->whereIn('plan_id', $domainPlanIds['career'])
             ->whereNotNull('completed_at')
             ->count();
 
         $artifactCount = PlanArtifact::query()
-            ->whereIn('plan_id', $planIds)
+            ->whereIn('plan_id', $domainPlanIds['development'])
             ->count();
 
         $githubArtifactCount = PlanArtifact::query()
-            ->whereIn('plan_id', $planIds)
+            ->whereIn('plan_id', $domainPlanIds['development'])
             ->where('provider', 'github')
             ->count();
 
