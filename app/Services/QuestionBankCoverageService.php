@@ -50,9 +50,16 @@ class QuestionBankCoverageService
                         fn (Question $question) => $this->questionFocusScore($question, $focusTopics) > 0
                     )->count();
 
+                $mix = is_array($strategy['question_mix'] ?? null)
+                    ? $strategy['question_mix']
+                    : [];
+                $requestedFocusCount = max(
+                    0,
+                    (int) ($mix['primary'] ?? 0) + (int) ($mix['secondary'] ?? 0),
+                );
                 $minimumFocusMatches = $focusTopics->isEmpty()
                     ? 0
-                    : min(3, $requiredCount);
+                    : min(3, max(1, $requestedFocusCount ?: $requiredCount));
 
                 $available = $packScore > 0
                     && $questions->count() >= $requiredCount
