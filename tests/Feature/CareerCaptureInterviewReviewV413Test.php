@@ -29,7 +29,7 @@ class CareerCaptureInterviewReviewV413Test extends TestCase
         $plan = $this->plan($user);
         $response = $this->actingAs($user)->post(route('plans.career.captures.store', $plan), [
             'source_type' => 'screenshot',
-            'screenshot' => UploadedFile::fake()->image('application.png', 900, 1600),
+            'screenshot' => $this->pngUpload('application.png'),
         ]);
 
         $response->assertRedirect(route('plans.career.index', $plan));
@@ -330,6 +330,18 @@ class CareerCaptureInterviewReviewV413Test extends TestCase
         $this->actingAs($user)
             ->get(route('plans.career.index', $plan))
             ->assertNotFound();
+    }
+
+    private function pngUpload(string $name): UploadedFile
+    {
+        $bytes = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=',
+            true,
+        );
+        $path = tempnam(sys_get_temp_dir(), 'career-capture-');
+        file_put_contents($path, $bytes);
+
+        return new UploadedFile($path, $name, 'image/png', null, true);
     }
 
     private function careerSurfaceState(Plan $plan): array
