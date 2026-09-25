@@ -83,6 +83,7 @@
                     $providerKey = $practiceProvider['provider'] ?? 'external_ai';
                     $providerLabel = match ($providerKey) {
                         'question_bank' => 'Canovia Question Bank',
+                        'native_ai' => 'Canovia Native AI',
                         'external_ai' => '外部AI',
                         default => $providerKey,
                     };
@@ -221,6 +222,41 @@
                     </form>
                 </section>
             @else
+                @if ($nativeAiAvailable)
+                    <section class="page-card border-cyan-300/25 p-5 sm:p-6">
+                        <div class="flex items-center gap-3">
+                            <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">1</span>
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h2 class="font-black text-slate-100">Canovia内で演習を準備</h2>
+                                    <span class="badge badge-green">Premium</span>
+                                </div>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">コピーや貼り付けをせず、Canoviaが問題生成から演習開始まで進めます。</p>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ route('plans.tasks.study_practice.native.prepare', [$plan, $task]) }}" class="mt-4">
+                            @csrf
+                            <input type="hidden" name="prepare_request_id" value="{{ $prepareRequestId }}">
+                            <button type="submit" class="btn-primary">Canoviaで演習を始める</button>
+                        </form>
+
+                        <p class="mt-3 text-[11px] leading-5 text-slate-500">
+                            AI Capacity: {{ data_get($nativeAiCapacity, 'policy.label', data_get($nativeAiCapacity, 'tier', 'standard')) }}
+                            · Native AIが利用できない場合も、外部AIの手動フローへ切り替えられます。
+                        </p>
+                    </section>
+
+                    <details class="page-card p-5 sm:p-6" @if(session('native_ai_fallback')) open @endif>
+                        <summary class="cursor-pointer text-sm font-black text-slate-200">外部AIを使う / Native AIが使えない場合</summary>
+                        <div class="mt-4 space-y-4">
+                @elseif ($nativeAiEntitled && ! $nativeAiConfigured)
+                    <section class="page-card border-amber-300/15 p-5 sm:p-6">
+                        <p class="text-sm font-black text-slate-100">Native AIは現在準備中です</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">Premium権利は有効ですが、サーバー側のNative AI設定がまだ有効化されていません。下の外部AIフローはそのまま使えます。</p>
+                    </section>
+                @endif
+
                 <section class="page-card p-5 sm:p-6">
                     <div class="flex items-center gap-3">
                         <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-sm font-black text-cyan-200">1</span>
@@ -294,6 +330,11 @@
                         @endif
                     </form>
                 </section>
+
+                @if ($nativeAiAvailable)
+                        </div>
+                    </details>
+                @endif
             @endif
         @endif
 
