@@ -47,7 +47,6 @@ class StudyWeaknessPrioritizationService
         $attempts = $recentAttempts->take(8)->values();
         $topics = [];
         $strengthIndexes = [];
-        $totalWeakSignals = 0;
 
         foreach ($attempts as $attemptIndex => $attempt) {
             $ageWeight = max(0.50, 1.0 - ($attemptIndex * 0.08));
@@ -111,7 +110,6 @@ class StudyWeaknessPrioritizationService
                     continue;
                 }
 
-                $totalWeakSignals++;
                 $topics[$topicKey] ??= [
                     'topic' => $signal['topic'],
                     'weighted_error' => 0.0,
@@ -196,9 +194,11 @@ class StudyWeaknessPrioritizationService
                     default => 0.42,
                 };
 
-                $topicShare = $totalWeakSignals > 0 ? $weakAttemptCount / $totalWeakSignals : 0.0;
-                $recentShare = $recentCount / 3.0;
-                $saturation = min(1.0, max($topicShare, $recentShare));
+                // Saturation is intentionally about recent repetition,
+                // not about how large this topic is relative to all weaknesses.
+                // A single known weakness must not look "fully saturated" after
+                // only one or two attempts.
+                $saturation = min(1.0, $recentCount / 3.0);
                 $saturationPenalty = 1.0 + (0.70 * $saturation);
 
                 $examRelevance = str_contains($scope, mb_strtolower($topic['topic'])) ? 1.15 : 1.0;
