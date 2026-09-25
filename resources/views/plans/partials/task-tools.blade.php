@@ -33,6 +33,15 @@
                             <span class="mt-2 block text-xs leading-5 text-slate-300">{{ $tool['description'] }}</span>
                         @endif
                     </a>
+                @elseif ($tool['id'] === 'career_workspace')
+                    <a href="{{ route('plans.career.index', $toolPlan) }}" class="{{ $compactTools ? 'btn-secondary px-3 py-2 text-xs' : 'rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/[0.04] p-4 transition hover:border-fuchsia-300/30' }}">
+                        @if ($compactTools)
+                            <span aria-hidden="true">{{ $tool['icon'] }}</span> {{ $tool['name'] }} @if($tool['recommended'])<span class="text-fuchsia-300">おすすめ</span>@endif
+                        @else
+                            <span class="flex items-center justify-between gap-2"><strong class="text-sm text-slate-100">{{ $tool['icon'] }} {{ $tool['name'] }}</strong><span class="badge badge-slate">{{ $tool['badge'] }}</span></span>
+                            <span class="mt-2 block text-xs leading-5 text-slate-400">{{ $tool['description'] }}</span>
+                        @endif
+                    </a>
                 @elseif ($tool['id'] === 'resources')
                     <a href="{{ route('plans.resources.index', $toolPlan) }}" class="{{ $compactTools ? 'btn-secondary px-3 py-2 text-xs' : 'rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:border-cyan-300/30' }}">
                         @if ($compactTools)
