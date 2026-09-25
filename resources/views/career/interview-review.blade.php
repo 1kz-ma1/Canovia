@@ -54,7 +54,9 @@
 
         @if ($canEdit)
             <div class="mt-6 flex flex-wrap gap-2 border-t border-white/8 pt-4">
-                <button type="submit" name="action" value="save" class="btn-secondary px-4 py-2 text-xs">途中保存</button>
+                @if ($review?->status !== 'completed')
+                    <button type="submit" name="action" value="save" class="btn-secondary px-4 py-2 text-xs">途中保存</button>
+                @endif
                 <button type="submit" name="action" value="complete" class="btn-primary px-4 py-2 text-xs">
                     {{ $review?->status === 'completed' ? '振り返りを更新' : '振り返りを完了' }}
                 </button>
