@@ -15,5 +15,9 @@
         href="{{ route('admin.question_packs.index') }}"
         class="{{ request()->routeIs('admin.question_packs.*') ? 'btn-primary' : 'btn-secondary' }} px-3 py-2 text-xs"
     >問題集</a>
+    <a
+        href="{{ route('admin.economy.index') }}"
+        class="{{ request()->routeIs('admin.economy.*') ? 'btn-primary' : 'btn-secondary' }} px-3 py-2 text-xs"
+    >Economy</a>
     <span class="ml-auto hidden text-[11px] font-semibold text-slate-500 sm:inline">CANOVIA ADMIN</span>
 </nav>
