@@ -39,7 +39,9 @@ return [
         ],
         FeatureKey::AutomaticAiExecution->value => [
             'label' => 'Automatic AI Execution',
-            'free' => true,
+            // V41.8: manual external-AI handoff remains Free. Only Canovia-side
+            // provider execution is a Premium Core capability.
+            'free' => false,
         ],
         FeatureKey::StudyLongTermWeaknessProfile->value => [
             'label' => 'Study Long-term Weakness Profile',
