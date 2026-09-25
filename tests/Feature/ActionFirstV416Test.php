@@ -47,10 +47,14 @@ class ActionFirstV416Test extends TestCase
         $this->assertSame(1, $xpath->query('//details[@data-surface-disclosure="career_pipeline" and not(@open)]')->length);
     }
 
-    public function test_empty_and_completed_plans_keep_navigation_without_inventing_actions(): void
+    public function test_empty_home_keeps_plan_creation_available(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user)->get(route('home'))->assertOk()->assertSee('計画を作る');
+    }
+
+    public function test_completed_plan_keeps_navigation_without_inventing_actions(): void
+    {
         [$user, $plan, $task] = $this->scenario();
         $task->update(['status' => 'done', 'progress_percent' => 100, 'remaining_minutes' => 0]);
         $response = $this->actingAs($user)->get(route('home'))->assertOk();

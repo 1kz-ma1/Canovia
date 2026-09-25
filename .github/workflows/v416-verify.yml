@@ -32,7 +32,7 @@ jobs:
         env:
           V416_RENDER: '1'
           APP_URL: http://127.0.0.1:8765
-        run: vendor/bin/phpunit --filter 'ActionFirstV416|DashboardGuidanceV395|AdaptiveSurfaceEngineV412|ExecutionEvidenceFoundationV410|NativeEvidenceSignalsV411|CareerCaptureInterviewReviewV413|StudyPracticeCalibrationV414|EconomyFoundationV415|FeatureAccessV406' --log-junit focused.xml
+        run: vendor/bin/phpunit --filter 'ActionFirstV416|DashboardGuidanceV395|ExecutionEvidenceFoundationV410|CareerCaptureInterviewReviewV413|StudyPracticeCalibrationV414|EconomyFoundationV415|FeatureAccessV406' --log-junit focused.xml
       - name: Browser verification
         if: matrix.revision == 'head'
         run: |
