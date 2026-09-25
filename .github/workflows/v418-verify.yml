@@ -48,7 +48,7 @@ jobs:
           tests/Feature/FeatureAccessV406Test.php
           tests/Feature/EconomyFoundationV415Test.php
           tests/Feature/AdminPremiumExperienceV417Test.php
-          tests/Feature/StudyPracticeOrchestrationV401Test.php
+          tests/Feature/CanoviaFutureV407Test.php
           tests/Feature/StudyPracticeCalibrationV414Test.php
 
   full-branch:
