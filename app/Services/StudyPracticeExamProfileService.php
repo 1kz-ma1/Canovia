@@ -23,7 +23,8 @@ class StudyPracticeExamProfileService
             (string) ($task->description ?? ''),
         ]));
 
-        $isAp = preg_match('/応用情報|\bap\b/u', $context) === 1;
+        $isAp = str_contains($context, '応用情報')
+            || preg_match('/(?:^|[^a-z])ap(?:$|[^a-z])/u', $context) === 1;
         $isSubjectA = preg_match('/科目\s*a|科目a|午前/u', $context) === 1;
 
         if ($isAp && $isSubjectA) {
