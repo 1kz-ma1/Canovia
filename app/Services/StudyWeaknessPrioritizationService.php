@@ -212,7 +212,9 @@ class StudyWeaknessPrioritizationService
 
                 $state = match (true) {
                     $resolved => 'resolved',
-                    $latestStrength === 0 && $weakAttemptCount >= 2 => 'stabilizing',
+                    $latestStrength === 0
+                        && ($latestWeak === null || $latestWeak > 0)
+                        && $weakAttemptCount >= 2 => 'stabilizing',
                     $weakAttemptCount >= 2 => 'confirmed',
                     $latestWeak === 0 => 'suspected',
                     default => 'monitoring',
