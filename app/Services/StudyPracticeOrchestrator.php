@@ -61,6 +61,24 @@ class StudyPracticeOrchestrator
         string $prepareRequestId,
         ?string $providerKey = null,
     ): StudyPracticeSession {
+        $existing = StudyPracticeSession::query()
+            ->where('prepare_request_id', $prepareRequestId)
+            ->first();
+
+        if ($existing) {
+            if (
+                (int) $existing->plan_id !== (int) $plan->id
+                || (int) $existing->task_id !== (int) $task->id
+                || ($userId !== null && (int) $existing->user_id !== $userId)
+                || ($userId === null && (string) $existing->actor_token !== (string) $actorToken)
+                || ($providerKey !== null && (string) $existing->question_provider !== $providerKey)
+            ) {
+                throw new RuntimeException('この演習準備リクエストは別の対象で使用済みです。');
+            }
+
+            return $existing;
+        }
+
         $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
 
         $provider = $providerKey !== null
