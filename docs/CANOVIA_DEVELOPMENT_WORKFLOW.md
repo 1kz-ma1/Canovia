@@ -36,6 +36,8 @@ Direct updates to `main` are exceptions only when the user explicitly authorizes
 
 ## Pull Request expectations
 
+Write PR titles, descriptions, verification results, and known limitations in Japanese. Keep code identifiers unchanged.
+
 A PR should include:
 
 - implementation summary

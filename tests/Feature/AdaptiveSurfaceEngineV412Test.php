@@ -154,7 +154,9 @@ class AdaptiveSurfaceEngineV412Test extends TestCase
     {
         $view = file_get_contents(resource_path('views/dashboard/index.blade.php'));
 
-        $this->assertStringContainsString("@include(\$surface->view", $view);
+        $disclosure = file_get_contents(resource_path('views/dashboard/surfaces/disclosure.blade.php'));
+        $this->assertStringContainsString("@include('dashboard.surfaces.disclosure'", $view);
+        $this->assertStringContainsString("@include(\$surface->view", $disclosure);
         $this->assertStringContainsString("\$surfaceModules", $view);
         $this->assertStringNotContainsString('data-plan-hub-current>', $view);
 

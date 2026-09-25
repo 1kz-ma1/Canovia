@@ -17,9 +17,9 @@
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0">
                     <h3 class="text-base font-black leading-6 text-white">{{ $hubCurrentTask->title }}</h3>
-                    <p class="mt-2 text-sm leading-6 text-slate-300">
-                        {{ $hubCurrentTask->next_action_note ?: ($hubCurrentTask->description ?: 'このTaskを少し前へ進めましょう。') }}
-                    </p>
+                    @if ($hubCurrentTask->next_action_note)
+                        <p class="mt-2 text-sm leading-6 text-slate-300">{{ \Illuminate\Support\Str::limit($hubCurrentTask->next_action_note, 80) }}</p>
+                    @endif
                 </div>
                 <span class="badge {{ $hubCurrentTask->status === 'doing' ? 'badge-green' : 'badge-slate' }}">{{ $hubCurrentTask->status === 'doing' ? '進行中' : '未着手' }}</span>
             </div>
@@ -53,9 +53,18 @@
                 @endif
             </div>
 
-            @if (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
-                <p class="mt-3 text-[11px] leading-5 text-cyan-200/80">AI演習は回答・評価結果をCanoviaが自動でEvidenceとして残します。</p>
-            @endif
+            <details class="pk-action-details mt-3" data-current-task-details>
+                <summary>次の一歩・Taskの詳細</summary>
+                <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-300">
+                    {{ $hubCurrentTask->next_action_note ?: ($hubCurrentTask->description ?: 'このTaskを少し前へ進めましょう。') }}
+                </p>
+                @if ($hubCurrentTask->next_action_note && $hubCurrentTask->description)
+                    <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-300">{{ $hubCurrentTask->description }}</p>
+                @endif
+                @if (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
+                    <p class="mt-3 text-[11px] leading-5 text-cyan-200/80">AI演習は回答・評価結果をCanoviaが自動でEvidenceとして残します。</p>
+                @endif
+            </details>
         </div>
     @endif
 </section>
