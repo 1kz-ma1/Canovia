@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\EvidenceSource;
 use App\Models\Plan;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\TaskEvidenceService;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,6 +47,30 @@ class ActionFirstV416Test extends TestCase
         $xpath = $this->xpath($response->getContent());
         $this->assertSame(1, $xpath->query('//*[@data-surface-id="career_interview_focus" and not(ancestor::details)]')->length);
         $this->assertSame(1, $xpath->query('//details[@data-surface-disclosure="career_pipeline" and not(@open)]')->length);
+    }
+
+    public function test_evidence_remains_accessible_without_changing_progress(): void
+    {
+        [$user, $plan, $task] = $this->scenario();
+        app(TaskEvidenceService::class)->record($task, EvidenceSource::Native, 'artifact_state_observed', ['title' => '確認済みの成果物']);
+        $response = $this->actingAs($user)->get(route('home'))->assertOk();
+        $xpath = $this->xpath($response->getContent());
+        $this->assertSame(1, $xpath->query('//details[@data-surface-disclosure="recent_evidence" and not(@open)]//*[@data-surface-id="recent_evidence"]')->length);
+        $this->assertSame(20, (int) $task->fresh()->progress_percent);
+        $this->assertDatabaseCount('task_evidences', 1);
+    }
+
+    public function test_collaborative_viewer_keeps_details_without_edit_actions(): void
+    {
+        [$owner, $plan] = $this->scenario();
+        $viewer = User::factory()->create();
+        $plan->update(['is_collaborative' => true]);
+        $plan->memberships()->create(['user_id' => $viewer->id, 'role' => 'viewer', 'joined_at' => now()]);
+        $response = $this->actingAs($viewer)->get(route('home'))->assertOk();
+        $xpath = $this->xpath($response->getContent());
+        $this->assertSame(1, $xpath->query('//*[@data-surface-id="plan_tools"]')->length);
+        $this->assertSame(0, $xpath->query('//*[@data-dashboard-panel="plan-'.$plan->id.'"]//form[@data-work-start-form]')->length);
+        $this->assertSame(0, $xpath->query('//*[@data-dashboard-panel="plan-'.$plan->id.'"]//a[contains(@href,"review-assistant")]')->length);
     }
 
     public function test_empty_home_keeps_plan_creation_available(): void
