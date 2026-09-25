@@ -173,10 +173,14 @@ class NativeAiGateway
 
     public function markRunFailed(int $runId, string $code, string $message): void
     {
-        $run = NativeAiRun::query()->find($runId);
-        if ($run) {
-            $this->markFailed($run, $code, $message);
-        }
+        NativeAiRun::query()
+            ->whereKey($runId)
+            ->update([
+                'status' => 'failed',
+                'error_code' => mb_substr($code, 0, 80),
+                'error_message' => mb_substr($message, 0, 4000),
+                'completed_at' => now(),
+            ]);
     }
 
     private function callOpenAi(
