@@ -124,6 +124,7 @@ class InterviewReviewController extends Controller
 
             $insights = [
                 'best_moment' => $submitted->get('best_moment'),
+                'asked_questions' => $submitted->get('asked_questions'),
                 'difficult_moment' => $submitted->get('difficult_moment'),
                 'next_focus' => $submitted->get('next_focus'),
                 'company_impression' => $submitted->get('company_impression'),
@@ -166,6 +167,7 @@ class InterviewReviewController extends Controller
                             'role_title' => $event->application->role_title,
                             'stage' => $event->stage,
                             'best_moment' => $submitted->get('best_moment'),
+                            'asked_questions' => $submitted->get('asked_questions'),
                             'difficult_moment' => $submitted->get('difficult_moment'),
                             'next_focus' => $submitted->get('next_focus'),
                         ],
