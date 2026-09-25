@@ -112,6 +112,21 @@ class Plan extends Model
         return $this->hasMany(TaskEvidence::class);
     }
 
+    public function careerApplications()
+    {
+        return $this->hasMany(CareerApplication::class);
+    }
+
+    public function careerCaptures()
+    {
+        return $this->hasMany(CareerCapture::class);
+    }
+
+    public function interviewReviews()
+    {
+        return $this->hasMany(InterviewReview::class);
+    }
+
     public function availabilityRules()
     {
         return $this->hasMany(PlanAvailabilityRule::class);
