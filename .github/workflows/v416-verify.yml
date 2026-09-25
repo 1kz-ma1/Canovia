@@ -29,7 +29,17 @@ jobs:
       - run: php artisan view:cache
       - name: Focused regressions
         if: matrix.revision == 'head'
+        env:
+          V416_RENDER: '1'
+          APP_URL: http://127.0.0.1:8765
         run: vendor/bin/phpunit --filter 'ActionFirstV416|DashboardGuidanceV395|AdaptiveSurfaceEngineV412|ExecutionEvidenceFoundationV410|NativeEvidenceSignalsV411|CareerCaptureInterviewReviewV413|StudyPracticeCalibrationV414|EconomyFoundationV415|FeatureAccessV406' --log-junit focused.xml
+      - name: Browser verification
+        if: matrix.revision == 'head'
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8765 --directory public > /tmp/v416-server.log 2>&1 &
+          node .github/v416-browser.mjs
       - name: Full suite
         if: always()
         run: vendor/bin/phpunit --log-junit full.xml > full.txt 2>&1
@@ -41,3 +51,4 @@ jobs:
             focused.xml
             full.xml
             full.txt
+            visual/
