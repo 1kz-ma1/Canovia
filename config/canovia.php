@@ -3,6 +3,9 @@
 return [
     'version' => env('CANOVIA_APP_VERSION', env('PACEKEEPER_APP_VERSION', 'v29')),
     'onboarding_version' => (int) env('CANOVIA_ONBOARDING_VERSION', 1),
+    // V41.7: the Super Admin is one account only. Prefer immutable user ID;
+    // admin_email remains a migration fallback until the ID is configured.
+    'super_admin_user_id' => env('CANOVIA_SUPER_ADMIN_USER_ID'),
     'admin_email' => env('CANOVIA_ADMIN_EMAIL', env('PACEKEEPER_ADMIN_EMAIL')),
     'admin_password' => env('CANOVIA_ADMIN_PASSWORD', env('FEEDBACK_ADMIN_PASSWORD', env('TEMPLATE_ADMIN_PASSWORD'))),
     // Legacy config key kept while older admin code/routes are phased out.
