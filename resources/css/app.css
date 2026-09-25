@@ -4790,3 +4790,21 @@ h3,
     50% { box-shadow: 0 0 0 7px rgb(34 211 238 / .07), 0 0 40px rgb(59 130 246 / .48); }
 }
 body.canovia-guide-active { overflow: hidden; }
+
+/* V41.6: native disclosure retains content and keyboard semantics without JS. */
+.pk-action-details > summary {
+    cursor: pointer;
+    padding-block: .65rem;
+    color: rgb(203 213 225);
+    font-size: .875rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+.pk-action-details > summary::marker { color: rgb(103 232 249); }
+.pk-action-details > summary:focus-visible {
+    outline: 2px solid rgb(103 232 249);
+    outline-offset: 4px;
+    border-radius: .25rem;
+}
+.pk-action-details[open] > summary { margin-bottom: .5rem; }
+.pk-action-details .page-card { box-shadow: none; }

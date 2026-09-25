@@ -1,6 +1,8 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-25 / V41.5 Economy Foundation
+更新基準: 2026-09-25 / V41.6 Action First / Progressive Disclosure
+
+HomeとPlan Hubは「行動 → 最低限の文脈 → 必要に応じて理由・分析・Evidenceを開く」の情報階層を採用する。情報を削除せず、表示層で段階開示する。選定・権限・進捗・Economyの既存契約は維持する。詳細は [V41.6仕様](V41.6_ACTION_FIRST_PROGRESSIVE_DISCLOSURE.md) を参照。
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 

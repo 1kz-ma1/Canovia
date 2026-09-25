@@ -1,0 +1,43 @@
+name: V41.6 verification
+on:
+  push:
+    branches: [feature/v41-6-action-first]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        revision: [head, baseline]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.revision == 'baseline' && '9d4c6875c64d8232b73d611224a69b48fdf23de9' || github.sha }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite, dom, intl
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci && npm run build
+      - run: php artisan view:cache
+      - name: Focused regressions
+        if: matrix.revision == 'head'
+        run: vendor/bin/phpunit --filter 'ActionFirstV416|DashboardGuidanceV395|AdaptiveSurfaceEngineV412|ExecutionEvidenceFoundationV410|NativeEvidenceSignalsV411|CareerCaptureInterviewReviewV413|StudyPracticeCalibrationV414|EconomyFoundationV415|FeatureAccessV406' --log-junit focused.xml
+      - name: Full suite
+        if: always()
+        run: vendor/bin/phpunit --log-junit full.xml > full.txt 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v416-${{ matrix.revision }}
+          path: |
+            focused.xml
+            full.xml
+            full.txt

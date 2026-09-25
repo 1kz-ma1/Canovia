@@ -1,0 +1,89 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Plan;
+use App\Models\Task;
+use App\Models\User;
+use DOMDocument;
+use DOMXPath;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Tests\TestCase;
+
+class ActionFirstV416Test extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_home_keeps_actions_visible_and_preserves_explanations_in_closed_disclosures(): void
+    {
+        [$user, $plan, $task] = $this->scenario();
+        $response = $this->actingAs($user)->get(route('home'))->assertOk();
+        $response->assertSee('詳細本文を最後まで保持')->assertSee('次の一歩を保持');
+        $xpath = $this->xpath($response->getContent());
+
+        $this->assertSame(1, $xpath->query('//details[@data-guidance-reasons and not(@open)]')->length);
+        $this->assertSame(0, $xpath->query('//details[@data-guidance-reasons]//form')->length);
+        $this->assertSame(1, $xpath->query('//details[@data-home-collaboration]/preceding::section[contains(@class,"pk-v395-guidance")]')->length);
+        $this->assertSame(1, $xpath->query('//details[@data-current-task-details and not(@open)]')->length);
+        $this->assertSame(0, $xpath->query('//details[@data-current-task-details]//a | //details[@data-current-task-details]//form')->length);
+        $this->assertSame(1, $xpath->query('//*[@data-plan-hub-current]//form[@data-work-start-form and not(ancestor::details)]')->length);
+        foreach (['study_focus', 'task_list', 'recent_activity'] as $id) {
+            $this->assertSame(1, $xpath->query('//details[@data-surface-disclosure="'.$id.'" and not(@open)]')->length);
+        }
+        $this->assertSame(1, $xpath->query('//*[@data-surface-id="plan_tools" and not(ancestor::details)]')->length);
+        $this->assertSame(1, $xpath->query('//*[@data-plan-hub-current]//a[contains(@href,"study-practice") and not(ancestor::details)]')->length);
+    }
+
+    public function test_career_action_stays_visible_while_pipeline_is_disclosed(): void
+    {
+        [$user] = $this->scenario('就活・キャリア', '一次面接の準備');
+        $response = $this->actingAs($user)->get(route('home'))->assertOk();
+        $xpath = $this->xpath($response->getContent());
+        $this->assertSame(1, $xpath->query('//*[@data-surface-id="career_interview_focus" and not(ancestor::details)]')->length);
+        $this->assertSame(1, $xpath->query('//details[@data-surface-disclosure="career_pipeline" and not(@open)]')->length);
+    }
+
+    public function test_empty_and_completed_plans_keep_navigation_without_inventing_actions(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->get(route('home'))->assertOk()->assertSee('計画を作る');
+        [$user, $plan, $task] = $this->scenario();
+        $task->update(['status' => 'done', 'progress_percent' => 100, 'remaining_minutes' => 0]);
+        $response = $this->actingAs($user)->get(route('home'))->assertOk();
+        $xpath = $this->xpath($response->getContent());
+        $this->assertSame(0, $xpath->query('//*[@data-plan-hub-current]')->length);
+        $this->assertSame(1, $xpath->query('//*[@data-surface-id="plan_tools" and not(ancestor::details)]')->length);
+    }
+
+    private function scenario(string $category = '資格学習', string $title = 'ネットワーク演習'): array
+    {
+        $user = User::factory()->create();
+        $plan = Plan::create([
+            'user_id' => $user->id, 'owner_token' => Str::random(64),
+            'public_slug' => (string) Str::uuid(), 'title' => '表示階層テスト',
+            'description' => '計画の説明を全文保持', 'category' => $category,
+            'priority' => 1, 'priority_mode' => 'manual',
+            'start_date' => today(), 'deadline' => today()->addMonth(), 'is_public' => false,
+        ]);
+        $task = Task::create([
+            'plan_id' => $plan->id, 'title' => $title, 'description' => '詳細本文を最後まで保持',
+            'next_action_note' => '次の一歩を保持', 'estimated_minutes' => 60,
+            'remaining_minutes' => 45, 'progress_percent' => 20, 'status' => 'doing',
+            'priority' => 1, 'activation_cost' => 2, 'sort_order' => 1,
+        ]);
+
+        return [$user, $plan, $task];
+    }
+
+    private function xpath(string $html): DOMXPath
+    {
+        $document = new DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        return new DOMXPath($document);
+    }
+}

@@ -48,78 +48,6 @@
             <span class="pk-v18-guide-bubble pk-v22-guide-bubble-layer" aria-hidden="true">今日もいい一歩が<br>待ってるよ！</span>
         </div>
 
-        <div class="pk-v18-quick-actions" aria-label="ホームの操作">
-            <a href="{{ route('plans.create') }}" class="pk-v18-action-chip is-primary" data-onboarding-target="create-plan"><span>＋</span> 新しい計画</a>
-            <form method="POST" action="{{ route('chat.start', 'review') }}">
-                @csrf
-                <button type="submit" class="pk-v18-action-chip">計画を更新</button>
-            </form>
-            <a href="{{ route('calendar.index') }}" class="pk-v18-action-chip">カレンダー</a>
-            <a href="{{ route('my_plans.index') }}" class="pk-v18-action-chip">計画一覧</a>
-            <a href="{{ route('future_memos.index') }}" class="pk-v18-action-chip"><span>✦</span> 未来メモ</a>
-        </div>
-
-        @if (($futureMemos ?? collect())->isEmpty())
-            <section class="page-card hidden border-cyan-300/20 p-4" data-future-memo-home-hint>
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div class="max-w-2xl">
-                        <p class="pk-v18-card-kicker">MAKE IT YOURS</p>
-                        <h2 class="mt-1 text-sm font-black text-slate-100 sm:text-base">未来メモを残すと、AIがあなたの希望を計画に反映しやすくなります</h2>
-                        <p class="mt-1 text-xs leading-5 text-slate-400">やりたいこと・なりたい自分・今困っていることを、1つだけでも大丈夫。目標が決まっていない人はAIと方向を整理できます。</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('future_memos.index') }}" class="btn-primary px-3 py-2 text-xs">未来メモを作る</a>
-                        <button type="button" class="btn-secondary px-3 py-2 text-xs" data-future-memo-hint-later>あとで</button>
-                    </div>
-                </div>
-            </section>
-        @endif
-
-        <section class="page-card overflow-hidden p-4 sm:p-5" aria-labelledby="home-collaboration-title">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <p class="pk-v18-card-kicker">CANOVIA / TOGETHER</p>
-                    <h2 id="home-collaboration-title" class="mt-1 text-base font-black text-slate-50 sm:text-lg">共同計画</h2>
-                    <p class="mt-1 text-xs leading-5 text-slate-400">同じゴールを、みんなで進める。</p>
-                </div>
-                <a href="{{ route('collaboration.join.form') }}" class="btn-secondary px-3 py-2 text-xs">参加コードを入力</a>
-            </div>
-
-            @if (($collaborationPlans ?? collect())->isNotEmpty())
-                <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                    @foreach (($collaborationPlans ?? collect())->take(4) as $collaborationItem)
-                        @php
-                            $collaborationPlan = $collaborationItem['plan'];
-                            $collaborationRole = $collaborationItem['role'];
-                            $collaborationRoleLabel = match ($collaborationRole) {
-                                'owner' => 'オーナー',
-                                'editor' => '編集者',
-                                default => '閲覧者',
-                            };
-                        @endphp
-                        <a href="{{ route('plans.collaboration.settings', $collaborationPlan) }}" class="group rounded-2xl border border-cyan-300/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04]">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-bold text-slate-100">{{ $collaborationPlan->displayIcon() }} {{ $collaborationPlan->title }}</p>
-                                    <p class="mt-1 text-[11px] text-slate-500">{{ $collaborationItem['member_count'] }}人 · {{ $collaborationRoleLabel }}</p>
-                                </div>
-                                <span class="shrink-0 text-sm text-cyan-200 transition group-hover:translate-x-0.5">→</span>
-                            </div>
-                        </a>
-                    @endforeach
-                </div>
-            @else
-                <div class="mt-4 rounded-2xl border border-dashed border-slate-700/80 bg-slate-950/25 p-4">
-                    <p class="text-sm font-bold text-slate-200">まだ共同計画はありません</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">計画のロードマップから共同計画を有効にするか、もらった参加コードを入力できます。</p>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <a href="{{ $roadmapUrl }}" class="btn-secondary px-3 py-2 text-xs">ロードマップから設定</a>
-                        <a href="{{ route('collaboration.join.form') }}" class="btn-secondary px-3 py-2 text-xs">共同計画に参加</a>
-                    </div>
-                </div>
-            @endif
-        </section>
-
         @if (session('success'))
             <div class="assistant-notice assistant-notice-success">{{ session('success') }}</div>
         @endif
@@ -157,7 +85,6 @@
                             <div>
                                 <p class="pk-v18-card-kicker">TODAY'S ROUTE</p>
                                 <h2>今日やること</h2>
-                                <p class="mt-1 text-[11px] leading-4 text-slate-400">PlanとTaskの優先度で決め、Canoviaは進め方を提案します。</p>
                             </div>
                         </div>
                         <a href="{{ route('my_plans.index') }}" class="pk-v18-ellipsis" aria-label="計画一覧を開く">•••</a>
@@ -180,6 +107,36 @@
                                     <span class="badge {{ $guidanceIndex === 0 ? 'badge-green' : 'badge-slate' }}">{{ $guidanceIndex === 0 ? '最優先' : 'Plan '.($guidanceIndex + 1) }}</span>
                                 </div>
 
+                                <p class="mt-2 text-xs text-slate-400">{{ $guidanceTask->status === 'doing' ? '進行中' : '未着手' }} · 目安 {{ $adaptive?->recommendedMinutes ?? (int) ($guidanceTask->remaining_minutes ?? 0) }}分</p>
+
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    @if (($tool['id'] ?? null) === 'ai_practice')
+                                        <a href="{{ route('plans.tasks.study_practice.show', [$guidancePlan, $guidanceTask]) }}" class="btn-primary flex-1 px-3 py-2 text-xs">AI演習で進める</a>
+                                    @elseif (($tool['id'] ?? null) === 'career_workspace')
+                                        <a href="{{ route('plans.career.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">Careerで進める</a>
+                                    @elseif (($tool['id'] ?? null) === 'artifacts')
+                                        <a href="{{ route('plans.artifacts.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">制作ファイルを開く</a>
+                                    @elseif (($tool['id'] ?? null) === 'resources')
+                                        <a href="{{ route('plans.resources.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">関連資料を開く</a>
+                                    @endif
+
+                                    @if (! $tool)
+                                        <button type="button" class="btn-primary flex-1 px-3 py-2 text-xs" data-open-dashboard-tab="plan-{{ $guidancePlan->id }}" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
+                                            次のActionを見る
+                                        </button>
+                                    @endif
+
+                                    <form method="POST" action="{{ route('work_sessions.start') }}" class="flex-1" data-work-start-form>
+                                        @csrf
+                                        <input type="hidden" name="task_id" value="{{ $guidanceTask->id }}">
+                                        <input type="hidden" name="source" value="dashboard">
+                                        <button type="submit" class="btn-secondary w-full px-3 py-2 text-xs">
+                                            ◷ 集中タイマー（任意）
+                                        </button>
+                                    </form>
+                                </div>
+                                <details class="pk-action-details mt-3" data-guidance-reasons>
+                                    <summary>なぜこの行動？・進め方</summary>
                                 <div class="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
                                     <span>
                                         Plan優先度 {{ (int) data_get($guidance, 'priority_evaluation.priority', 3) }}
@@ -212,32 +169,8 @@
                                     </div>
                                 @endif
 
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    @if (($tool['id'] ?? null) === 'ai_practice')
-                                        <a href="{{ route('plans.tasks.study_practice.show', [$guidancePlan, $guidanceTask]) }}" class="btn-primary flex-1 px-3 py-2 text-xs">AI演習で進める</a>
-                                    @elseif (($tool['id'] ?? null) === 'career_workspace')
-                                        <a href="{{ route('plans.career.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">Careerで進める</a>
-                                    @elseif (($tool['id'] ?? null) === 'artifacts')
-                                        <a href="{{ route('plans.artifacts.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">制作ファイルを開く</a>
-                                    @elseif (($tool['id'] ?? null) === 'resources')
-                                        <a href="{{ route('plans.resources.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">関連資料を開く</a>
-                                    @endif
-
-                                    @if (! $tool)
-                                        <button type="button" class="btn-primary flex-1 px-3 py-2 text-xs" data-open-dashboard-tab="plan-{{ $guidancePlan->id }}" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
-                                            次のActionを見る
-                                        </button>
-                                    @endif
-
-                                    <form method="POST" action="{{ route('work_sessions.start') }}" class="flex-1" data-work-start-form>
-                                        @csrf
-                                        <input type="hidden" name="task_id" value="{{ $guidanceTask->id }}">
-                                        <input type="hidden" name="source" value="dashboard">
-                                        <button type="submit" class="btn-secondary w-full px-3 py-2 text-xs">
-                                            ◷ 集中タイマー（任意）
-                                        </button>
-                                    </form>
-                                </div>
+                                    <p class="mt-2 text-xs text-slate-400">PlanとTaskの優先度で決め、Canoviaは進め方を提案します。</p>
+                                </details>
                             </article>
                         @endforeach
                     </div>
@@ -248,6 +181,8 @@
                 </section>
             @endif
 
+            <details class="pk-action-details page-card p-4" data-home-overview>
+                <summary>進捗・前回の続き・ロードマップ</summary>
             <section class="pk-v18-overview-grid">
                 <article class="pk-v18-progress-card">
                     <a href="{{ route('my_plans.index') }}" class="pk-v18-card-link" aria-label="計画一覧を見る"></a>
@@ -300,6 +235,7 @@
                 <p>{{ $processMessage }}</p>
                 <small>SAME SKY · BRIGHTER YOU</small>
             </blockquote>
+            </details>
         @endif
 
         @if (($dashboard['pending_plan_updates'] ?? collect())->isNotEmpty())
@@ -317,6 +253,81 @@
                 </div>
             </details>
         @endif
+
+        <div class="pk-v18-quick-actions" aria-label="ホームの操作">
+            <a href="{{ route('plans.create') }}" class="pk-v18-action-chip is-primary" data-onboarding-target="create-plan"><span>＋</span> 新しい計画</a>
+            <form method="POST" action="{{ route('chat.start', 'review') }}">
+                @csrf
+                <button type="submit" class="pk-v18-action-chip">計画を更新</button>
+            </form>
+            <a href="{{ route('calendar.index') }}" class="pk-v18-action-chip">カレンダー</a>
+            <a href="{{ route('my_plans.index') }}" class="pk-v18-action-chip">計画一覧</a>
+            <a href="{{ route('future_memos.index') }}" class="pk-v18-action-chip"><span>✦</span> 未来メモ</a>
+        </div>
+
+        @if (($futureMemos ?? collect())->isEmpty())
+            <section class="page-card hidden border-cyan-300/20 p-4" data-future-memo-home-hint>
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="max-w-2xl">
+                        <p class="pk-v18-card-kicker">MAKE IT YOURS</p>
+                        <h2 class="mt-1 text-sm font-black text-slate-100 sm:text-base">未来メモを残すと、AIがあなたの希望を計画に反映しやすくなります</h2>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">やりたいこと・なりたい自分・今困っていることを、1つだけでも大丈夫。目標が決まっていない人はAIと方向を整理できます。</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('future_memos.index') }}" class="btn-primary px-3 py-2 text-xs">未来メモを作る</a>
+                        <button type="button" class="btn-secondary px-3 py-2 text-xs" data-future-memo-hint-later>あとで</button>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        <details class="pk-action-details page-card p-4" data-home-collaboration>
+            <summary>共同計画・参加する</summary>
+        <section class="page-card overflow-hidden p-4 sm:p-5" aria-labelledby="home-collaboration-title">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p class="pk-v18-card-kicker">CANOVIA / TOGETHER</p>
+                    <h2 id="home-collaboration-title" class="mt-1 text-base font-black text-slate-50 sm:text-lg">共同計画</h2>
+                    <p class="mt-1 text-xs leading-5 text-slate-400">同じゴールを、みんなで進める。</p>
+                </div>
+                <a href="{{ route('collaboration.join.form') }}" class="btn-secondary px-3 py-2 text-xs">参加コードを入力</a>
+            </div>
+
+            @if (($collaborationPlans ?? collect())->isNotEmpty())
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach (($collaborationPlans ?? collect())->take(4) as $collaborationItem)
+                        @php
+                            $collaborationPlan = $collaborationItem['plan'];
+                            $collaborationRole = $collaborationItem['role'];
+                            $collaborationRoleLabel = match ($collaborationRole) {
+                                'owner' => 'オーナー',
+                                'editor' => '編集者',
+                                default => '閲覧者',
+                            };
+                        @endphp
+                        <a href="{{ route('plans.collaboration.settings', $collaborationPlan) }}" class="group rounded-2xl border border-cyan-300/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04]">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-bold text-slate-100">{{ $collaborationPlan->displayIcon() }} {{ $collaborationPlan->title }}</p>
+                                    <p class="mt-1 text-[11px] text-slate-500">{{ $collaborationItem['member_count'] }}人 · {{ $collaborationRoleLabel }}</p>
+                                </div>
+                                <span class="shrink-0 text-sm text-cyan-200 transition group-hover:translate-x-0.5">→</span>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="mt-4 rounded-2xl border border-dashed border-slate-700/80 bg-slate-950/25 p-4">
+                    <p class="text-sm font-bold text-slate-200">まだ共同計画はありません</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">計画のロードマップから共同計画を有効にするか、もらった参加コードを入力できます。</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <a href="{{ $roadmapUrl }}" class="btn-secondary px-3 py-2 text-xs">ロードマップから設定</a>
+                        <a href="{{ route('collaboration.join.form') }}" class="btn-secondary px-3 py-2 text-xs">共同計画に参加</a>
+                    </div>
+                </div>
+            @endif
+        </section>
+        </details>
 
         <nav class="pk-v18-plan-tabs overflow-x-auto" aria-label="ダッシュボード表示">
             <div class="flex min-w-max gap-1" role="tablist">
@@ -405,7 +416,7 @@
                                 <p class="text-xs font-bold text-slate-400">{{ $categoryProfile->label }}・{{ $item['progress']['status'] }}・進捗 {{ $item['progress']['weighted_progress_percent'] }}%</p>
                                 <h2 class="mt-1 text-lg font-black text-slate-100 sm:text-xl">{{ $item['plan']->title }}</h2>
                                 @if (filled($item['plan']->description))
-                                    <p class="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-slate-300">{{ $item['plan']->description }}</p>
+                                    <details class="pk-action-details mt-2"><summary>計画の説明</summary><p class="mt-2 max-w-3xl whitespace-pre-line text-sm leading-6 text-slate-300">{{ $item['plan']->description }}</p></details>
                                 @endif
                                 <p class="mt-2 text-xs text-slate-400">期限 {{ $item['plan']->deadline?->format('Y/m/d') ?? '未設定' }}・残り目安 約{{ round($item['progress']['remaining_minutes'] / 60, 1) }}時間</p>
                             </div>
@@ -420,7 +431,7 @@
                 </section>
 
                 @foreach ($surfaceModules as $surface)
-                    @include($surface->view, ['surface' => $surface])
+                    @include('dashboard.surfaces.disclosure', ['surface' => $surface])
                 @endforeach
             </section>
         @endforeach
