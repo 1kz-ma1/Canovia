@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v41.7',
+        'date' => '2026-09-25',
+        'title' => '設定とPremium検証を、実運用できる形へ',
+        'summary' => '設定画面を共通ハブへ広げ、Canoviaの運営者だけが使える管理導線と、身近なユーザーへPremiumを無償提供して体験を試せる仕組みを追加しました。',
+        'highlights' => [
+            'ヘッダーの「表示」を「設定」へ変更し、従来のテーマ・アクセント・表示密度を設定内の「表示」として残しました。',
+            'Super Adminはサーバー側で指定した1アカウントだけに固定し、一般ユーザーが管理画面URLを知っていてもアクセスできないようにしました。',
+            'Super Adminは検証のため全Featureを利用でき、Free / Premiumとして見え方とFeature Accessを一時的に確認できます。',
+            '管理者画面から特定ユーザーへPremium Coreを無償付与でき、無期限・30日・90日・任意期限を選べます。',
+            '無償Premiumは通常のPremium権利として動作しますが、管理者権限・All Access・AI Capacity Boostは付与しません。',
+            '無償Premiumの解除は履歴を削除せず終了時刻を記録し、誰にいつ提供したかを後から確認できる形にしました。',
+        ],
+        'tip' => 'V41.7では決済やNative AIはまだ追加していません。次の段階でPremium CoreへNative AI Practiceを接続し、課金すると何が楽になるかを実体験として検証します。',
+    ],
+    [
         'version' => 'v41.5',
         'date' => '2026-09-25',
         'title' => 'Canovia Economyの土台を、課金処理より先に',
