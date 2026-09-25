@@ -21,6 +21,12 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, sqlite3, pdo_sqlite
           coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
       - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
       - run: php artisan view:cache
       - run: php artisan test tests/Feature/EconomyFoundationV415Test.php
