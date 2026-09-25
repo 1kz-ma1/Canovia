@@ -211,11 +211,12 @@ Route::middleware('feature.access:'.FeatureKey::ProjectArtifact->value)->group(f
     Route::delete('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'destroy'])->name('plans.artifacts.destroy');
 });
 
-// Canovia Tools: 資格学習向けAI演習。外部AIとの受け渡しはJSONで行い、
-// Canovia側は問題UI・回答・評価プレビューを担当する。
+// Canovia Tools: 資格学習向けAI演習。
+// Freeは外部AIとのJSON handoffを維持し、Premium CoreはNative AIを同じ演習UIへ接続する。
 Route::middleware('feature.access:'.FeatureKey::AiPractice->value)->group(function () {
     Route::get('/plans/{plan}/tasks/{task}/study-practice', [StudyPracticeController::class, 'show'])->name('plans.tasks.study_practice.show');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/prepare', [StudyPracticeController::class, 'prepare'])->name('plans.tasks.study_practice.prepare');
+    Route::post('/plans/{plan}/tasks/{task}/study-practice/native/prepare', [StudyPracticeController::class, 'prepareNative'])->name('plans.tasks.study_practice.native.prepare');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/import', [StudyPracticeController::class, 'import'])->name('plans.tasks.study_practice.import');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/draft', [StudyPracticeController::class, 'saveDraft'])->name('plans.tasks.study_practice.draft');
     Route::post('/plans/{plan}/tasks/{task}/study-practice/answers', [StudyPracticeController::class, 'submitAnswers'])->name('plans.tasks.study_practice.answers');
