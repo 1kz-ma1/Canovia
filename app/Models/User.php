@@ -50,6 +50,11 @@ class User extends Authenticatable
         return $this->hasMany(FutureMemo::class);
     }
 
+    public function productGrants()
+    {
+        return $this->hasMany(UserProductGrant::class);
+    }
+
     protected function casts(): array
     {
         return [
