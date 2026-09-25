@@ -47,7 +47,7 @@ class PlanSituationResolver
         ];
 
         if ($profile->key === 'career') {
-            $situation = array_merge($situation, $this->careerSituation($tasks, $activeTasks, $currentTask));
+            $situation = array_merge($situation, $this->careerSituation($plan, $tasks, $activeTasks, $currentTask));
         }
 
         if ($profile->key === 'study') {
@@ -64,8 +64,77 @@ class PlanSituationResolver
     /**
      * @return array<string,mixed>
      */
-    private function careerSituation(Collection $tasks, Collection $activeTasks, ?Task $currentTask): array
+    private function careerSituation(Plan $plan, Collection $tasks, Collection $activeTasks, ?Task $currentTask): array
     {
+        $applications = $plan->relationLoaded('careerApplications')
+            ? $plan->careerApplications
+            : $plan->careerApplications()->with('selectionEvents.interviewReview')->get();
+        $captures = $plan->relationLoaded('careerCaptures')
+            ? $plan->careerCaptures
+            : $plan->careerCaptures()->get();
+
+        $activeInterviewTasks = $activeTasks
+            ->filter(fn (Task $task) => $this->careerStage($task) === 'interview')
+            ->values();
+
+        if ($applications->isNotEmpty()) {
+            $pipeline = $this->careerApplicationPipeline($applications);
+
+            $events = $applications
+                ->flatMap(fn ($application) => $application->selectionEvents)
+                ->filter(fn ($event) => $event->type === 'interview')
+                ->values();
+
+            $nextInterview = $events
+                ->filter(fn ($event) => $event->status === 'scheduled' && $event->scheduled_at && $event->scheduled_at->isFuture())
+                ->sortBy('scheduled_at')
+                ->first();
+
+            $reviewDue = $events
+                ->filter(function ($event) {
+                    $completedReview = $event->interviewReview?->status === \App\Models\InterviewReview::STATUS_COMPLETED;
+                    if ($completedReview) {
+                        return false;
+                    }
+
+                    if ($event->status === 'completed') {
+                        return true;
+                    }
+
+                    return $event->status === 'scheduled'
+                        && $event->scheduled_at
+                        && $event->scheduled_at->lte(now());
+                })
+                ->sortBy(fn ($event) => $event->scheduled_at?->timestamp ?? PHP_INT_MAX)
+                ->first();
+
+            $resultWaiting = $events
+                ->filter(fn ($event) => $event->status === 'result_waiting')
+                ->values();
+
+            return [
+                'career_pipeline' => $pipeline,
+                'career_pipeline_source' => 'applications',
+                'career_stage' => $currentTask ? $this->careerStage($currentTask) : null,
+                'career_has_interview' => (bool) $nextInterview || (bool) $reviewDue || $activeInterviewTasks->isNotEmpty(),
+                'career_interview_tasks' => $activeInterviewTasks->take(3)->values(),
+                'career_interview_is_current' => $currentTask ? $this->careerStage($currentTask) === 'interview' : false,
+                'career_application_count' => $applications->count(),
+                'career_interview_count' => $events
+                    ->filter(fn ($event) => in_array($event->status, ['scheduled', 'completed', 'result_waiting'], true))
+                    ->count(),
+                'career_pending_capture_count' => $captures->where('status', 'pending')->count(),
+                'career_next_interview_event' => $nextInterview,
+                'career_review_due_event' => $reviewDue,
+                'career_result_waiting_events' => $resultWaiting,
+                'career_result_waiting_count' => $resultWaiting->count(),
+                'career_review_due' => (bool) $reviewDue,
+                'career_review_due_company' => $reviewDue?->application?->company_name,
+                'career_next_interview_at' => $nextInterview?->scheduled_at?->toIso8601String(),
+                'career_next_interview_company' => $nextInterview?->application?->company_name,
+            ];
+        }
+
         $stages = collect([
             'discovery' => ['label' => '企業・職種探し', 'tasks' => collect()],
             'application' => ['label' => '応募・書類', 'tasks' => collect()],
@@ -96,21 +165,55 @@ class PlanSituationResolver
             })
             ->values();
 
-        $activeInterviewTasks = $activeTasks
-            ->filter(fn (Task $task) => $this->careerStage($task) === 'interview')
-            ->values();
-
         $currentStage = $currentTask ? $this->careerStage($currentTask) : null;
 
         return [
             'career_pipeline' => $pipeline,
+            'career_pipeline_source' => 'tasks',
             'career_stage' => $currentStage,
             'career_has_interview' => $activeInterviewTasks->isNotEmpty(),
             'career_interview_tasks' => $activeInterviewTasks->take(3)->values(),
             'career_interview_is_current' => $currentStage === 'interview',
-            'career_application_count' => (int) data_get($pipeline->firstWhere('key', 'application'), 'total', 0),
+            'career_application_count' => 0,
             'career_interview_count' => (int) data_get($pipeline->firstWhere('key', 'interview'), 'total', 0),
+            'career_pending_capture_count' => $captures->where('status', 'pending')->count(),
+            'career_next_interview_event' => null,
+            'career_review_due_event' => null,
+            'career_result_waiting_events' => collect(),
+            'career_result_waiting_count' => 0,
+            'career_review_due' => false,
+            'career_review_due_company' => null,
+            'career_next_interview_at' => null,
+            'career_next_interview_company' => null,
         ];
+    }
+
+    private function careerApplicationPipeline(Collection $applications): Collection
+    {
+        $definitions = collect([
+            'discovery' => ['label' => '候補・応募準備', 'stages' => ['candidate', 'preparing']],
+            'application' => ['label' => '応募・書類', 'stages' => ['applied', 'screening']],
+            'interview' => ['label' => '面接・選考', 'stages' => ['interview', 'final_interview']],
+            'offer' => ['label' => '内定・条件確認', 'stages' => ['offer']],
+            'closed' => ['label' => '終了', 'stages' => ['closed']],
+        ]);
+
+        return $definitions
+            ->map(function (array $definition, string $key) use ($applications) {
+                $items = $applications
+                    ->filter(fn ($application) => in_array($application->stage, $definition['stages'], true))
+                    ->values();
+
+                return [
+                    'key' => $key,
+                    'label' => $definition['label'],
+                    'total' => $items->count(),
+                    'done' => $key === 'closed' ? $items->count() : 0,
+                    'active' => $items->filter(fn ($application) => in_array($application->status, ['active', 'waiting'], true))->count(),
+                    'applications' => $items->take(4)->values(),
+                ];
+            })
+            ->values();
     }
 
     private function careerStage(Task $task): string

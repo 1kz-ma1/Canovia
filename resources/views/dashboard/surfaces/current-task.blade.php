@@ -33,6 +33,8 @@
             <div class="mt-4 flex flex-wrap gap-2">
                 @if (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
                     <a href="{{ route('plans.tasks.study_practice.show', [$item['plan'], $hubCurrentTask]) }}" class="btn-primary px-3 py-2 text-xs">✦ AI演習で進める</a>
+                @elseif (($primaryExecutionTool['id'] ?? null) === 'career_workspace')
+                    <a href="{{ route('plans.career.index', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">◆ Careerで進める</a>
                 @elseif (($primaryExecutionTool['id'] ?? null) === 'artifacts')
                     <a href="{{ route('plans.artifacts.index', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">◇ 制作ファイルを開く</a>
                 @elseif (($primaryExecutionTool['id'] ?? null) === 'resources')

@@ -215,6 +215,8 @@
                                 <div class="mt-3 flex flex-wrap gap-2">
                                     @if (($tool['id'] ?? null) === 'ai_practice')
                                         <a href="{{ route('plans.tasks.study_practice.show', [$guidancePlan, $guidanceTask]) }}" class="btn-primary flex-1 px-3 py-2 text-xs">AI演習で進める</a>
+                                    @elseif (($tool['id'] ?? null) === 'career_workspace')
+                                        <a href="{{ route('plans.career.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">Careerで進める</a>
                                     @elseif (($tool['id'] ?? null) === 'artifacts')
                                         <a href="{{ route('plans.artifacts.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">制作ファイルを開く</a>
                                     @elseif (($tool['id'] ?? null) === 'resources')

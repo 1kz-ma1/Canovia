@@ -66,6 +66,8 @@ class TaskEvidence extends Model
             'artifact_state_observed' => '制作ファイル',
             'focus_session_completed' => '集中作業',
             'focus_session_interrupted' => '集中作業を中断',
+            'interview_review_completed' => '面接振り返り',
+            'interview_result_recorded' => '選考結果',
             default => '活動',
         };
     }
@@ -90,6 +92,22 @@ class TaskEvidence extends Model
             'focus_session_interrupted' => sprintf(
                 '集中タイマーを%d分で中断しました。取り組んだ事実だけを記録しています。',
                 (int) data_get($this->metadata, 'actual_minutes', 0),
+            ),
+            'interview_review_completed' => sprintf(
+                '%sの面接振り返りを完了。次に意識すること: %s',
+                (string) data_get($this->metadata, 'company_name', '応募先'),
+                trim((string) data_get($this->metadata, 'next_focus')) ?: '未設定',
+            ),
+            'interview_result_recorded' => sprintf(
+                '%sの選考結果を「%s」として記録しました。',
+                (string) data_get($this->metadata, 'company_name', '応募先'),
+                match (data_get($this->metadata, 'result')) {
+                    'passed' => '通過',
+                    'rejected' => '不通過',
+                    'offer' => '内定・オファー',
+                    'withdrawn' => '辞退',
+                    default => '結果確認',
+                },
             ),
             default => 'Taskに関する活動を確認しました。',
         };

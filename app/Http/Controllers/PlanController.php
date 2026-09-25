@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Storage;
 use App\Models\Plan;
 use App\Services\BehaviorIdentityService;
 use App\Services\ContinuityService;
@@ -292,7 +293,16 @@ class PlanController extends Controller
     public function destroy(Request $request, Plan $plan, PlanOwnershipService $ownership)
     {
         $ownership->authorizePlan($request, $plan);
+
+        $careerScreenshotPaths = $plan->careerCaptures()
+            ->whereNotNull('screenshot_path')
+            ->pluck('screenshot_path')
+            ->filter()
+            ->values();
+
         $plan->delete();
+
+        $careerScreenshotPaths->each(fn ($path) => Storage::delete($path));
 
         return redirect()->route('home')->with('success', '計画を削除しました。');
     }

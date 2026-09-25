@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-25 / main V41.1 + V41.2 Adaptive Surface Engine
+更新基準: 2026-09-25 / main V41.2 + V41.3 Career Capture / Interview Review
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -377,3 +377,36 @@ Plan
 AI導入後は自由なUI生成を許可しない。AIは `policyContext` に含まれるregistered module IDだけを使って順序・非表示を提案し、`applyDecision` がunknown IDを除外する。current_task / plan_toolsはprotected moduleとして非表示不可とする。
 
 Roadmapは同じCategory Profileを利用し、V41.2では安全なtask_flow rendererを維持しつつ、study_map / pipeline / delivery_flow / milestoneをpreferred rendererとして保持する。専門renderer実装時にController/View契約を変えず差し替えられる。
+
+
+## 15. V41.3 Career Capture / Interview Review
+
+就活カテゴリでは入力負担を最小化するため、Application本体より先に `CareerCapture` を入口に置く。
+
+```text
+Screenshot / URL / future Email / Calendar
+  -> CareerCapture
+  -> Extract / Match
+  -> CareerApplication
+  -> CareerSelectionEvent
+  -> Surface Engine
+```
+
+V41.3 UIではScreenshotとURLを利用できる。企業名が分からない段階でもpending Captureとして保存でき、Application作成を必須にしない。手動Application入力はfallbackとして折りたたみ領域に置く。
+
+Screenshot本体は現行Render構成でローカルfilesystem永続性に依存しないよう、非公開のDB Payloadへ最大3MBで保存する。将来object storageへ移行するためのpath境界は維持する。
+
+CareerApplicationが存在する場合、Career PipelineはTask推定ではなくApplication stageを優先する。存在しない既存PlanはV41.2のTask inferenceへfallbackする。
+
+Interview Eventは予定時刻とReview状態からSurfaceを切り替える。
+
+```text
+面接前       -> NEXT INTERVIEW
+面接後未振返 -> INTERVIEW REVIEW
+振返済       -> RESULT WAITING
+結果確定     -> Application更新
+```
+
+Interview Reviewの質問は `InterviewReviewQuestionService` が供給する。前回Reviewのnext_focusを次回質問へ引き継ぎ、final interview等のstageでも質問を追加できる。Question/Answerはprompt/source付きで永続化するため、将来rule sourceをAI sourceへ置換してもReview UI/schemaを変更しない。
+
+Review完了・選考結果はTaskとの関連がある場合Native TaskEvidenceへ保存するが、これらの事実だけでTask progressを自動変更しない。

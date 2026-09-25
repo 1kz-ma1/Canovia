@@ -33,6 +33,17 @@ class PlanToolService
             ],
         ];
 
+        if ($this->isCareerPlan($plan)) {
+            $tools[] = [
+                'id' => 'career_workspace',
+                'name' => 'Career',
+                'description' => '応募先・選考予定・面接振り返りを、入力を増やしすぎず一か所で扱います。',
+                'icon' => '◆',
+                'recommended' => true,
+                'badge' => '就活',
+            ];
+        }
+
         if (
             $this->isStudyPlan($plan)
             && $this->featureAccess->canUse($actor, FeatureKey::AiPractice, [
@@ -117,6 +128,13 @@ class PlanToolService
     private function isStudyPlan(Plan $plan): bool
     {
         return trim((string) $plan->category) === '資格学習';
+    }
+
+    private function isCareerPlan(Plan $plan): bool
+    {
+        $category = mb_strtolower(trim((string) $plan->category));
+
+        return preg_match('/就活|就職|転職|キャリア|career|job/u', $category) === 1;
     }
 
     private function isProjectPlan(Plan $plan): bool

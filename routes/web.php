@@ -36,6 +36,8 @@ use App\Http\Controllers\PlanResourceAssistantController;
 use App\Http\Controllers\PlanArtifactController;
 use App\Http\Controllers\StudyPracticeController;
 use App\Http\Controllers\FutureMemoController;
+use App\Http\Controllers\CareerWorkspaceController;
+use App\Http\Controllers\InterviewReviewController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -177,6 +179,20 @@ Route::post('/plans/{plan}/resources/assistant/apply', [PlanResourceAssistantCon
 Route::post('/plans/{plan}/resources/assistant/reset', [PlanResourceAssistantController::class, 'reset'])->name('plans.resources.assistant.reset');
 Route::put('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'update'])->name('plans.resources.update');
 Route::delete('/plans/{plan}/resources/{resource}', [PlanResourceController::class, 'destroy'])->name('plans.resources.destroy');
+
+// Career workspace / low-input capture / interview learning loop.
+Route::get('/plans/{plan}/career', [CareerWorkspaceController::class, 'index'])->name('plans.career.index');
+Route::post('/plans/{plan}/career/captures', [CareerWorkspaceController::class, 'storeCapture'])->name('plans.career.captures.store');
+Route::get('/plans/{plan}/career/captures/{capture}/screenshot', [CareerWorkspaceController::class, 'screenshot'])->name('plans.career.captures.screenshot');
+Route::delete('/plans/{plan}/career/captures/{capture}', [CareerWorkspaceController::class, 'destroyCapture'])->name('plans.career.captures.destroy');
+Route::post('/plans/{plan}/career/captures/{capture}/link', [CareerWorkspaceController::class, 'linkCapture'])->name('plans.career.captures.link');
+Route::post('/plans/{plan}/career/applications', [CareerWorkspaceController::class, 'storeApplication'])->name('plans.career.applications.store');
+Route::patch('/plans/{plan}/career/applications/{application}', [CareerWorkspaceController::class, 'updateApplication'])->name('plans.career.applications.update');
+Route::post('/plans/{plan}/career/applications/{application}/events', [CareerWorkspaceController::class, 'storeSelectionEvent'])->name('plans.career.events.store');
+Route::patch('/plans/{plan}/career/events/{event}/result', [CareerWorkspaceController::class, 'updateSelectionEventResult'])->name('plans.career.events.result');
+Route::patch('/plans/{plan}/career/events/{event}/cancel', [CareerWorkspaceController::class, 'cancelSelectionEvent'])->name('plans.career.events.cancel');
+Route::get('/plans/{plan}/career/interviews/{event}/review', [InterviewReviewController::class, 'show'])->name('plans.career.interview_reviews.show');
+Route::post('/plans/{plan}/career/interviews/{event}/review', [InterviewReviewController::class, 'store'])->name('plans.career.interview_reviews.store');
 Route::middleware('feature.access:'.FeatureKey::ProjectArtifact->value)->group(function () {
     Route::get('/plans/{plan}/artifacts', [PlanArtifactController::class, 'index'])->name('plans.artifacts.index');
     Route::post('/plans/{plan}/artifacts', [PlanArtifactController::class, 'store'])->name('plans.artifacts.store');

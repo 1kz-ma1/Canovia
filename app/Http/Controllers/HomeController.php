@@ -36,6 +36,8 @@ class HomeController extends Controller
             'tasks' => fn ($query) => $query->with(['prerequisite', 'resources', 'artifacts'])->orderBy('sort_order')->orderBy('id'),
             'resources',
             'artifacts',
+            'careerApplications.selectionEvents.interviewReview',
+            'careerCaptures',
             'availabilityRules',
             'availabilityOverrides',
             'workLogs' => fn ($query) => $query->with('task')->latest('worked_on')->latest('id'),

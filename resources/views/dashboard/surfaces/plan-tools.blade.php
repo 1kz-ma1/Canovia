@@ -7,8 +7,11 @@
         </div>
     </div>
     <div class="mt-4 flex flex-wrap gap-2">
+        @if ($categoryProfile->key === 'career')
+            <a href="{{ route('plans.career.index', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">◆ Career</a>
+        @endif
         @if ($planCanEdit)
-            <a href="{{ route('plans.review_assistant.show', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">計画を更新</a>
+            <a href="{{ route('plans.review_assistant.show', $item['plan']) }}" class="{{ $categoryProfile->key === 'career' ? 'btn-secondary' : 'btn-primary' }} px-3 py-2 text-xs">計画を更新</a>
         @endif
         <a href="{{ route('plans.resources.index', $item['plan']) }}" class="btn-secondary px-3 py-2 text-xs">関連資料{{ $item['plan']->resources->isNotEmpty() ? ' · '.$item['plan']->resources->count() : '' }}</a>
         <a href="{{ route('plans.artifacts.index', $item['plan']) }}" class="btn-secondary px-3 py-2 text-xs">制作ファイル{{ $item['plan']->artifacts->isNotEmpty() ? ' · '.$item['plan']->artifacts->count() : '' }}</a>

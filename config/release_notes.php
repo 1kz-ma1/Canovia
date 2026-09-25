@@ -2,6 +2,23 @@
 
 return [
     [
+        'version' => 'v41.3',
+        'date' => '2026-09-25',
+        'title' => '就活を「入力して管理」から「経験を残して次へ」へ',
+        'summary' => '就活PlanにCareer Capture Inbox・応募/選考データ・面接予定・面接後Reviewを追加し、スクショやURLを先に投げるだけで後から選考へつなげられる基盤を作りました。',
+        'highlights' => [
+            'Career Capture Inboxを追加し、求人・応募完了・面接案内などのスクリーンショットまたはURLを、企業名を入力せず先に保存できます。',
+            'スクリーンショットは公開URLへ置かず、非公開のDB Payloadとして保存し、Plan閲覧権限を持つユーザーだけが表示できます。',
+            'CareerApplication / CareerSelectionEventを追加し、応募先・選考段階・面接予定・結果待ちをTask推測とは別の実データとして扱えるようにしました。',
+            '応募データが存在する場合、CAREER PIPELINEはTask推測よりCareerApplicationを優先して表示します。',
+            '面接予定前はNEXT INTERVIEW、面接時刻を過ぎて振り返り未完了ならINTERVIEW REVIEW、振り返り後はRESULT WAITINGへSurfaceが切り替わります。',
+            'Interview Reviewは固定フォームに閉じず、前回の「次に意識すること」を次回質問へ引き継ぐrule-based Question Serviceを採用しました。',
+            '面接振り返り完了と選考結果はTaskに紐づいている場合Native Evidenceとして残しますが、それだけでTask進捗率は変更しません。',
+            'Career Capture Serviceを共通入口にして、将来のメール・Calendar・スクショAI解析が同じCaptureモデルへ流れ込めるようにしました。',
+        ],
+        'tip' => '求人を見つけたら、まずスクショかURLだけCareerへ投げて大丈夫です。入力できない情報を無理に埋める必要はありません。',
+    ],
+    [
         'version' => 'v41.2',
         'date' => '2026-09-25',
         'title' => 'Planごとに「今必要な画面」が変わるように',

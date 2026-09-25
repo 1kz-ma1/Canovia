@@ -74,6 +74,11 @@ class Task extends Model
         return $this->hasMany(TaskMilestone::class)->orderBy('sort_order')->orderBy('id');
     }
 
+    public function careerSelectionEvents()
+    {
+        return $this->hasMany(CareerSelectionEvent::class);
+    }
+
     public function continuationOf()
     {
         return $this->belongsTo(self::class, 'continuation_of_task_id');
