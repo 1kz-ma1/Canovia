@@ -56,7 +56,17 @@ class ProductGrantService
         $allDirect = $this->directProducts($user);
         $usable = $this->catalog->usableProducts($allDirect);
 
-        foreach ($this->activeGrants($user) as $grant) {
+        $grants = $this->activeGrants($user)
+            ->sortByDesc(fn (UserProductGrant $grant) => match ((string) $grant->source) {
+                'sponsor' => 400,
+                'gift' => 300,
+                'subscription' => 200,
+                'manual' => 150,
+                'migration' => 100,
+                default => 0,
+            });
+
+        foreach ($grants as $grant) {
             if (! $grant->product_key instanceof ProductKey) {
                 continue;
             }
