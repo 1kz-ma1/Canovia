@@ -190,6 +190,7 @@ Route::post('/plans/{plan}/career/applications', [CareerWorkspaceController::cla
 Route::patch('/plans/{plan}/career/applications/{application}', [CareerWorkspaceController::class, 'updateApplication'])->name('plans.career.applications.update');
 Route::post('/plans/{plan}/career/applications/{application}/events', [CareerWorkspaceController::class, 'storeSelectionEvent'])->name('plans.career.events.store');
 Route::patch('/plans/{plan}/career/events/{event}/result', [CareerWorkspaceController::class, 'updateSelectionEventResult'])->name('plans.career.events.result');
+Route::patch('/plans/{plan}/career/events/{event}/cancel', [CareerWorkspaceController::class, 'cancelSelectionEvent'])->name('plans.career.events.cancel');
 Route::get('/plans/{plan}/career/interviews/{event}/review', [InterviewReviewController::class, 'show'])->name('plans.career.interview_reviews.show');
 Route::post('/plans/{plan}/career/interviews/{event}/review', [InterviewReviewController::class, 'store'])->name('plans.career.interview_reviews.store');
 Route::middleware('feature.access:'.FeatureKey::ProjectArtifact->value)->group(function () {
