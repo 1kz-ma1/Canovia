@@ -46,7 +46,7 @@ class StudyPracticeController extends Controller
 
         $actorToken = $identity->resolve($request);
         $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
-        $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
+        $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(8)->get();
         $currentAttempt = ! empty($state['attempt_id'])
             ? (clone $attemptQuery)->whereKey((int) $state['attempt_id'])->first()
             : null;
@@ -1272,6 +1272,17 @@ class StudyPracticeController extends Controller
 
         $questionIds = collect($questions)->pluck('id')->map('strval')->all();
         $allowedCorrectness = ['correct', 'partial', 'incorrect', 'ungraded'];
+        $allowedErrorTypes = [
+            'none',
+            'knowledge_gap',
+            'concept_gap',
+            'reasoning_gap',
+            'condition_reading',
+            'unit_error',
+            'calculation_slip',
+            'careless',
+            'unknown',
+        ];
         $result = [];
         $seen = [];
 
@@ -1290,12 +1301,22 @@ class StudyPracticeController extends Controller
                 $correctness = 'ungraded';
             }
 
+            $errorType = trim((string) ($item['error_type'] ?? ($correctness === 'correct' ? 'none' : 'unknown')));
+            if (! in_array($errorType, $allowedErrorTypes, true)) {
+                $errorType = $correctness === 'correct' ? 'none' : 'unknown';
+            }
+            if ($correctness === 'correct') {
+                $errorType = 'none';
+            }
+
             $seen[$questionId] = true;
             $result[] = [
                 'question_id' => $questionId,
                 'correctness' => $correctness,
                 'feedback' => mb_substr(trim((string) ($item['feedback'] ?? '')), 0, 2000),
                 'reasoning_feedback' => mb_substr(trim((string) ($item['reasoning_feedback'] ?? '')), 0, 2000),
+                'error_type' => $errorType,
+                'weakness_topics' => array_slice($this->stringList($item['weakness_topics'] ?? []), 0, 8),
                 'misconceptions' => array_slice($this->stringList($item['misconceptions'] ?? []), 0, 8),
             ];
         }
