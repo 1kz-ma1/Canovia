@@ -34,7 +34,7 @@ final class ProductGrantEntitlementResolver implements EntitlementResolver
         $match = $this->grants->grantForFeature(
             $actor,
             $feature,
-            ['manual', 'subscription', 'migration'],
+            ['manual', 'subscription', 'complimentary', 'migration'],
         );
         if (! $match) {
             return null;
