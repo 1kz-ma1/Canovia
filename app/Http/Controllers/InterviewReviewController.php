@@ -133,7 +133,7 @@ class InterviewReviewController extends Controller
             $review->update([
                 'status' => $completed ? InterviewReview::STATUS_COMPLETED : InterviewReview::STATUS_DRAFT,
                 'insights' => $insights,
-                'completed_at' => $completed ? now() : null,
+                'completed_at' => $completed ? ($review->completed_at ?? now()) : null,
             ]);
 
             if ($completed) {
