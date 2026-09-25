@@ -24,7 +24,7 @@ class QuestionBankStudyPracticeQuestionProvider implements StudyPracticeQuestion
         return 'direct';
     }
 
-    public function prepare(Plan $plan, Task $task, Collection $recentAttempts, array $strategy): array
+    public function prepare(Plan $plan, Task $task, Collection $recentAttempts, array $strategy, ?int $actorUserId = null): array
     {
         $coverage = $this->coverageService->evaluate($plan, $task, $strategy);
         $pack = $coverage['pack'];
