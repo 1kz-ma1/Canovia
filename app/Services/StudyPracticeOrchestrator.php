@@ -45,7 +45,7 @@ class StudyPracticeOrchestrator
 
         return [
             'strategy' => $strategy,
-            'provider' => $provider->prepare($plan, $task, $recentAttempts, $strategy),
+            'provider' => $provider->prepare($plan, $task, $recentAttempts, $strategy, null),
         ];
     }
 
@@ -66,7 +66,7 @@ class StudyPracticeOrchestrator
         $provider = $providerKey !== null
             ? $this->providerRouter->questionProviderByKey($providerKey)
             : $this->providerRouter->questionProvider($plan, $task, $strategy);
-        $prepared = $provider->prepare($plan, $task, $recentAttempts, $strategy);
+        $prepared = $provider->prepare($plan, $task, $recentAttempts, $strategy, $userId);
 
         $isDirect = (string) ($prepared['mode'] ?? 'handoff') === 'direct'
             && is_array($prepared['questions'] ?? null)
@@ -133,9 +133,19 @@ class StudyPracticeOrchestrator
         Task $task,
         array $questions,
         array $answers,
+        ?string $providerKey = null,
     ): array {
-        $provider = $this->providerRouter->assessmentProvider($plan, $task, $questions, $answers);
-        $prepared = $provider->prepare($plan, $task, $questions, $answers);
+        $provider = $providerKey !== null
+            ? $this->providerRouter->assessmentProviderByKey($providerKey)
+            : $this->providerRouter->assessmentProvider($plan, $task, $questions, $answers);
+        $prepared = $provider->prepare(
+            $plan,
+            $task,
+            $questions,
+            $answers,
+            $session->user_id ? (int) $session->user_id : null,
+            (int) $session->id,
+        );
 
         $session->update([
             'assessment_provider' => (string) ($prepared['provider'] ?? $provider->key()),
