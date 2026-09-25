@@ -30,6 +30,14 @@ class CareerCaptureService
         ?int $userId = null,
         ?string $actorToken = null,
     ): CareerCapture {
+        if (! in_array($sourceType, CareerCapture::SOURCES, true)) {
+            throw new \InvalidArgumentException('Unsupported Career Capture source.');
+        }
+
+        if (($screenshotByteSize ?? 0) > 3 * 1024 * 1024) {
+            throw new \InvalidArgumentException('Career screenshot payload exceeds 3MB.');
+        }
+
         return DB::transaction(function () use (
             $plan,
             $sourceType,
