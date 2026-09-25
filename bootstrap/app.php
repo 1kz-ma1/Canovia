@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use App\Http\Middleware\EnsureAdminAccess;
 use App\Http\Middleware\EnsureFeatureAccess;
 use App\Http\Middleware\NormalizeAiJsonInput;
 use App\Http\Middleware\RedirectLegacyCanoviaHost;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn (Request $request) => route('auth.login.form'));
         $middleware->redirectUsersTo(fn (Request $request) => route('home'));
         $middleware->alias([
+            'admin.access' => EnsureAdminAccess::class,
             'feature.access' => EnsureFeatureAccess::class,
         ]);
         $middleware->appendToGroup('web', RedirectLegacyCanoviaHost::class);
