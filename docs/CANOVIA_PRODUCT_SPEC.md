@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-25 / main V41.3 + V41.4 Practice Calibration / Weakness Priority
+更新基準: 2026-09-25 / V41.5 Economy Foundation
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -34,7 +34,7 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 2. **無料でも核となる目標達成体験を成立させる。** 基本思想は「努力する権利には課金しない。努力を加速する価値に課金する」。
 3. **アプリが知っている事実を再入力させない。** Plan、Task、WorkSession、WorkLog等の既知情報を再利用する。
 4. **FactsとInterpretationを分離する。** 作業事実と、AI/推薦による意味付けを分ける。
-5. **収益化ロジックを機能へ散らさない。** Feature側はPremium/Coin/Gift/Sponsorを直接判定しない。
+5. **収益化ロジックを機能へ散らさない。** Feature側はPremium/Pack/Gift/Sponsorを直接判定しない。Coinは直接Feature解放に使わない。
 6. **Feature FlagとEntitlementを分離する。** 公開可否と利用権は別責務とする。
 7. **RoadmapとRuntime Feature Controlを分離する。** Product statusがruntime enableを自動決定しない。
 8. **DeployとReleaseを分離できる構造を目指す。** ただしApp Reviewを迂回するために使わない。
@@ -75,6 +75,9 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - FeatureKey一元管理
 - FeatureFlagServiceの最小公開可否境界
 - Canovia Future / Roadmap Votingの最小データモデルとSupport UI
+- V41.5 Economy Catalog / Product Grant / source-specific Product Grant Entitlement resolvers
+- AI Capacityの独立境界（standard / boosted）
+- 決定論的Economy RecommendationとAdmin Economy Inspector
 
 ### Next
 
@@ -86,8 +89,9 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - Roadmap候補のAdmin管理（表示、投票受付、threshold、priority、status）
 - SupportしたRoadmap Featureのstatus変化・Release通知
 - Roadmap FeatureとRelease Notesの明示的な紐付け
-- Premium / StoreKitの具体要件確定後のPremiumEntitlementResolver
-- 必要なFeatureのみPremium/Coin等の追加価値へ切り替える設計
+- StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
+- Premium Coreの最初のNative AI実行経路
+- Study / Career / Developer Packの具体Capability実装とFeatureKey接続
 
 ### Future
 
@@ -109,28 +113,78 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 
 ## 4. Monetization and Entitlements
 
-将来のアクセス経路候補:
+Canovia Economyの基本構造:
 
-- Free
-- Premium
-- Coin
-- Earn Coin
-- Gift
-- Sponsored Access
+```text
+FREE
+│
+└─ PREMIUM CORE
+      ├─ Study Pack
+      ├─ Career Pack
+      ├─ Developer Pack
+      ├─ Creator Pack
+      ├─ AI Capacity Boost
+      └─ All Access
+```
+
+原則:
+
+> Freeでも、自分で動けば目標へ到達できる。  
+> 課金すると、整理・転記・解析・判断・自動化をCanoviaがより多く引き受ける。
+
+`Billing`、`Entitlement`、`AI Capacity`は別責務とする。
+
+```text
+Billing != Entitlement
+Entitlement != AI Capacity
+Pack ownership != unlimited AI
+```
 
 Feature側が問い合わせる内容は一つに限定する。
 
 > このactorは、この公開済みFeatureを利用できるか。
 
-`FeatureAccessService` がEntitlementの共通境界であり、Feature codeへ以下のような条件を散らさない。
+`FeatureAccessService` がEntitlementの最終境界であり、Feature codeへ以下のような条件を散らさない。
 
 ```php
 $user->is_premium
+$user->has_study_pack
 $user->coin_balance
 $user->has_gift
 ```
 
-V40.6時点ではFree resolverのみが有劻で、既存機能の利用範囲は変更しない。Premium購入、StoreKit、Coin残高、Coin取引、Earn Coin、Gift、Sponsor、Paywallは未実装である。
+V41.5では `ProductKey` / `config/economy.php` / `user_product_grants` を追加し、Provider非依存のProduct GrantをPremium / Gift / Sponsorそれぞれのresolverから既存の `FeatureAccessService` へ流す。
+
+```text
+Billing / Manual / Gift / Sponsor
+              ↓
+        Product Grant
+              ↓
+        Economy Catalog
+              ↓
+Premium / Gift / Sponsor
+Product Grant resolvers
+              ↓
+     FeatureAccessService
+```
+
+現在のユーザー向けFree機能は維持する。Pack向けCapability-level FeatureKeyはFree=falseで予約し、実際のCapabilityを実装したときに既存アクセス境界へ接続する。
+
+AI Capacityは `AiCapacityService` で独立判定する。All AccessはPurpose Packを包含するがAI Capacity Boostを包含しない。
+
+料金構成の推薦はV41.5時点では生成AIではなく決定論的な `EconomyRecommendationService` が担当し、Freeを正式な推薦結果として扱う。売上最大化ではなく「現在の使い方に対する最小十分構成」を目的とする。
+
+Coinは直接Feature解放するEntitlement sourceから外す。将来は応援・Gift・自己表現・Cosmetic等の別経済として扱い、Coinで注目やランキングを買えない方針とする。
+
+未実装:
+
+- StoreKit / Stripe等の購入処理
+- 実料金
+- 公開Paywall / Checkout
+- Coin残高・取引
+- Gift購入
+- Sponsor課金
+- Native AI使用量課金
 
 ## 5. Feature Flag
 
@@ -435,3 +489,34 @@ External AI assessmentはquestion_feedbackへ `error_type` と `weakness_topics`
 Question Bank selectorは `bank-v2-balanced` へ更新し、Primary / Secondary / Diagnostic quotaとdomain round-robinを利用する。External AI selectorは `prompt-v41.4-calibrated` とし、Canoviaが決めたExam ProfileとQuestion MixをPromptへ渡す。
 
 AIのnext_step.focus_topicsは候補Signalとして残すが、次回演習方針を直接決定しない。最終的な出題配分はCanovia Policyが決める。
+
+
+## 17. V41.5 Economy Foundation
+
+V41.5は課金処理を導入せず、将来のPremium Core + Purpose Packを既存Entitlement境界へ接続できる基盤を実装する。
+
+Canonical Products:
+
+- `premium_core`
+- `study_pack`
+- `career_pack`
+- `developer_pack`
+- `creator_pack`
+- `all_access`
+- `ai_capacity_boost`
+
+Product Grantは `user_product_grants` にProvider非依存の投影として保存する。raw receiptや課金Provider固有payloadはここへ保存しない。
+
+Purpose PackはPremium Coreを前提とし、All AccessはPremium Core + Purpose Packsへ展開する。AI Capacity Boostは別軸でありAll Accessへ自動包含しない。
+
+V41.5で追加するCapability-level FeatureKey:
+
+- `study_long_term_weakness_profile`
+- `career_native_capture_analysis`
+- `developer_github_evidence`
+
+これらは将来Capability用であり、現在のAI Practice / Career manual capture / Project Artifact manual linkingをFreeから奪わない。
+
+Admin Economy Inspectorでは、ユーザーごとのProduct Grant、effective Products、FeatureAccessDecision、AI Capacity、決定論的推薦を確認し、開発用Grantを手動付与/解除できる。
+
+Public Pricing UIは、実際のPremium価値と購入経路が成立するまで追加しない。

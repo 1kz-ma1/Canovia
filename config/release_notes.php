@@ -2,6 +2,22 @@
 
 return [
     [
+        'version' => 'v41.5',
+        'date' => '2026-09-25',
+        'title' => 'Canovia Economyの土台を、課金処理より先に',
+        'summary' => 'Freeの核体験を維持したまま、Premium Core・用途別Pack・All Access・AI Capacityを既存Entitlement境界へ接続できるEconomy Foundationを追加しました。',
+        'highlights' => [
+            'Premium Core / Study / Career / Developer / Creator / All Access / AI Capacity BoostをProduct Catalogとして分離し、Feature codeへ料金プラン名を持ち込まない構造にしました。',
+            '決済前でもProduct Grantを手動付与できるprovider-neutralなuser_product_grantsを追加し、将来StoreKitやStripeから同期できる形にしました。',
+            'Product Grantは既存FeatureAccessServiceへProductGrantEntitlementResolver経由で流し、Feature Flag・Ownershipとの責務分離を維持します。',
+            'AI CapacityはEntitlementと分離し、All AccessでもAI利用量が無制限にならない構造にしました。',
+            '料金構成の推薦は生成AIではなく決定論で開始し、Freeのままが適切な場合は正式にFreeを返します。',
+            'Admin Economy Inspectorで、Grant・effective Product・Feature access・AI Capacity・推薦理由を開発中に確認できます。',
+            'Coinは直接Featureを解放するEntitlement sourceから外し、将来の応援・Gift・自己表現向け別経済として整理しました。',
+        ],
+        'tip' => 'V41.5では購入・課金・Paywallはまだありません。まず権利と機能の境界を安定させ、Native AIの実装時に実際のPremium価値へ接続します。',
+    ],
+    [
         'version' => 'v41.4',
         'date' => '2026-09-25',
         'title' => 'AI演習を「難しい」より「本番で役立つ」へ',

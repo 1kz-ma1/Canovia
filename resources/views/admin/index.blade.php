@@ -19,7 +19,7 @@
             </div>
         </header>
 
-        <section class="grid gap-4 lg:grid-cols-3">
+        <section class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
             <a href="{{ route('admin.feedback.index') }}" class="group page-card block p-5 transition hover:-translate-y-0.5 hover:border-sky-400/35 sm:p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -78,6 +78,17 @@
                         <p class="text-[10px] text-slate-500">公開中</p>
                         <p class="mt-1 text-xl font-black text-emerald-200">{{ $publishedQuestionPackCount }}</p>
                     </div>
+                </div>
+            </a>
+
+            <a href="{{ route('admin.economy.index') }}" class="group page-card block p-5 transition hover:-translate-y-0.5 hover:border-emerald-400/35 sm:p-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <span class="inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-black tracking-[.12em] text-emerald-300">ECONOMY</span>
+                        <h2 class="mt-3 text-xl font-black text-slate-50">Economy Inspector</h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-400">Product Grant・Feature Access・AI Capacity・推薦を決済なしで検証します。</p>
+                    </div>
+                    <span class="text-2xl text-slate-600 transition group-hover:translate-x-1 group-hover:text-emerald-300" aria-hidden="true">→</span>
                 </div>
             </a>
         </section>

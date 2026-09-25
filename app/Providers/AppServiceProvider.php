@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Services\Entitlements\FreeEntitlementResolver;
+use App\Services\Entitlements\GiftProductGrantEntitlementResolver;
+use App\Services\Entitlements\ProductGrantEntitlementResolver;
+use App\Services\Entitlements\SponsorProductGrantEntitlementResolver;
 use App\Services\FeatureAccessService;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -12,7 +15,18 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(FreeEntitlementResolver::class);
-        $this->app->tag([FreeEntitlementResolver::class], 'canovia.entitlement_resolvers');
+        $this->app->singleton(ProductGrantEntitlementResolver::class);
+        $this->app->singleton(GiftProductGrantEntitlementResolver::class);
+        $this->app->singleton(SponsorProductGrantEntitlementResolver::class);
+        $this->app->tag(
+            [
+                SponsorProductGrantEntitlementResolver::class,
+                GiftProductGrantEntitlementResolver::class,
+                ProductGrantEntitlementResolver::class,
+                FreeEntitlementResolver::class,
+            ],
+            'canovia.entitlement_resolvers',
+        );
 
         $this->app->singleton(
             FeatureAccessService::class,
