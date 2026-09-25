@@ -16,5 +16,5 @@ interface StudyPracticeAssessmentProvider
      * @param array<int, array<string, mixed>> $answers
      * @return array<string, mixed>
      */
-    public function prepare(Plan $plan, Task $task, array $questions, array $answers): array;
+    public function prepare(Plan $plan, Task $task, array $questions, array $answers, ?int $actorUserId = null, ?int $studyPracticeSessionId = null): array;
 }

@@ -16,5 +16,5 @@ interface StudyPracticeQuestionProvider
      * @param array<string, mixed> $strategy
      * @return array<string, mixed>
      */
-    public function prepare(Plan $plan, Task $task, Collection $recentAttempts, array $strategy): array;
+    public function prepare(Plan $plan, Task $task, Collection $recentAttempts, array $strategy, ?int $actorUserId = null): array;
 }

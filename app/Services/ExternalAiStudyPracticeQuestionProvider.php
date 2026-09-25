@@ -21,7 +21,7 @@ class ExternalAiStudyPracticeQuestionProvider implements StudyPracticeQuestionPr
         return 'handoff';
     }
 
-    public function prepare(Plan $plan, Task $task, Collection $recentAttempts, array $strategy): array
+    public function prepare(Plan $plan, Task $task, Collection $recentAttempts, array $strategy, ?int $actorUserId = null): array
     {
         return [
             'provider' => $this->key(),

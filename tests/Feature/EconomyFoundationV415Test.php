@@ -34,12 +34,13 @@ class EconomyFoundationV415Test extends TestCase
             FeatureKey::AdvancedAnalytics,
             FeatureKey::QuestionPack,
             FeatureKey::ProjectArtifact,
-            FeatureKey::AutomaticAiExecution,
         ] as $feature) {
             $decision = $access->resolveAccess($user, $feature);
             $this->assertTrue($decision->allowed, $feature->value);
             $this->assertSame(EntitlementSource::Free, $decision->source);
         }
+
+        $this->assertFalse($access->canUse($user, FeatureKey::AutomaticAiExecution));
 
         foreach ([
             FeatureKey::StudyLongTermWeaknessProfile,

@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\FeatureKey;
+use App\Enums\ProductKey;
 use App\Models\RoadmapFeature;
 use App\Models\RoadmapVote;
+use App\Models\User;
+use App\Models\UserProductGrant;
 use App\Services\FeatureAccessService;
 use App\Services\FeatureFlagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -58,8 +61,16 @@ class CanoviaFutureV407Test extends TestCase
             'minimum_app_version' => null,
         ]);
 
+        $user = User::factory()->create();
+        UserProductGrant::create([
+            'user_id' => $user->id,
+            'product_key' => ProductKey::PremiumCore,
+            'source' => 'manual',
+            'starts_at' => now()->subMinute(),
+        ]);
+
         $this->assertFalse(app(FeatureFlagService::class)->isEnabled(FeatureKey::AutomaticAiExecution));
-        $this->assertTrue(app(FeatureAccessService::class)->canUse(null, FeatureKey::AutomaticAiExecution));
+        $this->assertTrue(app(FeatureAccessService::class)->canUse($user, FeatureKey::AutomaticAiExecution));
     }
 
     public function test_feature_flag_can_limit_platform_and_minimum_app_version_without_entitlement_logic(): void

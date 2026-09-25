@@ -1,8 +1,8 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-25 / V41.7 Admin & Premium Experience Foundation
+更新基準: 2026-09-25 / V41.8 Native AI Practice
 
-V41.6のAction First / Progressive Disclosureを維持しつつ、V41.7では「運営者」「Free」「Premium」を安全に分離して検証できる基盤を追加する。Super Adminは単一アカウントに固定し、一般ユーザーへの無償Premium付与とAdmin限定プレビューを、Product GrantやFeature Accessとは別責務として扱う。詳細は [V41.7仕様](V41.7_ADMIN_PREMIUM_EXPERIENCE_FOUNDATION.md) を参照。
+V41.6のAction First、V41.7のAdmin / Premium Experience Foundationを維持しつつ、V41.8ではPremium Coreを最初の実際のNative AI価値へ接続する。Freeの外部AI Handoffは残し、PremiumではAI Practiceの問題生成・評価に伴うコピー/貼り付けをCanoviaが引き受ける。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md) を参照。
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -81,6 +81,8 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - AI Capacityの独立境界（standard / boosted）
 - 決定論的Economy RecommendationとAdmin Economy Inspector
 - 単一アカウントSuper Admin、Settings Hub、Complimentary Premium、Admin Free/Premium Preview
+- Premium CoreのNative AI Practice（問題生成 / 回答評価 / manual fallback）
+- Native AI Run usage history（provider / model / AI Capacity / token usage / status）
 
 ### Next
 
@@ -93,8 +95,8 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - SupportしたRoadmap Featureのstatus変化・Release通知
 - Roadmap FeatureとRelease Notesの明示的な紐付け
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
-- Premium Coreの最初のNative AI実行経路
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
+- Native AI usage historyを使ったquota / cost policy
 
 ### Future
 
@@ -171,7 +173,7 @@ Product Grant resolvers
      FeatureAccessService
 ```
 
-現在のユーザー向けFree機能は維持する。Pack向けCapability-level FeatureKeyはFree=falseで予約し、実際のCapabilityを実装したときに既存アクセス境界へ接続する。
+AI Practice本体、Question Bank、外部AI Handoff等の核となるFree経路は維持する。V41.8では `automatic_ai_execution` をPremium Coreの実CapabilityとしてFree=falseへ切り替え、Canovia自身がAI Providerを呼ぶ自動実行だけをPremium価値とする。Pack向けCapability-level FeatureKeyはFree=falseで予約し、実際のCapabilityを実装したときに既存アクセス境界へ接続する。
 
 AI Capacityは `AiCapacityService` で独立判定する。All AccessはPurpose Packを包含するがAI Capacity Boostを包含しない。
 
@@ -187,7 +189,7 @@ Coinは直接Feature解放するEntitlement sourceから外す。将来は応援
 - Coin残高・取引
 - Gift購入
 - Sponsor課金
-- Native AI使用量課金
+- Native AI使用量課金（V41.8では利用履歴のみ記録し、請求はしない）
 
 ## 5. Feature Flag
 
@@ -563,3 +565,34 @@ Admin Previewは権限を書き換えずsession-scopedな表示・Feature Access
 - Preview中もAdminAccessは維持し、管理画面から戻れる
 
 V41.7ではNative AI実行、StoreKit / Stripe、公開Pricing / Paywall、Pro / All Access購入、AI使用量meteringは実装しない。最初のNative AI Practiceは次段階でPremium Coreの実価値として接続する。
+
+
+## 19. V41.8 Native AI Practice
+
+V41.8はPremium Coreの `automatic_ai_execution` を最初の実Capabilityとして有効化する。AI Practice自体はFreeのままであり、料金境界は学習機能の有無ではなく「外部AIとの手動受け渡しをCanoviaが引き受けるか」に置く。
+
+```text
+Free
+  Prompt generation
+    -> External AI
+    -> JSON import
+    -> Answer
+    -> External AI assessment
+    -> JSON import
+
+Premium Core
+  Native AI generation
+    -> Answer
+    -> Native AI assessment
+    -> Evidence / Next Action
+```
+
+Native AIを呼ぶ判断は必ず `FeatureAccessService` の `AutomaticAiExecution` を通す。Product Grant、Admin、Premium Previewの具体条件をStudy Practiceへ直接埋め込まない。AI Capacityは引き続き `AiCapacityService` の独立責務とし、standard / boostedをProvider実行時のpolicyへ反映する。
+
+Providerは既存Study Practice abstractionへ `native_ai` を追加し、Question Bank / External AIと同じSession・回答UI・Assessment・Evidence loopを共有する。Question Bankで十分なCoverageがある場合は決定論的なQuestion Bankを優先し、Coverage不足時にPremiumのNative AIを主導線として提示する。
+
+Native AIはStructured JSONを返すが、Provider出力をそのまま信頼しない。Canovia側でflow、Plan / Task ID、Question schema、Assessment schema、score、recommended progress等を再検証する。Provider障害、quota、timeout、refusal、contract mismatchが発生した場合もAI Practiceを停止せず、既存のExternal AI handoffへ戻す。
+
+`native_ai_runs` はProvider / model / purpose / capacity tier / token usage / status / errorを記録する最小usage historyとする。Prompt本文やAPI credentialは保存しない。V41.8ではusage historyを請求へ接続せず、将来のquota・cost policyの観測データとしてのみ使う。
+
+Native AI server configurationはdefault disabledとし、API credentialをclientへ公開しない。StoreKit / Stripe、公開Pricing、token課金、Plan/Career/DeveloperのNative AI化、完全Native SwiftUI UIはV41.8のNon-goalとする。

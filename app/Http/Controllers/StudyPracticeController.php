@@ -3,14 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Enums\FeatureKey;
+use App\Exceptions\NativeAiExecutionException;
 use App\Models\Plan;
 use App\Models\StudyPracticeAttempt;
 use App\Models\StudyPracticeSession;
 use App\Models\Task;
+use App\Services\AiCapacityService;
 use App\Services\AiJsonInputNormalizer;
 use App\Services\BehaviorIdentityService;
 use App\Services\EvidenceProgressService;
 use App\Services\FeatureAccessService;
+use App\Services\NativeAiGateway;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
@@ -31,6 +34,8 @@ class StudyPracticeController extends Controller
         StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
         FeatureAccessService $featureAccess,
+        NativeAiGateway $nativeAi,
+        AiCapacityService $aiCapacity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -157,6 +162,15 @@ class StudyPracticeController extends Controller
             FeatureKey::QuestionPack,
             ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
         );
+        $nativeAiDecision = $featureAccess->resolveAccess(
+            $request->user(),
+            FeatureKey::AutomaticAiExecution,
+            ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
+        );
+        $nativeAiEntitled = $nativeAiDecision->allowed;
+        $nativeAiAvailable = $nativeAiEntitled && $nativeAi->isConfigured();
+        $nativeAiCapacity = $aiCapacity->policyFor($request->user());
+
         $orchestration = $orchestrator->previewHandoff(
             $plan,
             $task,
@@ -214,6 +228,10 @@ class StudyPracticeController extends Controller
             'practiceStage' => $practiceStage,
             'currentAttempt' => $currentAttempt,
             'recentAttempts' => $recentAttempts,
+            'nativeAiEntitled' => $nativeAiEntitled,
+            'nativeAiAvailable' => $nativeAiAvailable,
+            'nativeAiConfigured' => $nativeAi->isConfigured(),
+            'nativeAiCapacity' => $nativeAiCapacity,
         ]);
     }
 
@@ -298,6 +316,121 @@ class StudyPracticeController extends Controller
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
             ->with('success', count($questions).'問をCanovia Question Bankから準備しました。')
+            ->with('study_practice_scroll_to', 'practice-questions');
+    }
+
+    public function prepareNative(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+        StudyPracticeOrchestrator $orchestrator,
+        BehaviorIdentityService $identity,
+        FeatureAccessService $featureAccess,
+        NativeAiGateway $nativeAi,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership);
+        abort_unless(trim((string) $plan->category) === '資格学習', 404);
+
+        $featureAccess->authorizeUse(
+            $request->user(),
+            FeatureKey::AutomaticAiExecution,
+            ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
+        );
+
+        $validated = $request->validate([
+            'prepare_request_id' => ['required', 'uuid'],
+        ]);
+
+        if (! $nativeAi->isConfigured()) {
+            return redirect()
+                ->route('plans.tasks.study_practice.show', [$plan, $task])
+                ->with('status', 'Canovia Native AIは現在利用できないため、外部AIの手動フローへ切り替えました。')
+                ->with('native_ai_fallback', true);
+        }
+
+        $actorToken = $identity->resolve($request);
+        $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
+        $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
+
+        try {
+            $practiceSession = $orchestrator->prepare(
+                $plan,
+                $task,
+                $recentAttempts,
+                $request->user()?->id,
+                $request->user() ? null : $actorToken,
+                (string) $validated['prepare_request_id'],
+                'native_ai',
+            );
+        } catch (NativeAiExecutionException $exception) {
+            return redirect()
+                ->route('plans.tasks.study_practice.show', [$plan, $task])
+                ->with('status', $exception->getMessage().' 外部AIの手動フローはそのまま利用できます。')
+                ->with('native_ai_fallback', true);
+        }
+
+        $runId = (int) data_get($practiceSession->provider_payload, 'native_ai.run_id', 0);
+        $envelope = data_get($practiceSession->provider_payload, 'response_envelope');
+
+        try {
+            if (! is_array($envelope)) {
+                throw ValidationException::withMessages([
+                    'prepare_request_id' => 'Native AIの問題生成結果を読み取れませんでした。',
+                ]);
+            }
+
+            $this->assertEnvelope($envelope, 'study_practice', $plan, $task, 'prepare_request_id');
+            $questions = $this->normalizeQuestions($envelope['questions'] ?? null);
+        } catch (ValidationException $exception) {
+            $practiceSession->update(['status' => StudyPracticeSession::STATUS_ABANDONED]);
+            if ($runId > 0) {
+                $nativeAi->markRunFailed(
+                    $runId,
+                    'native_ai_validation_failed',
+                    collect($exception->errors())->flatten()->first() ?: $exception->getMessage(),
+                );
+            }
+
+            return redirect()
+                ->route('plans.tasks.study_practice.show', [$plan, $task])
+                ->with('status', 'Native AIの結果を安全に読み込めなかったため、外部AIの手動フローへ切り替えました。')
+                ->with('native_ai_fallback', true);
+        }
+
+        $title = trim((string) ($envelope['title'] ?? 'Canovia Native AI演習'));
+        $exerciseTitle = $title !== '' ? mb_substr($title, 0, 120) : 'Canovia Native AI演習';
+
+        $practiceSession->update([
+            'status' => StudyPracticeSession::STATUS_READY,
+            'exercise_title' => $exerciseTitle,
+            'questions_snapshot' => $questions,
+            'selected_questions' => collect($questions)->map(fn (array $question) => [
+                'question_ref' => (string) $question['id'],
+                'question_id' => null,
+                'source_type' => 'native_ai',
+            ])->values()->all(),
+        ]);
+
+        if ($runId > 0) {
+            $nativeAi->attachRun($runId, $request->user()?->id, $practiceSession);
+        }
+
+        $request->session()->put($this->sessionKey($plan, $task), [
+            'title' => $exerciseTitle,
+            'questions' => $questions,
+            'answers' => [],
+            'draft_answers' => [],
+            'evaluation_prompt' => null,
+            'assessment' => null,
+            'attempt_id' => null,
+            'attempt_token' => (string) Str::uuid(),
+            'practice_session_id' => $practiceSession->id,
+        ]);
+
+        return redirect()
+            ->route('plans.tasks.study_practice.show', [$plan, $task])
+            ->with('success', count($questions).'問をCanovia Native AIで準備しました。')
             ->with('study_practice_scroll_to', 'practice-questions');
     }
 
@@ -447,6 +580,8 @@ class StudyPracticeController extends Controller
         StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
         TaskEvidenceService $evidenceService,
+        FeatureAccessService $featureAccess,
+        NativeAiGateway $nativeAi,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -567,20 +702,86 @@ class StudyPracticeController extends Controller
                 'draft_saved_at' => now(),
             ]);
 
-            $assessmentHandoff = $orchestrator->prepareAssessment(
-                $practiceSession,
-                $plan,
-                $task,
-                $questions,
-                $answers,
-            );
+            $nativeFallback = false;
+            $assessmentProviderKey = null;
+
+            if ((string) $practiceSession->question_provider === 'native_ai') {
+                $nativeAllowed = $featureAccess->canUse(
+                    $request->user(),
+                    FeatureKey::AutomaticAiExecution,
+                    ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
+                );
+
+                if ($nativeAllowed && $nativeAi->isConfigured()) {
+                    $assessmentProviderKey = 'native_ai';
+                } else {
+                    $assessmentProviderKey = 'external_ai';
+                    $nativeFallback = true;
+                }
+            }
+
+            try {
+                $assessmentHandoff = $orchestrator->prepareAssessment(
+                    $practiceSession,
+                    $plan,
+                    $task,
+                    $questions,
+                    $answers,
+                    $assessmentProviderKey,
+                );
+            } catch (NativeAiExecutionException $exception) {
+                $assessmentHandoff = $orchestrator->prepareAssessment(
+                    $practiceSession,
+                    $plan,
+                    $task,
+                    $questions,
+                    $answers,
+                    'external_ai',
+                );
+                $nativeFallback = true;
+            }
+
+            if (
+                (string) ($assessmentHandoff['mode'] ?? '') === 'direct'
+                && is_array(data_get($assessmentHandoff, 'payload.assessment_envelope'))
+            ) {
+                try {
+                    $assessment = $this->normalizeAssessmentEnvelope(
+                        data_get($assessmentHandoff, 'payload.assessment_envelope'),
+                        $plan,
+                        $task,
+                        $questions,
+                        'answers',
+                    );
+                } catch (ValidationException $exception) {
+                    $runId = (int) data_get($assessmentHandoff, 'payload.native_ai.run_id', 0);
+                    if ($runId > 0) {
+                        $nativeAi->markRunFailed(
+                            $runId,
+                            'native_ai_validation_failed',
+                            collect($exception->errors())->flatten()->first() ?: $exception->getMessage(),
+                        );
+                    }
+
+                    $assessmentHandoff = $orchestrator->prepareAssessment(
+                        $practiceSession,
+                        $plan,
+                        $task,
+                        $questions,
+                        $answers,
+                        'external_ai',
+                    );
+                    $nativeFallback = true;
+                    $assessment = null;
+                }
+            } else {
+                $assessment = data_get($assessmentHandoff, 'payload.assessment');
+            }
 
             if ((string) ($assessmentHandoff['mode'] ?? '') === 'direct') {
-                $assessment = data_get($assessmentHandoff, 'payload.assessment');
-
                 if (! is_array($assessment)) {
                     throw ValidationException::withMessages([
-                        'answers' => 'Canoviaの機械採点結果を作成できませんでした。',
+                        'answers' => 'Canoviaの採点結果を作成できませんでした。',
                     ]);
                 }
 
@@ -608,9 +809,13 @@ class StudyPracticeController extends Controller
                 $practiceSession->update(['status' => StudyPracticeSession::STATUS_ASSESSED]);
                 $request->session()->put($key, $state);
 
+                $successMessage = (string) ($assessmentHandoff['provider'] ?? '') === 'native_ai'
+                    ? 'Canovia Native AIが回答を評価しました。結果を確認できます。'
+                    : 'Canovia Question Bankの採点ルールで評価しました。結果を確認できます。';
+
                 return redirect()
                     ->route('plans.tasks.study_practice.show', [$plan, $task])
-                    ->with('success', 'Canovia Question Bankの採点ルールで評価しました。結果を確認できます。')
+                    ->with('success', $successMessage)
                     ->with('study_practice_scroll_to', 'practice-assessment');
             }
 
@@ -630,10 +835,21 @@ class StudyPracticeController extends Controller
         $state['attempt_id'] = null;
         $request->session()->put($key, $state);
 
-        return redirect()
+        $redirect = redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
-            ->with('success', '回答をまとめました。評価用プロンプトをAIへ送ってください。')
+            ->with(
+                'success',
+                isset($nativeFallback) && $nativeFallback
+                    ? 'Native AI評価を完了できなかったため、外部AI用の評価プロンプトを準備しました。'
+                    : '回答をまとめました。評価用プロンプトをAIへ送ってください。',
+            )
             ->with('study_practice_scroll_to', 'practice-evaluation');
+
+        if (isset($nativeFallback) && $nativeFallback) {
+            $redirect->with('native_ai_fallback', true);
+        }
+
+        return $redirect;
     }
 
     public function previewAssessment(
@@ -683,36 +899,13 @@ class StudyPracticeController extends Controller
         // handoff that was used to build the attempt.
         $request->session()->put($key, $state);
 
-        $score = filter_var($decoded['score_percent'] ?? null, FILTER_VALIDATE_INT);
-        $recommendedProgress = filter_var($decoded['recommended_task_progress_percent'] ?? null, FILTER_VALIDATE_INT);
-
-        if ($score === false || $score < 0 || $score > 100) {
-            throw ValidationException::withMessages(['assessment_json' => 'score_percentは0〜100の整数で返してください。']);
-        }
-        if ($recommendedProgress === false || $recommendedProgress < 0 || $recommendedProgress > 100) {
-            throw ValidationException::withMessages(['assessment_json' => 'recommended_task_progress_percentは0〜100の整数で返してください。']);
-        }
-
-        $assessment = [
-            'score_percent' => $score,
-            'question_feedback' => $this->normalizeQuestionFeedback(
-                $decoded['question_feedback'] ?? [],
-                $state['questions'] ?? [],
-            ),
-            'strengths' => $this->stringList($decoded['strengths'] ?? []),
-            'weaknesses' => $this->stringList($decoded['weaknesses'] ?? []),
-            'recommended_task_progress_percent' => $recommendedProgress,
-            'evidence_summary' => mb_substr(trim((string) ($decoded['evidence_summary'] ?? '')), 0, 2000),
-            'next_action' => mb_substr(trim((string) ($decoded['next_action'] ?? '')), 0, 1000),
-        ];
-        $assessment['next_step'] = $this->normalizeNextStep(
-            $decoded['next_step'] ?? null,
+        $assessment = $this->normalizeAssessmentEnvelope(
+            $decoded,
+            $plan,
             $task,
-            $assessment,
+            $state['questions'] ?? [],
+            'assessment_json',
         );
-        if (! filled($assessment['next_action'])) {
-            $assessment['next_action'] = $assessment['next_step']['label'];
-        }
 
         $attempt = $this->persistAssessment(
             $request,
@@ -888,6 +1081,58 @@ class StudyPracticeController extends Controller
     {
         abort_unless((int) $task->plan_id === (int) $plan->id, 404);
         $ownership->authorizeTask($request, $task);
+    }
+
+    /**
+     * @param array<string,mixed> $decoded
+     * @param array<int,array<string,mixed>> $questions
+     * @return array<string,mixed>
+     */
+    private function normalizeAssessmentEnvelope(
+        array $decoded,
+        Plan $plan,
+        Task $task,
+        array $questions,
+        string $field,
+    ): array {
+        $this->assertEnvelope($decoded, 'study_assessment', $plan, $task, $field);
+
+        $score = filter_var($decoded['score_percent'] ?? null, FILTER_VALIDATE_INT);
+        $recommendedProgress = filter_var(
+            $decoded['recommended_task_progress_percent'] ?? null,
+            FILTER_VALIDATE_INT,
+        );
+
+        if ($score === false || $score < 0 || $score > 100) {
+            throw ValidationException::withMessages([$field => 'score_percentは0〜100の整数で返してください。']);
+        }
+        if ($recommendedProgress === false || $recommendedProgress < 0 || $recommendedProgress > 100) {
+            throw ValidationException::withMessages([$field => 'recommended_task_progress_percentは0〜100の整数で返してください。']);
+        }
+
+        $assessment = [
+            'score_percent' => $score,
+            'question_feedback' => $this->normalizeQuestionFeedback(
+                $decoded['question_feedback'] ?? [],
+                $questions,
+            ),
+            'strengths' => $this->stringList($decoded['strengths'] ?? []),
+            'weaknesses' => $this->stringList($decoded['weaknesses'] ?? []),
+            'recommended_task_progress_percent' => $recommendedProgress,
+            'evidence_summary' => mb_substr(trim((string) ($decoded['evidence_summary'] ?? '')), 0, 2000),
+            'next_action' => mb_substr(trim((string) ($decoded['next_action'] ?? '')), 0, 1000),
+        ];
+        $assessment['next_step'] = $this->normalizeNextStep(
+            $decoded['next_step'] ?? null,
+            $task,
+            $assessment,
+        );
+
+        if (! filled($assessment['next_action'])) {
+            $assessment['next_action'] = $assessment['next_step']['label'];
+        }
+
+        return $assessment;
     }
 
     private function assertEnvelope(?array $decoded, string $flow, Plan $plan, Task $task, string $field): void

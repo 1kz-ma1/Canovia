@@ -2,6 +2,22 @@
 
 return [
     [
+        'version' => 'v41.8',
+        'date' => '2026-09-25',
+        'title' => 'Premiumなら、AI演習のコピペをCanoviaが引き受ける',
+        'summary' => 'Freeの外部AI Handoffを残したまま、Premium Coreでは問題生成と回答評価をCanovia内のNative AIで完結できる最初の実行経路を追加しました。',
+        'highlights' => [
+            'AI Practice本体と外部AIの手動HandoffはFreeのまま維持し、Native AI実行だけをPremium CoreのAutomatic AI Executionへ接続しました。',
+            'Question Bankで十分にカバーできない演習では、Premiumは「Canoviaで演習を始める」から問題生成を直接実行できます。',
+            'Native AIで生成した問題も既存の回答UI・途中保存・StudyPracticeSession・弱点分析をそのまま利用します。',
+            '回答後の評価もPremiumではCanovia内で実行し、結果・Evidence・次Actionまで外部AIとのコピペなしで進められます。',
+            'Native AIが一時的に失敗しても回答や学習経路を失わず、従来の外部AI Prompt / JSON Handoffへfallbackします。',
+            'Native AI Runへprovider・model・AI Capacity・token使用量・成否を記録し、将来のquotaやコスト制御へ備えます。',
+            '同じprepare_request_idの再送ではProviderを再実行せず、二重API呼び出しを防ぎます。',
+        ],
+        'tip' => 'Native AIはserver-side設定を有効化した環境だけで動きます。V41.8では決済・公開Paywall・AI利用量課金はまだ追加していません。',
+    ],
+    [
         'version' => 'v41.7',
         'date' => '2026-09-25',
         'title' => '設定とPremium検証を、実運用できる形へ',

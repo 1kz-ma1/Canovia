@@ -45,7 +45,7 @@ class StudyPracticeOrchestrator
 
         return [
             'strategy' => $strategy,
-            'provider' => $provider->prepare($plan, $task, $recentAttempts, $strategy),
+            'provider' => $provider->prepare($plan, $task, $recentAttempts, $strategy, null),
         ];
     }
 
@@ -61,12 +61,30 @@ class StudyPracticeOrchestrator
         string $prepareRequestId,
         ?string $providerKey = null,
     ): StudyPracticeSession {
+        $existing = StudyPracticeSession::query()
+            ->where('prepare_request_id', $prepareRequestId)
+            ->first();
+
+        if ($existing) {
+            if (
+                (int) $existing->plan_id !== (int) $plan->id
+                || (int) $existing->task_id !== (int) $task->id
+                || ($userId !== null && (int) $existing->user_id !== $userId)
+                || ($userId === null && (string) $existing->actor_token !== (string) $actorToken)
+                || ($providerKey !== null && (string) $existing->question_provider !== $providerKey)
+            ) {
+                throw new RuntimeException('この演習準備リクエストは別の対象で使用済みです。');
+            }
+
+            return $existing;
+        }
+
         $strategy = $this->strategyService->build($plan, $task, $recentAttempts);
 
         $provider = $providerKey !== null
             ? $this->providerRouter->questionProviderByKey($providerKey)
             : $this->providerRouter->questionProvider($plan, $task, $strategy);
-        $prepared = $provider->prepare($plan, $task, $recentAttempts, $strategy);
+        $prepared = $provider->prepare($plan, $task, $recentAttempts, $strategy, $userId);
 
         $isDirect = (string) ($prepared['mode'] ?? 'handoff') === 'direct'
             && is_array($prepared['questions'] ?? null)
@@ -133,9 +151,19 @@ class StudyPracticeOrchestrator
         Task $task,
         array $questions,
         array $answers,
+        ?string $providerKey = null,
     ): array {
-        $provider = $this->providerRouter->assessmentProvider($plan, $task, $questions, $answers);
-        $prepared = $provider->prepare($plan, $task, $questions, $answers);
+        $provider = $providerKey !== null
+            ? $this->providerRouter->assessmentProviderByKey($providerKey)
+            : $this->providerRouter->assessmentProvider($plan, $task, $questions, $answers);
+        $prepared = $provider->prepare(
+            $plan,
+            $task,
+            $questions,
+            $answers,
+            $session->user_id ? (int) $session->user_id : null,
+            (int) $session->id,
+        );
 
         $session->update([
             'assessment_provider' => (string) ($prepared['provider'] ?? $provider->key()),

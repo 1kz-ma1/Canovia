@@ -20,7 +20,7 @@ class QuestionBankStudyPracticeAssessmentProvider implements StudyPracticeAssess
         return 'direct';
     }
 
-    public function prepare(Plan $plan, Task $task, array $questions, array $answers): array
+    public function prepare(Plan $plan, Task $task, array $questions, array $answers, ?int $actorUserId = null, ?int $studyPracticeSessionId = null): array
     {
         return [
             'provider' => $this->key(),
