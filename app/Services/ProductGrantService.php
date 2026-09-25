@@ -49,22 +49,20 @@ class ProductGrantService
     }
 
     /**
+     * @param array<int,string> $sources
      * @return array{grant:UserProductGrant,effective_product:ProductKey}|null
      */
-    public function grantForFeature(User $user, FeatureKey $feature): ?array
+    public function grantForFeature(User $user, FeatureKey $feature, array $sources = []): ?array
     {
         $allDirect = $this->directProducts($user);
         $usable = $this->catalog->usableProducts($allDirect);
 
-        $grants = $this->activeGrants($user)
-            ->sortByDesc(fn (UserProductGrant $grant) => match ((string) $grant->source) {
-                'sponsor' => 400,
-                'gift' => 300,
-                'subscription' => 200,
-                'manual' => 150,
-                'migration' => 100,
-                default => 0,
-            });
+        $grants = $this->activeGrants($user);
+        if ($sources !== []) {
+            $grants = $grants
+                ->filter(fn (UserProductGrant $grant) => in_array((string) $grant->source, $sources, true))
+                ->values();
+        }
 
         foreach ($grants as $grant) {
             if (! $grant->product_key instanceof ProductKey) {
@@ -87,5 +85,4 @@ class ProductGrantService
         }
 
         return null;
-    }
-}
+    }}
