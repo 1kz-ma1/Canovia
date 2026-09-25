@@ -28,6 +28,23 @@
     $onboardingAuto = ! $focusMode && (! auth()->check() || (int) auth()->user()->onboarding_version < $onboardingVersion);
     $releaseNotes = \App\Support\ReleaseNotes::all();
     $latestReleaseKey = (string) data_get($releaseNotes->first(), 'key', '');
+    $currentUser = auth()->user();
+    $isSuperAdmin = $currentUser
+        ? app(\App\Services\AdminAccessService::class)->isSuperAdmin($currentUser)
+        : false;
+    $adminPreviewMode = $isSuperAdmin
+        ? app(\App\Services\AdminPreviewContext::class)->mode($currentUser)
+        : null;
+    $hasPremiumCore = $currentUser && ! $isSuperAdmin
+        ? app(\App\Services\ProductGrantService::class)->hasEffectiveProduct($currentUser, \App\Enums\ProductKey::PremiumCore)
+        : false;
+    $currentAccessLabel = $isSuperAdmin
+        ? match ($adminPreviewMode) {
+            'free' => 'Free プレビュー',
+            'premium' => 'Premium プレビュー',
+            default => 'Super Admin',
+        }
+        : ($hasPremiumCore ? 'Premium' : 'Free');
 @endphp
 <!DOCTYPE html>
 <html lang="ja">
@@ -96,7 +113,7 @@
                     <a href="{{ route('calendar.index') }}" class="header-secondary-link">カレンダー</a>
                     <button type="button" class="header-secondary-link canovia-guide-desktop-trigger" data-guide-open aria-label="Canovia Guideを開く">ガイド</button>
                     <button type="button" class="header-secondary-link release-notes-desktop-trigger" data-release-notes-open aria-label="Canoviaの更新情報を見る">更新情報<span class="release-notes-new-dot" data-release-notes-new aria-hidden="true"></span></button>
-                    <button type="button" class="ui-settings-trigger" data-ui-settings-open aria-label="表示設定を開く">表示</button>
+                    <button type="button" class="ui-settings-trigger" data-ui-settings-open aria-label="設定を開く">設定</button>
                     @auth
                         <span class="max-w-36 truncate text-xs font-semibold text-slate-400">{{ auth()->user()->name }}</span>
                         <form method="POST" action="{{ route('auth.logout') }}" data-clear-offline-state>
@@ -155,8 +172,8 @@
                     </span>
                     <span>フィードバック</span>
                 </a>
-                <button type="button" class="mobile-utility-button" data-ui-settings-open aria-label="表示設定を開く" title="表示設定">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.4a1.6 1.6 0 0 0 0-3.2h-.9a1.8 1.8 0 0 1 0-3.6H15A6 6 0 0 0 15 3h-3Zm-4.5 7.5h.01M9 6.8h.01M14.8 6.6h.01M17.2 10h.01"/></svg>
+                <button type="button" class="mobile-utility-button" data-ui-settings-open aria-label="設定を開く" title="設定">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="M19.2 13.3a7.6 7.6 0 0 0 .1-1.3 7.6 7.6 0 0 0-.1-1.3l2-1.5-2-3.4-2.4 1a7.8 7.8 0 0 0-2.2-1.3L14.3 3h-4.6l-.4 2.5a7.8 7.8 0 0 0-2.2 1.3l-2.4-1-2 3.4 2 1.5a7.6 7.6 0 0 0-.1 1.3 7.6 7.6 0 0 0 .1 1.3l-2 1.5 2 3.4 2.4-1a7.8 7.8 0 0 0 2.2 1.3l.4 2.5h4.6l.4-2.5a7.8 7.8 0 0 0 2.2-1.3l2.4 1 2-3.4-2-1.5Z"/></svg>
                 </button>
                 @auth
                     <a href="{{ route('auth.account') }}" class="account-state-dot is-protected" title="アカウント保護済み" aria-label="アカウント設定"></a>
@@ -211,51 +228,98 @@
 
     @unless ($focusMode)
         <dialog class="ui-settings-dialog" data-ui-settings-dialog aria-labelledby="ui-settings-title">
-            <form method="dialog" class="ui-settings-card">
+            <div class="ui-settings-card">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <h2 id="ui-settings-title" class="text-xl font-bold text-slate-50">表示設定</h2>
+                        <p class="text-[10px] font-black uppercase tracking-[.18em] text-cyan-300">SETTINGS</p>
+                        <h2 id="ui-settings-title" class="mt-1 text-xl font-bold text-slate-50">設定</h2>
                     </div>
                     <button type="button" class="feedback-close" data-ui-settings-close aria-label="閉じる">×</button>
                 </div>
 
-                <fieldset class="mt-6">
-                    <legend class="text-sm font-bold text-slate-200">テーマ</legend>
-                    <div class="canovia-theme-official mt-3" aria-label="Canoviaの正式テーマはダークです">
-                        <span class="canovia-theme-official-mark" aria-hidden="true">●</span>
+                <section class="mt-5 rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+                    <div class="flex items-center justify-between gap-3">
                         <div>
-                            <strong>ダーク</strong>
-                            <small>Canoviaの世界観に合わせた標準テーマ</small>
+                            <p class="text-sm font-bold text-slate-100">アカウント</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ $currentUser ? ($currentUser->name ?: $currentUser->email) : 'Guest' }}</p>
                         </div>
+                        @auth
+                            <a href="{{ route('auth.account') }}" class="btn-secondary px-3 py-2 text-xs">アカウント設定</a>
+                        @else
+                            <a href="{{ route('auth.login.form') }}" class="btn-secondary px-3 py-2 text-xs">ログイン</a>
+                        @endauth
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-slate-500">ライトテーマはデザインを再設計するまで一時的に提供を停止しています。</p>
-                </fieldset>
+                </section>
 
-                <fieldset class="mt-6">
-                    <legend class="text-sm font-bold text-slate-200">アクセント</legend>
-                    <div class="ui-accent-options mt-3" data-ui-accent-options>
-                        @foreach (\App\Models\Plan::ACCENT_LABELS as $accentKey => $accentLabel)
-                            <button type="button" class="ui-accent-swatch" data-ui-accent-value="{{ $accentKey }}" data-accent="{{ $accentKey }}" aria-label="{{ $accentLabel }}"></button>
-                        @endforeach
+                <section class="mt-3 rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+                    <p class="text-sm font-bold text-slate-100">利用プラン</p>
+                    <div class="mt-2 flex items-center justify-between gap-3">
+                        <span class="badge {{ $currentAccessLabel === 'Free' ? 'badge-slate' : 'badge-green' }}">{{ $currentAccessLabel }}</span>
+                        <span class="text-[11px] text-slate-500">課金処理はまだ未導入です</span>
                     </div>
-                </fieldset>
+                </section>
 
-                <fieldset class="mt-6">
-                    <legend class="text-sm font-bold text-slate-200">表示密度</legend>
-                    <div class="ui-choice-grid mt-3" data-ui-density-options>
-                        <button type="button" class="ui-choice" data-ui-density-value="compact"><strong>コンパクト</strong><small>多めに表示</small></button>
-                        <button type="button" class="ui-choice" data-ui-density-value="standard"><strong>標準</strong><small>ちょうどよく表示</small></button>
-                        <button type="button" class="ui-choice" data-ui-density-value="comfortable"><strong>ゆったり</strong><small>余白を広めに</small></button>
-                    </div>
-                </fieldset>
+                @if ($isSuperAdmin)
+                    <section class="mt-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.04] p-4">
+                        <p class="text-[10px] font-black uppercase tracking-[.16em] text-amber-300">SUPER ADMIN</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <a href="{{ route('admin.dashboard') }}" class="btn-secondary px-3 py-2 text-xs">管理者メニュー</a>
+                            <a href="{{ route('admin.economy.index') }}" class="btn-secondary px-3 py-2 text-xs">ユーザー・権利管理</a>
+                        </div>
+                        <p class="mt-3 text-xs font-bold text-slate-300">表示プレビュー</p>
+                        <div class="mt-2 grid grid-cols-3 gap-2">
+                            @foreach (['admin' => 'Admin', 'free' => 'Free', 'premium' => 'Premium'] as $mode => $label)
+                                <form method="POST" action="{{ route('admin.preview.update') }}">
+                                    @csrf
+                                    <input type="hidden" name="mode" value="{{ $mode }}">
+                                    <button type="submit" class="{{ (($mode === 'admin' && ! $adminPreviewMode) || $adminPreviewMode === $mode) ? 'btn-primary' : 'btn-secondary' }} w-full justify-center px-2 py-2 text-xs">{{ $label }}</button>
+                                </form>
+                            @endforeach
+                        </div>
+                        <p class="mt-2 text-[11px] leading-5 text-slate-500">プレビュー中も管理者権限自体は維持され、設定からAdmin表示へ戻せます。</p>
+                    </section>
+                @endif
 
-                <div class="mt-6 grid gap-2 sm:grid-cols-2">
+                <details class="pk-action-details mt-4" open>
+                    <summary>表示</summary>
+                    <fieldset class="mt-3">
+                        <legend class="text-sm font-bold text-slate-200">テーマ</legend>
+                        <div class="canovia-theme-official mt-3" aria-label="Canoviaの正式テーマはダークです">
+                            <span class="canovia-theme-official-mark" aria-hidden="true">●</span>
+                            <div>
+                                <strong>ダーク</strong>
+                                <small>Canoviaの世界観に合わせた標準テーマ</small>
+                            </div>
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-slate-500">ライトテーマはデザインを再設計するまで一時的に提供を停止しています。</p>
+                    </fieldset>
+
+                    <fieldset class="mt-5">
+                        <legend class="text-sm font-bold text-slate-200">アクセント</legend>
+                        <div class="ui-accent-options mt-3" data-ui-accent-options>
+                            @foreach (\App\Models\Plan::ACCENT_LABELS as $accentKey => $accentLabel)
+                                <button type="button" class="ui-accent-swatch" data-ui-accent-value="{{ $accentKey }}" data-accent="{{ $accentKey }}" aria-label="{{ $accentLabel }}"></button>
+                            @endforeach
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="mt-5">
+                        <legend class="text-sm font-bold text-slate-200">表示密度</legend>
+                        <div class="ui-choice-grid mt-3" data-ui-density-options>
+                            <button type="button" class="ui-choice" data-ui-density-value="compact"><strong>コンパクト</strong><small>多めに表示</small></button>
+                            <button type="button" class="ui-choice" data-ui-density-value="standard"><strong>標準</strong><small>ちょうどよく表示</small></button>
+                            <button type="button" class="ui-choice" data-ui-density-value="comfortable"><strong>ゆったり</strong><small>余白を広めに</small></button>
+                        </div>
+                    </fieldset>
+                </details>
+
+                <div class="mt-5 grid gap-2 sm:grid-cols-2">
                     <button type="button" class="btn-secondary w-full justify-center" data-onboarding-restart>使い方を見る</button>
                     <button type="button" class="btn-secondary w-full justify-center" data-install-guide-open>ホーム画面に追加</button>
                 </div>
 
-                <button type="button" class="btn-primary mt-3 w-full" data-ui-settings-close>この見え方で使う</button>
-            </form>
+                <button type="button" class="btn-primary mt-3 w-full" data-ui-settings-close>閉じる</button>
+            </div>
         </dialog>
 
         <dialog class="release-notes-dialog" data-release-notes-dialog data-latest-release-key="{{ $latestReleaseKey }}" aria-labelledby="release-notes-title">

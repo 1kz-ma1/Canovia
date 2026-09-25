@@ -16,28 +16,17 @@ class AdminFeedbackController extends Controller
 
     public function login(Request $request)
     {
-        if ($this->authorized($request)) {
-            return redirect()->route('admin.dashboard');
-        }
+        abort_unless($this->authorized($request), 403);
 
-        return view('admin.feedback.login', [
-            'passwordConfigured' => $this->adminAccess->passwordConfigured(),
-        ]);
+        return redirect()->route('admin.dashboard');
     }
 
     public function authenticate(Request $request)
     {
-        $validated = $request->validate([
-            'password' => ['required', 'string', 'max:255'],
-        ]);
-
-        if (! $this->adminAccess->passwordMatches((string) $validated['password'])) {
-            return back()->withErrors([
-                'password' => '管理用パスワードが正しくありません。',
-            ]);
-        }
-
-        $this->adminAccess->markAuthenticated($request);
+        // V41.7: password knowledge never grants Admin access. This endpoint is
+        // retained only for legacy bookmarks/forms and requires AdminAccess
+        // middleware before reaching the controller.
+        abort_unless($this->authorized($request), 403);
 
         return redirect()->route('admin.dashboard');
     }

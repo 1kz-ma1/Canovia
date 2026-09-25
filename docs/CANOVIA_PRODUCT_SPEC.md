@@ -1,8 +1,8 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-25 / V41.6 Action First / Progressive Disclosure
+更新基準: 2026-09-25 / V41.7 Admin & Premium Experience Foundation
 
-HomeとPlan Hubは「行動 → 最低限の文脈 → 必要に応じて理由・分析・Evidenceを開く」の情報階層を採用する。情報を削除せず、表示層で段階開示する。選定・権限・進捗・Economyの既存契約は維持する。詳細は [V41.6仕様](V41.6_ACTION_FIRST_PROGRESSIVE_DISCLOSURE.md) を参照。
+V41.6のAction First / Progressive Disclosureを維持しつつ、V41.7では「運営者」「Free」「Premium」を安全に分離して検証できる基盤を追加する。Super Adminは単一アカウントに固定し、一般ユーザーへの無償Premium付与とAdmin限定プレビューを、Product GrantやFeature Accessとは別責務として扱う。詳細は [V41.7仕様](V41.7_ADMIN_PREMIUM_EXPERIENCE_FOUNDATION.md) を参照。
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -80,6 +80,7 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - V41.5 Economy Catalog / Product Grant / source-specific Product Grant Entitlement resolvers
 - AI Capacityの独立境界（standard / boosted）
 - 決定論的Economy RecommendationとAdmin Economy Inspector
+- 単一アカウントSuper Admin、Settings Hub、Complimentary Premium、Admin Free/Premium Preview
 
 ### Next
 
@@ -522,3 +523,43 @@ V41.5で追加するCapability-level FeatureKey:
 Admin Economy Inspectorでは、ユーザーごとのProduct Grant、effective Products、FeatureAccessDecision、AI Capacity、決定論的推薦を確認し、開発用Grantを手動付与/解除できる。
 
 Public Pricing UIは、実際のPremium価値と購入経路が成立するまで追加しない。
+
+
+## 18. V41.7 Admin / Premium Experience Foundation
+
+V41.7はNative AIや決済を実装する前に、運営者・Free・Premiumの体験を安全に分離し、Premium価値を実ユーザーで検証できる状態を作る。
+
+管理者判定はProduct GrantやFeature Entitlementと混ぜない。
+
+```text
+AdminAccessService
+  -> 運営者か
+
+FeatureAccessService
+  -> 公開済みFeatureを使えるか
+
+ProductGrantService
+  -> Premium等の商品権利を持つか
+
+AdminPreviewContext
+  -> Super AdminがFree/Premium体験を確認中か
+```
+
+Super AdminはCanovia上で昇格できるロールにせず、server-side設定の `CANOVIA_SUPER_ADMIN_USER_ID` と一致する1アカウントだけを正とする。移行中のみ既存 `CANOVIA_ADMIN_EMAIL` をfallbackとして使い、IDが設定された後はemail一致をAdmin根拠にしない。管理パスワードやsession flagを本番の権限昇格には使わない。
+
+`/admin/*` は `admin.access` middlewareでserver-side保護し、一般ユーザーはURLを知っていても403とする。Super Adminは通常Admin表示では全FeatureKeyへアクセスでき、AI Capacityも検証用最大状態とするが、Product Grant上でAll Access等を所有しているものとして記録しない。
+
+既存の「表示」入口は「設定」へ拡張する。テーマ・アクセント・表示密度は「表示」セクションとして保持し、アカウント・利用プラン・運営導線を同じSettings Hubへまとめる。管理者メニューとAdmin PreviewはSuper Adminにだけ表示する。
+
+身近なユーザーやテスターへは `premium_core` を `source=complimentary` のProduct Grantとして無償付与できる。日常の無償付与UIからAll Access、Purpose Pack、AI Capacity Boostは付与しない。付与期間は無期限 / 30日 / 90日 / 任意期限。解除時はGrant rowを削除せず期限切れにしてmetadataへ解除情報を残し、最低限の履歴を維持する。
+
+Complimentary PremiumはPremium Feature Accessだけを与え、AdminAccessは与えない。
+
+Admin Previewは権限を書き換えずsession-scopedな表示・Feature Access contextとして実装する。
+
+- Admin: 全Feature + boosted AI Capacity
+- Free: Free Entitlementとして評価
+- Premium: Free + Premium Coreとして評価し、AI Capacityはstandard
+- Preview中もAdminAccessは維持し、管理画面から戻れる
+
+V41.7ではNative AI実行、StoreKit / Stripe、公開Pricing / Paywall、Pro / All Access購入、AI使用量meteringは実装しない。最初のNative AI Practiceは次段階でPremium Coreの実価値として接続する。
