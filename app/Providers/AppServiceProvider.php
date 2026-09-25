@@ -6,6 +6,8 @@ use App\Services\Entitlements\FreeEntitlementResolver;
 use App\Services\Entitlements\GiftProductGrantEntitlementResolver;
 use App\Services\Entitlements\ProductGrantEntitlementResolver;
 use App\Services\Entitlements\SponsorProductGrantEntitlementResolver;
+use App\Services\AdminAccessService;
+use App\Services\AdminPreviewContext;
 use App\Services\FeatureAccessService;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -30,7 +32,11 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(
             FeatureAccessService::class,
-            fn ($app) => new FeatureAccessService($app->tagged('canovia.entitlement_resolvers')),
+            fn ($app) => new FeatureAccessService(
+                $app->tagged('canovia.entitlement_resolvers'),
+                $app->make(AdminAccessService::class),
+                $app->make(AdminPreviewContext::class),
+            ),
         );
     }
 
