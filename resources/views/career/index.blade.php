@@ -168,6 +168,14 @@
                                         </a>
                                     @endif
 
+                                    @if ($canEdit && $event->status === 'scheduled')
+                                        <form method="POST" action="{{ route('plans.career.events.cancel', [$plan, $event]) }}" class="mt-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="text-[11px] text-slate-500 hover:text-rose-300">この面接が実施されなかった場合は予定を中止</button>
+                                        </form>
+                                    @endif
+
                                     @if ($canEdit && $event->status === 'result_waiting')
                                         <form method="POST" action="{{ route('plans.career.events.result', [$plan, $event]) }}" class="mt-3 flex flex-wrap gap-2">
                                             @csrf
