@@ -85,4 +85,6 @@ class ProductGrantService
         }
 
         return null;
-    }}
+    }
+}
+
