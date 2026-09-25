@@ -3,14 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Enums\FeatureKey;
+use App\Exceptions\NativeAiExecutionException;
 use App\Models\Plan;
 use App\Models\StudyPracticeAttempt;
 use App\Models\StudyPracticeSession;
 use App\Models\Task;
+use App\Services\AiCapacityService;
 use App\Services\AiJsonInputNormalizer;
 use App\Services\BehaviorIdentityService;
 use App\Services\EvidenceProgressService;
 use App\Services\FeatureAccessService;
+use App\Services\NativeAiGateway;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
@@ -31,6 +34,8 @@ class StudyPracticeController extends Controller
         StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
         FeatureAccessService $featureAccess,
+        NativeAiGateway $nativeAi,
+        AiCapacityService $aiCapacity,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -157,6 +162,15 @@ class StudyPracticeController extends Controller
             FeatureKey::QuestionPack,
             ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
         );
+        $nativeAiDecision = $featureAccess->resolveAccess(
+            $request->user(),
+            FeatureKey::AutomaticAiExecution,
+            ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
+        );
+        $nativeAiEntitled = $nativeAiDecision->allowed;
+        $nativeAiAvailable = $nativeAiEntitled && $nativeAi->isConfigured();
+        $nativeAiCapacity = $aiCapacity->policyFor($request->user());
+
         $orchestration = $orchestrator->previewHandoff(
             $plan,
             $task,
@@ -214,6 +228,10 @@ class StudyPracticeController extends Controller
             'practiceStage' => $practiceStage,
             'currentAttempt' => $currentAttempt,
             'recentAttempts' => $recentAttempts,
+            'nativeAiEntitled' => $nativeAiEntitled,
+            'nativeAiAvailable' => $nativeAiAvailable,
+            'nativeAiConfigured' => $nativeAi->isConfigured(),
+            'nativeAiCapacity' => $nativeAiCapacity,
         ]);
     }
 
@@ -298,6 +316,121 @@ class StudyPracticeController extends Controller
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
             ->with('success', count($questions).'問をCanovia Question Bankから準備しました。')
+            ->with('study_practice_scroll_to', 'practice-questions');
+    }
+
+    public function prepareNative(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+        StudyPracticeOrchestrator $orchestrator,
+        BehaviorIdentityService $identity,
+        FeatureAccessService $featureAccess,
+        NativeAiGateway $nativeAi,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership);
+        abort_unless(trim((string) $plan->category) === '資格学習', 404);
+
+        $featureAccess->authorizeUse(
+            $request->user(),
+            FeatureKey::AutomaticAiExecution,
+            ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
+        );
+
+        $validated = $request->validate([
+            'prepare_request_id' => ['required', 'uuid'],
+        ]);
+
+        if (! $nativeAi->isConfigured()) {
+            return redirect()
+                ->route('plans.tasks.study_practice.show', [$plan, $task])
+                ->with('status', 'Canovia Native AIは現在利用できないため、外部AIの手動フローへ切り替えました。')
+                ->with('native_ai_fallback', true);
+        }
+
+        $actorToken = $identity->resolve($request);
+        $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
+        $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
+
+        try {
+            $practiceSession = $orchestrator->prepare(
+                $plan,
+                $task,
+                $recentAttempts,
+                $request->user()?->id,
+                $request->user() ? null : $actorToken,
+                (string) $validated['prepare_request_id'],
+                'native_ai',
+            );
+        } catch (NativeAiExecutionException $exception) {
+            return redirect()
+                ->route('plans.tasks.study_practice.show', [$plan, $task])
+                ->with('status', $exception->getMessage().' 外部AIの手動フローはそのまま利用できます。')
+                ->with('native_ai_fallback', true);
+        }
+
+        $runId = (int) data_get($practiceSession->provider_payload, 'native_ai.run_id', 0);
+        $envelope = data_get($practiceSession->provider_payload, 'response_envelope');
+
+        try {
+            if (! is_array($envelope)) {
+                throw ValidationException::withMessages([
+                    'prepare_request_id' => 'Native AIの問題生成結果を読み取れませんでした。',
+                ]);
+            }
+
+            $this->assertEnvelope($envelope, 'study_practice', $plan, $task, 'prepare_request_id');
+            $questions = $this->normalizeQuestions($envelope['questions'] ?? null);
+        } catch (ValidationException $exception) {
+            $practiceSession->update(['status' => StudyPracticeSession::STATUS_ABANDONED]);
+            if ($runId > 0) {
+                $nativeAi->markRunFailed(
+                    $runId,
+                    'native_ai_validation_failed',
+                    collect($exception->errors())->flatten()->first() ?: $exception->getMessage(),
+                );
+            }
+
+            return redirect()
+                ->route('plans.tasks.study_practice.show', [$plan, $task])
+                ->with('status', 'Native AIの結果を安全に読み込めなかったため、外部AIの手動フローへ切り替えました。')
+                ->with('native_ai_fallback', true);
+        }
+
+        $title = trim((string) ($envelope['title'] ?? 'Canovia Native AI演習'));
+        $exerciseTitle = $title !== '' ? mb_substr($title, 0, 120) : 'Canovia Native AI演習';
+
+        $practiceSession->update([
+            'status' => StudyPracticeSession::STATUS_READY,
+            'exercise_title' => $exerciseTitle,
+            'questions_snapshot' => $questions,
+            'selected_questions' => collect($questions)->map(fn (array $question) => [
+                'question_ref' => (string) $question['id'],
+                'question_id' => null,
+                'source_type' => 'native_ai',
+            ])->values()->all(),
+        ]);
+
+        if ($runId > 0) {
+            $nativeAi->attachRun($runId, $request->user()?->id, $practiceSession);
+        }
+
+        $request->session()->put($this->sessionKey($plan, $task), [
+            'title' => $exerciseTitle,
+            'questions' => $questions,
+            'answers' => [],
+            'draft_answers' => [],
+            'evaluation_prompt' => null,
+            'assessment' => null,
+            'attempt_id' => null,
+            'attempt_token' => (string) Str::uuid(),
+            'practice_session_id' => $practiceSession->id,
+        ]);
+
+        return redirect()
+            ->route('plans.tasks.study_practice.show', [$plan, $task])
+            ->with('success', count($questions).'問をCanovia Native AIで準備しました。')
             ->with('study_practice_scroll_to', 'practice-questions');
     }
 
