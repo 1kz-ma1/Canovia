@@ -48,14 +48,14 @@ class AdminPremiumExperienceV417Test extends TestCase
         config(['canovia.super_admin_user_id' => $admin->id]);
 
         $this->actingAs($admin)
-            ->get(route('home'))
+            ->get(route('auth.account'))
             ->assertOk()
             ->assertSee('設定')
             ->assertSee('管理者メニュー')
             ->assertSee('Super Admin');
 
         $this->actingAs($other)
-            ->get(route('home'))
+            ->get(route('auth.account'))
             ->assertOk()
             ->assertSee('設定')
             ->assertDontSee('管理者メニュー')
@@ -96,7 +96,7 @@ class AdminPremiumExperienceV417Test extends TestCase
             ->assertSessionHas(AdminPreviewContext::SESSION_KEY, 'free');
 
         $this->actingAs($admin)
-            ->get(route('home'))
+            ->get(route('auth.account'))
             ->assertOk()
             ->assertSee('Free プレビュー')
             ->assertSee('管理者メニュー');
@@ -106,7 +106,7 @@ class AdminPremiumExperienceV417Test extends TestCase
             ->assertRedirect();
 
         $this->actingAs($admin)
-            ->get(route('home'))
+            ->get(route('auth.account'))
             ->assertOk()
             ->assertSee('Premium プレビュー')
             ->assertSee('管理者メニュー');
@@ -116,7 +116,7 @@ class AdminPremiumExperienceV417Test extends TestCase
             ->assertRedirect();
 
         $this->actingAs($admin)
-            ->get(route('home'))
+            ->get(route('auth.account'))
             ->assertOk()
             ->assertSee('Super Admin')
             ->assertSessionMissing(AdminPreviewContext::SESSION_KEY);
