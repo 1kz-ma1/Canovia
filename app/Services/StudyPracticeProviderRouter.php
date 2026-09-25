@@ -16,6 +16,8 @@ class StudyPracticeProviderRouter
         private readonly QuestionBankStudyPracticeAssessmentProvider $questionBankAssessmentProvider,
         private readonly ExternalAiStudyPracticeQuestionProvider $externalQuestionProvider,
         private readonly ExternalAiStudyPracticeAssessmentProvider $externalAssessmentProvider,
+        private readonly NativeAiStudyPracticeQuestionProvider $nativeQuestionProvider,
+        private readonly NativeAiStudyPracticeAssessmentProvider $nativeAssessmentProvider,
     ) {}
 
     public function questionProvider(Plan $plan, Task $task, array $strategy): StudyPracticeQuestionProvider
@@ -31,6 +33,7 @@ class StudyPracticeProviderRouter
     {
         return match ($key) {
             'question_bank' => $this->questionBankProvider,
+            'native_ai' => $this->nativeQuestionProvider,
             'external_ai' => $this->externalQuestionProvider,
             default => $this->externalQuestionProvider,
         };
@@ -51,5 +54,15 @@ class StudyPracticeProviderRouter
         }
 
         return $this->externalAssessmentProvider;
+    }
+
+    public function assessmentProviderByKey(string $key): StudyPracticeAssessmentProvider
+    {
+        return match ($key) {
+            'question_bank_grader' => $this->questionBankAssessmentProvider,
+            'native_ai' => $this->nativeAssessmentProvider,
+            'external_ai' => $this->externalAssessmentProvider,
+            default => $this->externalAssessmentProvider,
+        };
     }
 }
