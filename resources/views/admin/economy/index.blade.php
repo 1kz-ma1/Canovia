@@ -31,6 +31,10 @@
             </form>
         </section>
 
+        @if (session('success'))
+            <div class="assistant-notice assistant-notice-success">{{ session('success') }}</div>
+        @endif
+
         @if ($selectedUser)
             <section class="grid gap-4 lg:grid-cols-3">
                 <article class="page-card p-5">
@@ -66,9 +70,75 @@
                 </article>
             </section>
 
+            <section class="page-card border-cyan-300/20 p-5 sm:p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <p class="text-[10px] font-black uppercase tracking-[.18em] text-cyan-300">COMPLIMENTARY PREMIUM</p>
+                        <h2 class="mt-1 text-lg font-black text-slate-100">Premiumを無償付与</h2>
+                        <p class="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                            身近なユーザーやテスターへPremium Coreだけを提供します。Admin権限やAll Access、AI Capacity Boostは付与されません。
+                        </p>
+                    </div>
+                    @if ($complimentaryPremium)
+                        <span class="badge badge-green">無償Premium 有効</span>
+                    @else
+                        <span class="badge badge-slate">未付与</span>
+                    @endif
+                </div>
+
+                @if ($complimentaryPremium)
+                    <div class="mt-4 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
+                        <p class="text-sm font-bold text-slate-100">
+                            {{ $complimentaryPremium->expires_at ? $complimentaryPremium->expires_at->format('Y/m/d H:i').' まで' : '無期限' }}
+                        </p>
+                        <p class="mt-1 text-xs text-slate-500">grant #{{ $complimentaryPremium->id }} · complimentary</p>
+                        <form method="POST" action="{{ route('admin.economy.complimentary.destroy', $selectedUser) }}" class="mt-3">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn-secondary px-3 py-2 text-xs text-rose-200" type="submit">無償Premiumを解除</button>
+                        </form>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('admin.economy.complimentary.store') }}" class="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+                        @csrf
+                        <input type="hidden" name="user_id" value="{{ $selectedUser->id }}">
+                        <label>
+                            <span class="form-label">期間</span>
+                            <select name="duration" class="form-control mt-2">
+                                <option value="unlimited">無期限</option>
+                                <option value="30_days">30日</option>
+                                <option value="90_days">90日</option>
+                                <option value="custom">任意期限</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span class="form-label">任意期限（custom時のみ）</span>
+                            <input type="datetime-local" name="custom_expires_at" class="form-control mt-2">
+                        </label>
+                        <button class="btn-primary justify-center" type="submit">Premiumを無償付与</button>
+                    </form>
+                @endif
+
+                @if (($complimentaryHistory ?? collect())->isNotEmpty())
+                    <details class="pk-action-details mt-4">
+                        <summary>無償付与の履歴</summary>
+                        <div class="mt-2 space-y-2">
+                            @foreach ($complimentaryHistory as $grant)
+                                <div class="rounded-xl border border-slate-800 bg-slate-950/30 p-3 text-xs text-slate-400">
+                                    <span class="font-bold text-slate-200">#{{ $grant->id }}</span>
+                                    · {{ $grant->created_at?->format('Y/m/d H:i') }}
+                                    · {{ $grant->expires_at ? '終了 '.$grant->expires_at->format('Y/m/d H:i') : '無期限' }}
+                                </div>
+                            @endforeach
+                        </div>
+                    </details>
+                @endif
+            </section>
+
             <section class="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
                 <article class="page-card p-5 sm:p-6">
-                    <h2 class="text-lg font-black text-slate-100">Product Grant</h2>
+                    <h2 class="text-lg font-black text-slate-100">開発用 Product Grant</h2>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">任意ProductのEntitlement検証用です。通常の無償提供には上のPremium専用操作を使います。</p>
                     <form method="POST" action="{{ route('admin.economy.grants.store') }}" class="mt-4 space-y-3">
                         @csrf
                         <input type="hidden" name="user_id" value="{{ $selectedUser->id }}">
@@ -83,7 +153,7 @@
                         <label class="block">
                             <span class="form-label">Source</span>
                             <select name="source" class="form-control mt-2">
-                                @foreach (['manual', 'subscription', 'gift', 'sponsor', 'migration'] as $source)
+                                @foreach (['manual', 'subscription', 'complimentary', 'gift', 'sponsor', 'migration'] as $source)
                                     <option value="{{ $source }}">{{ $source }}</option>
                                 @endforeach
                             </select>
