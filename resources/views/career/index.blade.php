@@ -35,7 +35,7 @@
             <div>
                 <p class="text-[10px] font-black uppercase tracking-[0.18em] text-fuchsia-300">CAPTURE INBOX</p>
                 <h2 class="mt-1 text-lg font-black text-slate-100">まずは投げるだけ</h2>
-                <p class="mt-1 text-xs leading-5 text-slate-500">スクショかURLだけ保存できます。企業名や選考状況を毎回入力する必要はありません。</p>
+                <p class="mt-1 text-xs leading-5 text-slate-500">スクショかURLだけ保存できます。企業名や選考状況を毎回入力する必要はありません。スクショは非公開で保存します。</p>
             </div>
             <span class="badge badge-slate">未整理 {{ $captures->where('status', 'pending')->count() }}件</span>
         </div>
@@ -79,7 +79,7 @@
                                 @endif
                             </div>
 
-                            @if ($capture->screenshot_path)
+                            @if ($capture->screenshot_mime)
                                 <a href="{{ route('plans.career.captures.screenshot', [$plan, $capture]) }}" target="_blank" class="mt-3 block max-w-md overflow-hidden rounded-xl border border-white/8 bg-slate-950/40">
                                     <img src="{{ route('plans.career.captures.screenshot', [$plan, $capture]) }}" alt="Career capture" class="max-h-56 w-full object-contain">
                                 </a>
