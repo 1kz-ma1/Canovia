@@ -173,7 +173,7 @@ class StudyWeaknessPrioritizationService
         ]));
 
         $ranked = collect($topics)
-            ->map(function (array $topic) use ($scope, $totalWeakSignals) {
+            ->map(function (array $topic) use ($scope) {
                 $weakAttemptCount = count($topic['weak_attempts']);
                 $recentCount = count($topic['recent_attempts']);
                 $latestWeak = $topic['latest_weak_index'];
