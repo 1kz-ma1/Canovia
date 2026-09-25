@@ -43,7 +43,7 @@ class NativeAiPracticeV418Test extends TestCase
             ->get(route('plans.tasks.study_practice.show', [$plan, $task]))
             ->assertOk()
             ->assertSee('演習準備プロンプトをコピー')
-            ->assertDontSee('Canoviaで演習を始める');
+            ->assertDontSee(route('plans.tasks.study_practice.native.prepare', [$plan, $task]), false);
 
         $this->actingAs($user)
             ->post(route('plans.tasks.study_practice.native.prepare', [$plan, $task]), [
