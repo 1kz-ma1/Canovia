@@ -27,7 +27,7 @@ class ExternalAiStudyPracticeQuestionProvider implements StudyPracticeQuestionPr
             'provider' => $this->key(),
             'mode' => $this->mode(),
             'selector_type' => 'external_ai',
-            'selector_version' => 'prompt-v40.1',
+            'selector_version' => 'prompt-v41.4-calibrated',
             'payload' => [
                 'generation_prompt' => $this->promptService->generationPrompt(
                     $plan,
