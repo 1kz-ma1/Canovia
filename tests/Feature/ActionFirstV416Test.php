@@ -21,9 +21,6 @@ class ActionFirstV416Test extends TestCase
     {
         [$user, $plan, $task] = $this->scenario();
         $response = $this->actingAs($user)->get(route('home'))->assertOk();
-        if (getenv('V416_RENDER')) {
-            file_put_contents(public_path('v416.html'), $response->getContent());
-        }
         $response->assertSee('詳細本文を最後まで保持')->assertSee('次の一歩を保持');
         $xpath = $this->xpath($response->getContent());
 
