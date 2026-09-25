@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  verify:
+  verify-v415:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -37,5 +37,38 @@ jobs:
       - name: Run Economy and entitlement regression tests
         run: php artisan test --filter='EconomyFoundationV415Test|FeatureAccessV406Test|CanoviaFutureV407Test'
 
-      - name: Run full PHP test suite
+  baseline-full-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+
+    steps:
+      - name: Check out PR base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run baseline full PHP suite
         run: php artisan test
