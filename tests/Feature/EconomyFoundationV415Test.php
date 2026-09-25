@@ -262,11 +262,17 @@ class EconomyFoundationV415Test extends TestCase
     public function test_admin_economy_inspector_can_add_and_revoke_manual_grants(): void
     {
         $user = User::factory()->create();
+        $studyPlan = $this->plan($user, '資格学習', 'AP対策');
+        for ($i = 0; $i < 3; $i++) {
+            $this->attempt($user, $studyPlan, 'admin-economy-'.$i);
+        }
 
         $this->withSession([AdminAccessService::SESSION_KEY => true])
             ->get(route('admin.economy.index', ['user_id' => $user->id]))
             ->assertOk()
-            ->assertSee('Economy Inspector');
+            ->assertSee('Economy Inspector')
+            ->assertSee('Premium Core')
+            ->assertSee('Study Pack');
 
         $this->withSession([AdminAccessService::SESSION_KEY => true])
             ->post(route('admin.economy.grants.store'), [

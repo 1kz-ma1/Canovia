@@ -62,7 +62,7 @@
                     @else
                         <div class="mt-3 flex flex-wrap gap-2">
                             @foreach (data_get($recommendation, 'recommended_products', []) as $productKey)
-                                @php $product = AppEnumsProductKey::tryFrom($productKey); @endphp
+                                @php $product = \App\Enums\ProductKey::tryFrom($productKey); @endphp
                                 <span class="badge badge-green">{{ $product ? $catalog->label($product) : $productKey }}</span>
                             @endforeach
                         </div>
