@@ -55,7 +55,9 @@ class StudyWeaknessPrioritizationService
             $attemptErrors = [];
 
             foreach ($this->strings($attempt->weaknesses ?? []) as $topic) {
-                $this->putSignal($attemptSignals, $topic, 0.55 * $ageWeight);
+                // Summary-level weaknesses are useful hints, but lower quality
+                // than per-question error classification.
+                $this->putSignal($attemptSignals, $topic, 0.30 * $ageWeight);
                 $attemptErrors[$this->key($topic)][] = 'unknown';
             }
 
@@ -359,9 +361,26 @@ class StudyWeaknessPrioritizationService
             ->countBy();
 
         return (string) $counts
-            ->sortDesc()
-            ->keys()
-            ->first();
+            ->map(fn ($count, $type) => [
+                'type' => (string) $type,
+                'count' => (int) $count,
+                'specific' => $type === 'unknown' ? 0 : 1,
+                'weight' => (float) (self::ERROR_WEIGHTS[$type] ?? 0.0),
+            ])
+            ->sort(function (array $left, array $right) {
+                return [
+                    -1 * $left['count'],
+                    -1 * $left['specific'],
+                    -1 * $left['weight'],
+                    $left['type'],
+                ] <=> [
+                    -1 * $right['count'],
+                    -1 * $right['specific'],
+                    -1 * $right['weight'],
+                    $right['type'],
+                ];
+            })
+            ->first()['type'];
     }
 
     private function normalizeErrorType(string $type): string
