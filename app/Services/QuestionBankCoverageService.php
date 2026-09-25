@@ -41,7 +41,7 @@ class QuestionBankCoverageService
             ->where('status', 'published')
             ->with(['questions' => fn ($query) => $query->where('is_active', true)])
             ->get()
-            ->map(function (QuestionPack $pack) use ($context, $focusTopics, $requiredCount) {
+            ->map(function (QuestionPack $pack) use ($context, $focusTopics, $requiredCount, $strategy) {
                 $packScore = $this->packMatchScore($pack, $context);
                 $questions = $pack->questions;
                 $focusMatchCount = $focusTopics->isEmpty()
