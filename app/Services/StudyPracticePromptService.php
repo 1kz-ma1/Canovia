@@ -159,6 +159,7 @@ response_fields.typeは single_choice / multiple_choice / number / short_text / 
 - short_text: 短い記述回答
 - textarea: 記述問題・説明・計算過程・思考過程など長めの入力
 各fieldには英数字・_・-だけの重複しないid、分かりやすいlabel、requiredを付けてください。
+各fieldには必ずplaceholderを文字列で、choicesを配列で含めてください。placeholderが不要なら""、選択式以外でchoicesが不要なら[]を返してください。
 選択式問題でも、学習効果が高い場合はanswerの選択欄に加えてreasoning用textareaを組み合わせて構いません。
 ただし全問に思考過程を強制せず、誤解や判断過程の分析に価値がある問題で使ってください。
 旧type / choices形式もCanoviaは互換読込できますが、新しく生成するJSONではresponse_fieldsを使ってください。
@@ -253,6 +254,7 @@ task_id: {$task->id}
 - next_stepは「この評価を見た直後にCanovia上で何をすべきか」を構造化して必ず返す
 - next_step.kindは practice / review / continue_task / complete_task / plan_update のいずれか
 - practiceを選ぶ場合はfocus_topicsとquestion_countも具体化する。ただしこれは候補であり、次回はCanoviaが他の弱点・横断診断と再配分する
+- practice以外を選ぶ場合もnext_step.focus_topicsとnext_step.question_countは省略せず、focus_topicsは[]、question_countは0を返す
 - labelはユーザーがそのまま次の行動として読める具体的な一文にする
 - reasonはなぜそれを次に行うのかを今回の結果に結び付けて簡潔に書く
 - evidence_summaryには正答状況や判断根拠を簡潔に残す
