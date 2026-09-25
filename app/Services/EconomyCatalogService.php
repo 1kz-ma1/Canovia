@@ -82,12 +82,6 @@ class EconomyCatalogService
             ->values();
     }
 
-    public function effectiveProductForFeature(ProductKey $grantedProduct, FeatureKey $feature): ?ProductKey
-    {
-        return $this->usableProducts([$grantedProduct])
-            ->first(fn (ProductKey $product) => $this->featureKeysFor($product)->contains($feature));
-    }
-
     public function label(ProductKey $product): string
     {
         return (string) data_get($this->product($product), 'label', $product->value);
