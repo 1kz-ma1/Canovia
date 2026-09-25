@@ -30,7 +30,6 @@ class FeatureAccessV406Test extends TestCase
             FeatureKey::AdvancedAnalytics,
             FeatureKey::QuestionPack,
             FeatureKey::ProjectArtifact,
-            FeatureKey::AutomaticAiExecution,
         ] as $feature) {
             foreach ([null, $user] as $actor) {
                 $decision = $service->resolveAccess($actor, $feature);
@@ -69,10 +68,20 @@ class FeatureAccessV406Test extends TestCase
         config()->set('features.canovia_ai', false);
 
         $decision = app(FeatureAccessService::class)
-            ->resolveAccess(null, FeatureKey::AutomaticAiExecution);
+            ->resolveAccess(null, FeatureKey::AiPractice);
 
         $this->assertTrue($decision->allowed);
         $this->assertSame(EntitlementSource::Free, $decision->source);
+    }
+
+    public function test_automatic_ai_execution_is_not_part_of_the_free_manual_handoff_path(): void
+    {
+        $decision = app(FeatureAccessService::class)
+            ->resolveAccess(User::factory()->create(), FeatureKey::AutomaticAiExecution);
+
+        $this->assertFalse($decision->allowed);
+        $this->assertNull($decision->source);
+        $this->assertSame('no_entitlement', $decision->reason);
     }
 
     public function test_future_resolver_can_grant_access_without_feature_code_knowing_the_source(): void
