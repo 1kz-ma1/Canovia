@@ -22,12 +22,6 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Run Economy and entitlement regression tests
-        run: php artisan test --filter='EconomyFoundationV415Test|FeatureAccessV406Test|CanoviaFutureV407Test'
-
-      - name: Run full PHP test suite
-        run: php artisan test
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -39,3 +33,9 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Run Economy and entitlement regression tests
+        run: php artisan test --filter='EconomyFoundationV415Test|FeatureAccessV406Test|CanoviaFutureV407Test'
+
+      - name: Run full PHP test suite
+        run: php artisan test
