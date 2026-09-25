@@ -136,15 +136,22 @@ class InterviewReviewController extends Controller
             ]);
 
             if ($completed) {
-                $event->update([
-                    'status' => 'result_waiting',
-                    'completed_at' => $event->completed_at ?? now(),
-                ]);
+                if ($event->result) {
+                    $event->update([
+                        'status' => 'completed',
+                        'completed_at' => $event->completed_at ?? now(),
+                    ]);
+                } else {
+                    $event->update([
+                        'status' => 'result_waiting',
+                        'completed_at' => $event->completed_at ?? now(),
+                    ]);
 
-                $event->application->update([
-                    'status' => 'waiting',
-                    'next_event_at' => null,
-                ]);
+                    $event->application->update([
+                        'status' => 'waiting',
+                        'next_event_at' => null,
+                    ]);
+                }
 
                 if ($event->task) {
                     $evidenceService->record(
@@ -190,5 +197,6 @@ class InterviewReviewController extends Controller
         $event->loadMissing('application');
         abort_unless((int) $event->application?->plan_id === (int) $plan->id, 404);
         abort_unless($event->type === 'interview', 404);
+        abort_if($event->status === 'cancelled', 404);
     }
 }
