@@ -1,0 +1,44 @@
+name: V41.13 Step2 Verify
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Syntax and Blade cache
+        run: |
+          php -l app/Models/InboxItem.php
+          php -l app/Http/Controllers/InboxController.php
+          php -l tests/Feature/InboxFoundationV4113Test.php
+          php artisan view:cache
+      - name: Focused regression tests
+        run: |
+          php artisan test \
+            tests/Feature/InboxFoundationV4113Test.php \
+            tests/Feature/ActionHierarchyV4113Test.php \
+            tests/Feature/ActionFirstV416Test.php \
+            tests/Feature/PublicBetaPolishV16Test.php \
+            tests/Feature/CanoviaGuideV405Test.php \
+            tests/Feature/StudyRecallCandidateV4112Test.php
+      - name: Instant Start compatibility
+        run: node --test tests/js/instant-start-v391.test.mjs
