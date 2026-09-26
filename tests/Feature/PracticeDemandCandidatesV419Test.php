@@ -18,6 +18,15 @@ class PracticeDemandCandidatesV419Test extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // This test class renders Admin views. Keep it independent from whether
+        // a frontend build artifact exists in the PHPUnit environment.
+        $this->withoutVite();
+    }
+
     public function test_admin_can_see_practice_supply_summary_and_candidate_queue(): void
     {
         [$admin, $plan, $task] = $this->studyPlan();
