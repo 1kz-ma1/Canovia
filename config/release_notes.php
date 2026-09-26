@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v41.8.2',
+        'date' => '2026-09-26',
+        'title' => '問題集を先に使い、足りない分だけAIで補う',
+        'summary' => 'PremiumのAI演習をHybrid Question Assemblyへ変更し、Question Bankで賄える問題を先に使って不足分だけNative AIで生成するようにしました。演習需要と供給不足も将来の問題集拡充に使える形で記録します。',
+        'highlights' => [
+            'Question BankのCoverageが一部しかなくても、使える問題を先に選定し、空いた枠だけNative AIへ依頼します。',
+            'Question Bankだけで必要数を揃えられる場合はNative AIを呼ばず、待ち時間とAPIコストを抑えます。',
+            'Native AIへは既に選定済みのBank問題を伝え、同じ問題・単純な数値差し替えの重複を避けるようにしました。',
+            'Hybrid演習の評価では、Bank問題のgrading_ruleをブラウザへ出さずサーバー側だけでNative AIへ渡し、正答基準を維持します。',
+            'practice_question_demandsに要求問題数、Bank供給数、生成不足数、生成数、focus_topics、exam profile、Coverageを記録します。',
+            'Practice DemandはAP専用ではなく、今後別の資格・学習領域でも同じ需要/供給分析へ使える汎用構造です。',
+        ],
+        'tip' => 'V41.9ではPractice Demandを管理画面で集計し、どの分野のQuestion Bankを次に増やすべきか判断できるようにします。',
+    ],
+    [
         'version' => 'v41.8.1',
         'date' => '2026-09-26',
         'title' => 'AI演習の回答欄を、問題の考え方に合わせる',
