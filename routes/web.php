@@ -38,6 +38,7 @@ use App\Http\Controllers\PlanResourceController;
 use App\Http\Controllers\PlanResourceAssistantController;
 use App\Http\Controllers\PlanArtifactController;
 use App\Http\Controllers\StudyPracticeController;
+use App\Http\Controllers\StudyActivityController;
 use App\Http\Controllers\FutureMemoController;
 use App\Http\Controllers\CareerWorkspaceController;
 use App\Http\Controllers\InterviewReviewController;
@@ -216,6 +217,10 @@ Route::middleware('feature.access:'.FeatureKey::ProjectArtifact->value)->group(f
     Route::put('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'update'])->name('plans.artifacts.update');
     Route::delete('/plans/{plan}/artifacts/{artifact}', [PlanArtifactController::class, 'destroy'])->name('plans.artifacts.destroy');
 });
+
+// 資格学習のActivity選択はAI演習より上位の共通入口として扱う。
+Route::get('/plans/{plan}/tasks/{task}/study-activity', [StudyActivityController::class, 'show'])
+    ->name('plans.tasks.study_activity.show');
 
 // Canovia Tools: 資格学習向けAI演習。
 // Freeは外部AIとのJSON handoffを維持し、Premium CoreはNative AIを同じ演習UIへ接続する。
