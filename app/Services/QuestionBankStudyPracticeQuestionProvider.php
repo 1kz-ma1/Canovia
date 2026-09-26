@@ -254,6 +254,38 @@ class QuestionBankStudyPracticeQuestionProvider implements StudyPracticeQuestion
     }
 
     /**
+     * @param array<string,mixed> $coverage
+     * @param array<string,mixed> $strategy
+     * @return array<string,mixed>
+     */
+    private function emptySelection(array $coverage, array $strategy): array
+    {
+        return [
+            'provider' => $this->key(),
+            'mode' => $this->mode(),
+            'selector_type' => 'question_bank_partial',
+            'selector_version' => 'bank-v2-balanced',
+            'payload' => [
+                'title' => 'Canovia Question Bank / '.($strategy['label'] ?? '演習'),
+                'questions' => [],
+                'pack' => null,
+                'coverage' => [
+                    'active_count' => (int) ($coverage['active_count'] ?? 0),
+                    'focus_match_count' => (int) ($coverage['focus_match_count'] ?? 0),
+                    'required_count' => (int) ($coverage['required_count'] ?? 0),
+                    'reason' => (string) ($coverage['reason'] ?? ''),
+                ],
+                'selection_mix' => [
+                    'requested' => (array) ($strategy['question_mix'] ?? []),
+                    'actual' => [],
+                ],
+            ],
+            'questions' => [],
+            'selected_questions' => [],
+        ];
+    }
+
+    /**
      * @param Collection<int,array<string,mixed>> $candidates
      * @param Collection<int,int> $selectedIds
      * @return Collection<int,array<string,mixed>>
