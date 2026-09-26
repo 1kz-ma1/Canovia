@@ -1,0 +1,50 @@
+name: V41.10A Verify
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, sqlite, pdo_sqlite
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Syntax and Blade cache
+        run: |
+          php -l app/Services/StudyTaskProgressionService.php
+          php -l app/Services/StudyPracticeStrategyService.php
+          php -l app/Services/StudyPracticePromptService.php
+          php -l app/Http/Controllers/StudyPracticeController.php
+          php -l tests/Feature/StudyTaskProgressionV4110Test.php
+          php artisan view:cache
+
+      - name: Focused regression tests
+        run: |
+          php artisan test \
+            tests/Feature/StudyTaskProgressionV4110Test.php \
+            tests/Feature/StudyPracticeGuidedFlowV4074Test.php \
+            tests/Feature/StudyPracticeLearningLoopV393Test.php \
+            tests/Feature/StudyPracticeCalibrationV414Test.php \
+            tests/Feature/NativeAiPracticeV418Test.php \
+            tests/Feature/HybridQuestionAssemblyV4182Test.php
