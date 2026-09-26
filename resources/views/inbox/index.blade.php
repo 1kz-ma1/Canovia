@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="mx-auto max-w-6xl space-y-5">
-        <section class="page-card border-cyan-300/20 p-5 sm:p-6" data-onboarding-target="today-start">
+        <section class="page-card border-cyan-300/20 p-5 sm:p-6" data-onboarding-target="inbox-capture" data-guide-target="inbox-capture">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="max-w-3xl">
                     <p class="text-xs font-black uppercase tracking-[0.16em] text-cyan-300">CANOVIA INBOX</p>
