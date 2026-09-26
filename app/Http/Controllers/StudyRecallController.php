@@ -1,0 +1,246 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\EvidenceSource;
+use App\Models\Plan;
+use App\Models\StudyRecallItem;
+use App\Models\Task;
+use App\Services\BehaviorIdentityService;
+use App\Services\PlanOwnershipService;
+use App\Services\StudyRecallSchedulerService;
+use App\Services\TaskEvidenceService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+class StudyRecallController extends Controller
+{
+    public function show(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership);
+
+        $items = StudyRecallItem::query()
+            ->where('plan_id', $plan->id)
+            ->where('task_id', $task->id)
+            ->where('is_active', true)
+            ->orderBy('due_at')
+            ->orderBy('id')
+            ->get();
+
+        $dueItems = $items->filter(fn (StudyRecallItem $item) => $item->isDue())->values();
+        $currentItem = $dueItems->first();
+
+        $todayReviewCount = $task->studyRecallReviews()
+            ->where('reviewed_at', '>=', today())
+            ->count();
+
+        return view('study_recall.show', [
+            'plan' => $plan,
+            'task' => $task,
+            'items' => $items,
+            'currentItem' => $currentItem,
+            'stats' => [
+                'total' => $items->count(),
+                'due' => $dueItems->count(),
+                'new' => $items->where('repetitions', 0)->count(),
+                'mastered' => $items->filter(fn (StudyRecallItem $item) => $item->isMastered())->count(),
+                'reviewed_today' => $todayReviewCount,
+            ],
+            'recentReviews' => $task->studyRecallReviews()
+                ->with('item')
+                ->latest('reviewed_at')
+                ->take(8)
+                ->get(),
+        ]);
+    }
+
+    public function store(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership, true);
+
+        $validated = $request->validate([
+            'cards_text' => ['required', 'string', 'max:30000'],
+        ]);
+
+        $lines = collect(preg_split('/\R/u', $validated['cards_text']) ?: [])
+            ->map(fn ($line) => trim((string) $line))
+            ->filter()
+            ->values();
+
+        if ($lines->count() > 100) {
+            throw ValidationException::withMessages([
+                'cards_text' => '一度に追加できるカードは100件までです。',
+            ]);
+        }
+
+        $parsed = $lines->map(function (string $line, int $index) {
+            $parts = preg_split('/\t|\s*\|\s*|\s*｜\s*/u', $line, 2);
+
+            if (! is_array($parts) || count($parts) < 2 || trim($parts[0]) === '' || trim($parts[1]) === '') {
+                throw ValidationException::withMessages([
+                    'cards_text' => ($index + 1).'行目を「表 | 裏」の形式で入力してください。',
+                ]);
+            }
+
+            return [
+                'prompt' => trim($parts[0]),
+                'answer' => trim($parts[1]),
+            ];
+        });
+
+        $created = 0;
+        foreach ($parsed as $card) {
+            $fingerprint = hash('sha256', $this->normalize($card['prompt']).'|'.$this->normalize($card['answer']));
+
+            $item = StudyRecallItem::query()->firstOrCreate(
+                [
+                    'task_id' => (int) $task->id,
+                    'fingerprint' => $fingerprint,
+                ],
+                [
+                    'plan_id' => (int) $plan->id,
+                    'prompt' => $card['prompt'],
+                    'answer' => $card['answer'],
+                    'tags' => [],
+                    'repetitions' => 0,
+                    'lapse_count' => 0,
+                    'interval_days' => 0,
+                    'ease_factor' => 2.50,
+                    'due_at' => null,
+                    'is_active' => true,
+                ],
+            );
+
+            if ($item->wasRecentlyCreated) {
+                $created++;
+            }
+        }
+
+        return redirect()
+            ->route('plans.tasks.study_recall.show', [$plan, $task])
+            ->with('success', $created.'件のRecallカードを追加しました。');
+    }
+
+    public function review(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        StudyRecallItem $item,
+        PlanOwnershipService $ownership,
+        BehaviorIdentityService $identity,
+        StudyRecallSchedulerService $scheduler,
+        TaskEvidenceService $evidence,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership, true);
+        $this->ensureItemBelongsToTask($item, $plan, $task);
+
+        $validated = $request->validate([
+            'rating' => ['required', Rule::in(StudyRecallSchedulerService::RATINGS)],
+            'review_request_id' => ['required', 'uuid'],
+        ]);
+
+        $actorToken = $identity->resolve($request);
+        $result = $scheduler->review(
+            $item,
+            $validated['rating'],
+            $validated['review_request_id'],
+            $request->user()?->id,
+            $actorToken,
+        );
+
+        $review = $result['review'];
+        $updatedItem = $result['item'];
+
+        $evidence->record(
+            $task,
+            EvidenceSource::Native,
+            'study_recall_reviewed',
+            [
+                'study_recall_review_id' => (int) $review->id,
+                'study_recall_item_id' => (int) $updatedItem->id,
+                'prompt' => Str::limit((string) $updatedItem->prompt, 160),
+                'rating' => (string) $review->rating,
+                'repetitions' => (int) $updatedItem->repetitions,
+                'lapse_count' => (int) $updatedItem->lapse_count,
+                'interval_days' => (int) $updatedItem->interval_days,
+                'due_at' => $updatedItem->due_at?->toIso8601String(),
+                'mastered' => $updatedItem->isMastered(),
+            ],
+            confidence: 0.75,
+            externalKey: 'study-recall-review:'.$review->id,
+            userId: $request->user()?->id,
+            actorToken: $request->user() ? null : $actorToken,
+            occurredAt: $review->reviewed_at,
+        );
+
+        $labels = [
+            'again' => 'もう一度',
+            'hard' => '難しい',
+            'good' => '思い出せた',
+            'easy' => '余裕',
+        ];
+
+        return redirect()
+            ->route('plans.tasks.study_recall.show', [$plan, $task])
+            ->with('status', ($labels[$validated['rating']] ?? '評価').'として記録しました。');
+    }
+
+    public function destroy(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        StudyRecallItem $item,
+        PlanOwnershipService $ownership,
+    ) {
+        $this->authorizeTask($request, $plan, $task, $ownership, true);
+        $this->ensureItemBelongsToTask($item, $plan, $task);
+
+        $item->delete();
+
+        return redirect()
+            ->route('plans.tasks.study_recall.show', [$plan, $task])
+            ->with('success', 'Recallカードを削除しました。');
+    }
+
+    private function authorizeTask(
+        Request $request,
+        Plan $plan,
+        Task $task,
+        PlanOwnershipService $ownership,
+        bool $edit = false,
+    ): void {
+        abort_unless((int) $task->plan_id === (int) $plan->id, 404);
+        abort_unless(trim((string) $plan->category) === '資格学習', 404);
+
+        if ($edit) {
+            $ownership->authorizeTask($request, $task);
+            return;
+        }
+
+        abort_unless($ownership->canView($request, $plan), 404);
+    }
+
+    private function ensureItemBelongsToTask(StudyRecallItem $item, Plan $plan, Task $task): void
+    {
+        abort_unless(
+            (int) $item->plan_id === (int) $plan->id
+            && (int) $item->task_id === (int) $task->id,
+            404,
+        );
+    }
+
+    private function normalize(string $value): string
+    {
+        return mb_strtolower(trim(preg_replace('/\s+/u', ' ', $value) ?? $value));
+    }
+}
