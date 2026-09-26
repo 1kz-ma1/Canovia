@@ -148,6 +148,10 @@ class AdminPracticeDemandController extends Controller
             ->latest('last_seen_at')
             ->latest('id');
 
+        if ($examProfile !== '') {
+            $candidateQuery->where('exam_profile_key', $examProfile);
+        }
+
         if ($candidateStatus !== 'all') {
             $candidateQuery->where('status', $candidateStatus);
         }
@@ -157,9 +161,14 @@ class AdminPracticeDemandController extends Controller
             ->withQueryString();
 
         $candidateCounts = collect(PracticeQuestionCandidate::STATUSES)
-            ->mapWithKeys(fn (string $status) => [
-                $status => PracticeQuestionCandidate::query()->where('status', $status)->count(),
-            ]);
+            ->mapWithKeys(function (string $status) use ($examProfile) {
+                $countQuery = PracticeQuestionCandidate::query()->where('status', $status);
+                if ($examProfile !== '') {
+                    $countQuery->where('exam_profile_key', $examProfile);
+                }
+
+                return [$status => $countQuery->count()];
+            });
 
         $availableProfiles = PracticeQuestionDemand::query()
             ->whereNotNull('exam_profile_key')
@@ -227,7 +236,7 @@ class AdminPracticeDemandController extends Controller
             'number' => [
                 'type' => 'numeric_tolerance',
                 'field_id' => $fieldId,
-                'answer' => 0,
+                'answer' => null,
                 'tolerance' => 0,
             ],
             'short_text', 'textarea' => [
