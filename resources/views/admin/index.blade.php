@@ -12,14 +12,14 @@
                 <div>
                     <h1 class="text-2xl font-black tracking-tight text-slate-50 sm:text-3xl">運営ダッシュボード</h1>
                     <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                        ユーザーの声と、計画作成・更新の動作状況をここから確認できます。
+                        ユーザーの声、計画作成・更新の動作状況、演習問題の需要と供給をここから確認できます。
                     </p>
                 </div>
                 <a href="{{ route('home') }}" class="btn-secondary shrink-0">Canoviaへ戻る</a>
             </div>
         </header>
 
-        <section class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+        <section class="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             <a href="{{ route('admin.feedback.index') }}" class="group page-card block p-5 transition hover:-translate-y-0.5 hover:border-sky-400/35 sm:p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -77,6 +77,31 @@
                     <div class="rounded-xl border border-slate-800 bg-slate-950/35 p-3">
                         <p class="text-[10px] text-slate-500">公開中</p>
                         <p class="mt-1 text-xl font-black text-emerald-200">{{ $publishedQuestionPackCount }}</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ route('admin.practice_demand.index') }}" class="group page-card block p-5 transition hover:-translate-y-0.5 hover:border-amber-300/35 sm:p-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <span class="inline-flex rounded-full border border-amber-300/20 bg-amber-300/10 px-2.5 py-1 text-[10px] font-black tracking-[.12em] text-amber-200">PRACTICE SUPPLY</span>
+                        <h2 class="mt-3 text-xl font-black text-slate-50">演習需要とCandidate</h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-400">Question Bankの不足分野と、Native AI生成問題の確認キューを管理します。</p>
+                    </div>
+                    <span class="text-2xl text-slate-600 transition group-hover:translate-x-1 group-hover:text-amber-200" aria-hidden="true">→</span>
+                </div>
+                <div class="mt-5 grid grid-cols-3 gap-2">
+                    <div class="rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                        <p class="text-[10px] leading-4 text-slate-500">30日<br>Session</p>
+                        <p class="mt-1 text-xl font-black text-slate-100">{{ $practiceDemand30d }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                        <p class="text-[10px] leading-4 text-slate-500">Bank<br>不足枠</p>
+                        <p class="mt-1 text-xl font-black text-amber-100">{{ $practiceGapQuestions30d }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-800 bg-slate-950/35 p-3">
+                        <p class="text-[10px] leading-4 text-slate-500">確認待ち<br>Candidate</p>
+                        <p class="mt-1 text-xl font-black text-cyan-100">{{ $pendingQuestionCandidateCount }}</p>
                     </div>
                 </div>
             </a>
