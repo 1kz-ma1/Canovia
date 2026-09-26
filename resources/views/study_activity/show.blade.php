@@ -64,7 +64,7 @@
                             <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
                                 @csrf
                                 <input type="hidden" name="task_id" value="{{ $task->id }}">
-                                <input type="hidden" name="source" value="study_activity">
+                                <input type="hidden" name="source" value="plan">
                                 <button type="submit" class="btn-secondary">◷ 記憶学習を開始</button>
                             </form>
                         </div>
@@ -75,7 +75,7 @@
                             <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
                                 @csrf
                                 <input type="hidden" name="task_id" value="{{ $task->id }}">
-                                <input type="hidden" name="source" value="study_activity">
+                                <input type="hidden" name="source" value="plan">
                                 <button type="submit" class="btn-secondary">◷ 教材学習を開始</button>
                             </form>
                         </div>
