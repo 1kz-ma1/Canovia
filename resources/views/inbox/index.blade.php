@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="mx-auto max-w-6xl space-y-5">
-        <section class="page-card border-cyan-300/20 p-5 sm:p-6" data-onboarding-target="today-start">
+        <section class="page-card border-cyan-300/20 p-5 sm:p-6" data-onboarding-target="inbox-capture" data-guide-target="inbox-capture">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="max-w-3xl">
                     <p class="text-xs font-black uppercase tracking-[0.16em] text-cyan-300">CANOVIA INBOX</p>
@@ -105,19 +105,105 @@
                                     <p class="mt-2 text-[10px] text-slate-600">{{ $inboxItem->created_at?->diffForHumans() }}</p>
                                 </div>
                             </div>
-                            <div class="mt-3 flex flex-wrap gap-2 border-t border-white/6 pt-3">
-                                <form method="POST" action="{{ route('inbox.status', $inboxItem) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="hidden" name="status" value="processed">
-                                    <button type="submit" class="btn-secondary px-3 py-2 text-xs">整理済みにする</button>
-                                </form>
-                                <form method="POST" action="{{ route('inbox.status', $inboxItem) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="hidden" name="status" value="archived">
-                                    <button type="submit" class="btn-secondary px-3 py-2 text-xs">アーカイブ</button>
-                                </form>
+                            @php
+                                $routingSuggestion = data_get($inboxItem->metadata, 'routing_suggestion');
+                                $suggestedDestination = data_get($routingSuggestion, 'destination', 'keep_inbox');
+                                $suggestedPlanTitle = data_get($routingSuggestion, 'suggested_plan_title');
+                                $suggestedTaskTitle = data_get($routingSuggestion, 'suggested_task_title');
+                            @endphp
+
+                            @if ($routingSuggestion)
+                                <div class="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.035] p-3" data-guide-target="inbox-routing-review">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <p class="text-xs font-black text-cyan-100">Canoviaの整理候補: {{ $routingDestinations[$suggestedDestination] ?? 'Inboxに残す' }}</p>
+                                        <span class="badge badge-slate">確信度 {{ (int) data_get($routingSuggestion, 'confidence', 0) }}/100</span>
+                                    </div>
+                                    <p class="mt-2 text-xs leading-5 text-slate-400">{{ data_get($routingSuggestion, 'reason') ?: '内容から整理先候補を作りました。' }}</p>
+                                    @if ($suggestedPlanTitle || $suggestedTaskTitle)
+                                        <p class="mt-2 text-[10px] text-slate-600">候補名: {{ $suggestedPlanTitle ?: 'Plan未特定' }}{{ $suggestedTaskTitle ? ' / '.$suggestedTaskTitle : '' }}。IDはAIに決めさせず、下で人が選びます。</p>
+                                    @endif
+                                </div>
+                            @endif
+
+                            <div class="mt-3 border-t border-white/6 pt-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    @if ($canUseInboxAi)
+                                        <form method="POST" action="{{ route('inbox.suggest', $inboxItem) }}" data-mutation-once>
+                                            @csrf
+                                            <button type="submit" class="{{ $routingSuggestion ? 'btn-secondary' : 'btn-primary' }} px-3 py-2 text-xs" data-guide-target="inbox-suggest">{{ $routingSuggestion ? '整理候補を作り直す' : '✦ 行き先を提案' }}</button>
+                                        </form>
+                                    @endif
+                                    <span class="text-[10px] text-slate-600">AIを使わなくても手動で整理できます。</span>
+                                </div>
+
+                                <details class="mt-3 rounded-xl border border-white/8 bg-slate-950/20 p-3" @if($routingSuggestion) open @endif>
+                                    <summary class="cursor-pointer text-xs font-bold text-slate-300">整理先を確認して確定</summary>
+                                    <form method="POST" action="{{ route('inbox.route', $inboxItem) }}" class="mt-3 space-y-3" data-mutation-once data-guide-target="inbox-route">
+                                        @csrf
+                                        <div class="grid gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <label class="text-[10px] font-bold text-slate-500">整理先</label>
+                                                <select name="destination" class="input-field mt-1 w-full">
+                                                    @foreach ($routingDestinations as $destinationKey => $destinationLabel)
+                                                        <option value="{{ $destinationKey }}" @selected($suggestedDestination === $destinationKey)>{{ $destinationLabel }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] font-bold text-slate-500">Plan</label>
+                                                <select name="plan_id" class="input-field mt-1 w-full">
+                                                    <option value="">Planなし / あとで</option>
+                                                    @foreach ($editablePlans as $plan)
+                                                        <option value="{{ $plan->id }}" @selected((int) $inboxItem->plan_id === (int) $plan->id)>{{ $plan->displayIcon() }} {{ $plan->title }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] font-bold text-slate-500">Task</label>
+                                                <select name="task_id" class="input-field mt-1 w-full">
+                                                    <option value="">Taskなし / あとで</option>
+                                                    @foreach ($editablePlans as $plan)
+                                                        @foreach ($plan->tasks->whereNotIn('status', ['done', 'cancelled'])->sortBy('sort_order') as $task)
+                                                            <option value="{{ $task->id }}">{{ $plan->title }} / {{ $task->title }}</option>
+                                                        @endforeach
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] font-bold text-slate-500">Future Memo種別</label>
+                                                <div class="mt-1 grid grid-cols-2 gap-2">
+                                                    <select name="future_memo_kind" class="input-field w-full">
+                                                        @foreach ($futureMemoKinds as $kindKey => $kindLabel)
+                                                            <option value="{{ $kindKey }}" @selected(data_get($routingSuggestion, 'future_memo_kind', 'interest') === $kindKey)>{{ $kindLabel }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <select name="future_memo_category" class="input-field w-full">
+                                                        @foreach ($futureMemoCategories as $categoryKey => $categoryLabel)
+                                                            <option value="{{ $categoryKey }}" @selected(data_get($routingSuggestion, 'future_memo_category', 'other') === $categoryKey)>{{ $categoryLabel }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="text-[10px] leading-4 text-slate-600">Recall教材は資格学習Plan + Taskが必要で、Candidate抽出時のみAutomatic AIを使います。Evidenceは確認事実として記録しますが、これだけでTask進捗は自動加算しません。</p>
+                                        <button type="submit" class="btn-primary px-3 py-2 text-xs">この整理先で確定</button>
+                                    </form>
+                                </details>
+
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <form method="POST" action="{{ route('inbox.status', $inboxItem) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="status" value="processed">
+                                        <button type="submit" class="btn-secondary px-3 py-2 text-xs">整理済みにする</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('inbox.status', $inboxItem) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="status" value="archived">
+                                        <button type="submit" class="btn-secondary px-3 py-2 text-xs">アーカイブ</button>
+                                    </form>
+                                </div>
                             </div>
                         </article>
                     @empty
@@ -203,6 +289,6 @@
             </details>
         @endif
 
-        <p class="px-1 text-[11px] leading-5 text-slate-600">Step 2ではInboxを「受け取る箱」として実装しています。AIによる自動判定と各機能への振り分けはStep 3でCandidate確認を挟んで接続します。</p>
+        <p class="px-1 text-[11px] leading-5 text-slate-600">AIの提案は確定操作ではありません。Canoviaは整理先候補だけを示し、実際のPlan / Taskと変換先は人が確認してから確定します。</p>
     </div>
 @endsection

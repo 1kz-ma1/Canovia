@@ -23,7 +23,7 @@
         <label class="canovia-guide-search mt-5">
             <span class="sr-only">ガイドを検索</span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
-            <input type="search" placeholder="やりたいことを検索  例：共同計画、AI演習、タイマー" data-guide-search>
+            <input type="search" placeholder="やりたいことを検索  例：Inbox、Recall、AI演習、共同計画" data-guide-search>
         </label>
 
         <div class="canovia-guide-list mt-5" data-guide-list>

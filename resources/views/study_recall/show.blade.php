@@ -99,7 +99,7 @@
             </section>
         @endif
 
-        <section class="page-card border-violet-300/20 p-5 sm:p-6">
+        <section class="page-card border-violet-300/20 p-5 sm:p-6" data-guide-target="recall-material">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-300">MATERIAL → CANDIDATE</p>

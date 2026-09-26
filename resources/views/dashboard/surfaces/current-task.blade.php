@@ -48,7 +48,7 @@
                         @csrf
                         <input type="hidden" name="task_id" value="{{ $hubCurrentTask->id }}">
                         <input type="hidden" name="source" value="dashboard">
-                        <button type="submit" class="btn-primary px-3 py-2 text-xs">◷ 集中タイマーで進める</button>
+                        <button type="submit" class="btn-primary px-3 py-2 text-xs" data-guide-target="timer-fallback">◷ 集中タイマーで進める</button>
                     </form>
                 @else
                     <a href="{{ route('plans.show', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">Taskを確認</a>

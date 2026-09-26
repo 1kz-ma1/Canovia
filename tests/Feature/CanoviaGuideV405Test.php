@@ -10,15 +10,19 @@ class CanoviaGuideV405Test extends TestCase
     {
         $catalog = config('canovia_guides');
 
-        $this->assertSame(1, $catalog['version']);
+        $this->assertSame(2, $catalog['version']);
         $this->assertArrayHasKey('together', $catalog['categories']);
 
         foreach ([
             'first_plan',
-            'today_action',
-            'timer',
+            'home_next_action',
+            'timer_fallback',
+            'inbox_capture',
+            'inbox_organize',
             'plan_update',
             'study_practice',
+            'recall',
+            'recall_material',
             'collaboration_create',
             'collaboration_join',
             'resources',
@@ -80,9 +84,13 @@ class CanoviaGuideV405Test extends TestCase
     {
         $files = [
             'views/dashboard/index.blade.php',
+            'views/dashboard/surfaces/current-task.blade.php',
             'views/plans/create.blade.php',
+            'views/inbox/index.blade.php',
             'views/navigation/index.blade.php',
             'views/work_sessions/active.blade.php',
+            'views/study_activity/show.blade.php',
+            'views/study_recall/show.blade.php',
             'views/roadmap/index.blade.php',
             'views/plans/show.blade.php',
             'views/plans/review_assistant.blade.php',
@@ -100,13 +108,17 @@ class CanoviaGuideV405Test extends TestCase
         foreach ([
             'create-plan',
             'plan-form',
-            'today-start',
-            'work-timer',
+            'home-now',
+            'inbox-capture',
+            'inbox-route',
+            'timer-fallback',
             'plan-update',
             'plan-update-input',
             'plan-detail',
             'study-practice',
             'practice-strategy',
+            'study-recall',
+            'recall-material',
             'collaboration-settings',
             'collaboration-primary',
             'collaboration-join',

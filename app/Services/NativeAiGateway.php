@@ -46,8 +46,8 @@ class NativeAiGateway
         string $prompt,
         array $schema,
         string $schemaName,
-        Plan $plan,
-        Task $task,
+        ?Plan $plan,
+        ?Task $task,
         ?int $maxOutputTokens = null,
         ?int $userId = null,
         ?int $studyPracticeSessionId = null,
@@ -73,8 +73,8 @@ class NativeAiGateway
         $model = $this->model();
         $run = NativeAiRun::query()->create([
             'user_id' => $userId,
-            'plan_id' => $plan->id,
-            'task_id' => $task->id,
+            'plan_id' => $plan?->id,
+            'task_id' => $task?->id,
             'study_practice_session_id' => $studyPracticeSessionId,
             'feature_key' => FeatureKey::AutomaticAiExecution->value,
             'purpose' => $purpose,
