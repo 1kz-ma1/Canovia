@@ -197,7 +197,7 @@ class HybridQuestionAssemblyV4182Test extends TestCase
 
         $this->assertStringContainsString('grading_context', $input);
         $this->assertStringContainsString('exact_choice', $input);
-        $this->assertStringContainsString('\"answer\": \"A\"', $input);
+        $this->assertStringContainsString('"answer": "A"', $input);
 
         $session->refresh();
         $this->assertSame('native_ai', $session->assessment_provider);
