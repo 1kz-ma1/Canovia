@@ -23,6 +23,10 @@ final class StudyPracticeNativeAiSchema
                         'properties' => [
                             'id' => ['type' => 'string'],
                             'prompt' => ['type' => 'string'],
+                            'work_input' => [
+                                'type' => 'string',
+                                'enum' => ['none', 'reasoning', 'calculation'],
+                            ],
                             'response_fields' => [
                                 'type' => 'array',
                                 'items' => [
@@ -54,7 +58,7 @@ final class StudyPracticeNativeAiSchema
                                 ],
                             ],
                         ],
-                        'required' => ['id', 'prompt', 'response_fields'],
+                        'required' => ['id', 'prompt', 'work_input', 'response_fields'],
                     ],
                 ],
             ],
