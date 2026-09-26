@@ -101,6 +101,44 @@
                     @endif
                 </p>
             </div>
+
+            @php
+                $recommendedActivity = (array) data_get($practiceReliability ?? [], 'recommended_activity', []);
+                $questionPracticeIsPrimary = data_get($recommendedActivity, 'key') === 'question_practice';
+            @endphp
+            <div class="mt-4 rounded-2xl border border-violet-300/15 bg-violet-300/[0.035] p-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-black uppercase tracking-[0.14em] text-violet-300">PRACTICE RELIABILITY</p>
+                        <h2 class="mt-1 text-base font-black text-slate-100">この演習の信頼度の目安</h2>
+                    </div>
+                    <span class="badge badge-slate">{{ data_get($practiceReliability, 'overall_label', '中') }} · {{ (int) data_get($practiceReliability, 'overall_score', 0) }}/100</span>
+                </div>
+
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach ((array) data_get($practiceReliability, 'metrics', []) as $metric)
+                        <div class="rounded-xl border border-white/8 bg-slate-950/25 p-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-xs font-bold text-slate-200">{{ $metric['label'] }}</span>
+                                <span class="text-[10px] font-bold text-slate-500">{{ $metric['label_level'] }} · {{ (int) $metric['score'] }}</span>
+                            </div>
+                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+                                <div class="h-full rounded-full bg-current text-violet-300" style="width: {{ max(0, min(100, (int) $metric['score'])) }}%"></div>
+                            </div>
+                            <p class="mt-2 text-[10px] leading-4 text-slate-500">{{ $metric['note'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
+
+                <p class="mt-3 text-[10px] leading-4 text-slate-600">{{ data_get($practiceReliability, 'disclaimer') }}</p>
+
+                @if (! $questionPracticeIsPrimary)
+                    <div class="mt-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.04] p-3">
+                        <p class="text-xs font-bold text-amber-100">このTaskでは {{ data_get($recommendedActivity, 'label', '別の学習方法') }} の方が相性が高いと判定しています。</p>
+                        <a href="{{ route('plans.tasks.study_activity.show', [$plan, $task]) }}" class="mt-2 inline-block text-xs font-bold text-amber-200 hover:text-amber-100">推奨学習方法を見る →</a>
+                    </div>
+                @endif
+            </div>
         </section>
 
         @if (session('success'))
