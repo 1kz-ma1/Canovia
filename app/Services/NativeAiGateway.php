@@ -53,6 +53,7 @@ class NativeAiGateway
         ?int $studyPracticeSessionId = null,
         string $capacityTier = 'standard',
         array $metadata = [],
+        array $inputParts = [],
     ): array {
         if (! $this->isConfigured()) {
             throw new NativeAiExecutionException(
@@ -81,7 +82,7 @@ class NativeAiGateway
             'model' => $model,
             'capacity_tier' => $capacityTier,
             'status' => 'running',
-            'request_hash' => hash('sha256', $purpose."\n".$model."\n".$prompt),
+            'request_hash' => hash('sha256', $purpose."\n".$model."\n".$prompt."\n".json_encode($this->inputPartFingerprints($inputParts))),
             'started_at' => now(),
         ]);
 
@@ -92,6 +93,7 @@ class NativeAiGateway
                 schemaName: $schemaName,
                 model: $model,
                 maxOutputTokens: $maxOutputTokens,
+                inputParts: $inputParts,
             );
 
             $outputText = $this->extractOutputText($body);
@@ -189,14 +191,29 @@ class NativeAiGateway
         string $schemaName,
         string $model,
         ?int $maxOutputTokens,
+        array $inputParts = [],
     ): array {
         $baseUrl = rtrim((string) config('native_ai.providers.openai.base_url'), '/');
         $apiKey = (string) config('native_ai.providers.openai.api_key');
         $timeout = max(5, min(120, (int) config('native_ai.timeout_seconds', 45)));
 
+        $input = $prompt;
+        if ($inputParts !== []) {
+            $input = [[
+                'role' => 'user',
+                'content' => [
+                    ...$inputParts,
+                    [
+                        'type' => 'input_text',
+                        'text' => $prompt,
+                    ],
+                ],
+            ]];
+        }
+
         $payload = [
             'model' => $model,
-            'input' => $prompt,
+            'input' => $input,
             'store' => false,
             'text' => [
                 'format' => [
@@ -304,6 +321,30 @@ class NativeAiGateway
             'error_message' => mb_substr($message, 0, 4000),
             'completed_at' => now(),
         ]);
+    }
+
+    /**
+     * Never place full Base64 source bytes in NativeAiRun.request_hash input.
+     *
+     * @param array<int,array<string,mixed>> $inputParts
+     * @return array<int,array<string,mixed>>
+     */
+    private function inputPartFingerprints(array $inputParts): array
+    {
+        return collect($inputParts)
+            ->map(function (array $part) {
+                $type = (string) ($part['type'] ?? '');
+                $payload = (string) ($part['image_url'] ?? $part['file_data'] ?? '');
+
+                return [
+                    'type' => $type,
+                    'filename' => $part['filename'] ?? null,
+                    'detail' => $part['detail'] ?? null,
+                    'sha256' => $payload !== '' ? hash('sha256', $payload) : null,
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     private function nullablePositiveInt(mixed $value): ?int
