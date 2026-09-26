@@ -90,7 +90,7 @@ class StudyPracticeGuidedFlowV4074Test extends TestCase
             ->assertOk()
             ->assertSee('NEXT ACTION')
             ->assertSee('MTUとTCP分割の類題を5問解く')
-            ->assertSee('まず学習結果をCanoviaへ反映')
+            ->assertSee('結果を反映して次へ')
             ->assertSee('回答済み 1問 · 今回の回答を見直す')
             ->assertSee('AI評価の受け渡しを確認する');
 
@@ -171,6 +171,8 @@ class StudyPracticeGuidedFlowV4074Test extends TestCase
         $this->assertStringContainsString('結果・次Action', $view);
         $this->assertStringContainsString('今回の回答を見直す', $view);
         $this->assertStringContainsString('AI評価の受け渡しを確認する', $view);
+        $this->assertStringContainsString('詳しい評価を確認', $view);
+        $this->assertSame(1, substr_count($view, "route('plans.tasks.study_practice.apply'"));
     }
 
     private function studyPlan(): array
