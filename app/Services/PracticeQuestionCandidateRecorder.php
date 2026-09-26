@@ -74,9 +74,6 @@ class PracticeQuestionCandidateRecorder
                 }
 
                 $fingerprint = $this->fingerprint($payload, $examProfileKey);
-                $candidate = PracticeQuestionCandidate::query()
-                    ->where('fingerprint', $fingerprint)
-                    ->first();
 
                 $reviewHints = [
                     'strategy_key' => filled($strategy['key'] ?? null)
@@ -97,9 +94,9 @@ class PracticeQuestionCandidateRecorder
                         : [],
                 ];
 
-                if (! $candidate) {
-                    return PracticeQuestionCandidate::query()->create([
-                        'fingerprint' => $fingerprint,
+                $candidate = PracticeQuestionCandidate::query()->firstOrCreate(
+                    ['fingerprint' => $fingerprint],
+                    [
                         'status' => PracticeQuestionCandidate::STATUS_PENDING,
                         'provider' => 'native_ai',
                         'model' => $model !== '' ? mb_substr($model, 0, 120) : null,
@@ -111,7 +108,11 @@ class PracticeQuestionCandidateRecorder
                         'review_hints' => $reviewHints,
                         'generation_count' => 1,
                         'last_seen_at' => now(),
-                    ]);
+                    ],
+                );
+
+                if ($candidate->wasRecentlyCreated) {
+                    return $candidate;
                 }
 
                 $alreadyCounted = (int) $candidate->latest_practice_question_demand_id === (int) $demand->id;
