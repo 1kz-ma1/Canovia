@@ -33,7 +33,7 @@ class PublicBetaPolishV16Test extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('data-onboarding-intro', false)
-            ->assertSee('PaceKeeperは、次の一歩を決めやすくするアプリです')
+            ->assertSee('Canoviaは、次の一歩を決めやすくするアプリです')
             ->assertSee('いつものAIで相談')
             ->assertSee('新しい情報はInboxへ');
     }
@@ -93,7 +93,7 @@ class PublicBetaPolishV16Test extends TestCase
 
         $this->assertStringContainsString('data-slow-notice', $html);
         $this->assertStringContainsString('data-retry', $html);
-        $this->assertStringContainsString('いつもより準備に時間がかかっています', $html);
+        $this->assertStringContainsString('宇宙船を起動しています', $html);
         $this->assertStringContainsString('slowAfterMs', $script);
         $this->assertStringContainsString('navigator.onLine', $script);
     }
