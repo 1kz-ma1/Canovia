@@ -35,7 +35,7 @@ class PublicBetaPolishV16Test extends TestCase
             ->assertSee('data-onboarding-intro', false)
             ->assertSee('PaceKeeperは、次の一歩を決めやすくするアプリです')
             ->assertSee('いつものAIで相談')
-            ->assertSee('迷ったら「今日」から');
+            ->assertSee('新しい情報はInboxへ');
     }
 
     public function test_ai_import_accepts_explanatory_text_around_the_json_payload(): void
