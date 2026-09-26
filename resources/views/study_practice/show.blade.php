@@ -84,6 +84,7 @@
                     $providerLabel = match ($providerKey) {
                         'question_bank' => 'Canovia Question Bank',
                         'native_ai' => 'Canovia Native AI',
+                        'hybrid_ai' => 'Canovia Hybrid（Bank優先 + AI補完）',
                         'external_ai' => '外部AI',
                         default => $providerKey,
                     };
@@ -231,7 +232,7 @@
                                     <h2 class="font-black text-slate-100">Canovia内で演習を準備</h2>
                                     <span class="badge badge-green">Premium</span>
                                 </div>
-                                <p class="mt-1 text-xs leading-5 text-slate-500">コピーや貼り付けをせず、Canoviaが問題生成から演習開始まで進めます。</p>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">Question Bankで使える問題を先に選び、足りない分だけNative AIで補完します。コピーや貼り付けは不要です。</p>
                             </div>
                         </div>
 
@@ -243,7 +244,7 @@
 
                         <p class="mt-3 text-[11px] leading-5 text-slate-500">
                             AI Capacity: {{ data_get($nativeAiCapacity, 'policy.label', data_get($nativeAiCapacity, 'tier', 'standard')) }}
-                            · Native AIが利用できない場合も、外部AIの手動フローへ切り替えられます。
+                            · Bankだけで揃う場合はAI生成を行いません。Native AIが必要な場面で利用できない場合も、外部AIの手動フローへ切り替えられます。
                         </p>
                     </section>
 
