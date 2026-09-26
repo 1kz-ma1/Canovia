@@ -10,7 +10,7 @@
     </a>
 
     <a href="{{ route('inbox.index') }}"
-       data-onboarding-target="today-nav"
+       data-onboarding-target="inbox-nav"
        class="mobile-tabbar-link mobile-tabbar-primary {{ request()->routeIs('inbox.*') ? 'is-active' : '' }}"
        aria-current="{{ request()->routeIs('inbox.*') ? 'page' : 'false' }}">
         <span class="pk-tab-icon pk-tab-icon-today" aria-hidden="true">
