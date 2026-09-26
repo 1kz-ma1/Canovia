@@ -344,24 +344,58 @@
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">ASSESSMENT / NEXT STEP</p>
 
                 @if ($nextStep)
+                    @php
+                        $progressionKind = (string) data_get($studyProgression ?? [], 'kind', '');
+                        $progressionLabel = trim((string) data_get($studyProgression ?? [], 'label', ''));
+                        $progressionReason = trim((string) data_get($studyProgression ?? [], 'reason', ''));
+                        $nextTask = data_get($studyProgression ?? [], 'next_task');
+                        $displayNextLabel = in_array($progressionKind, ['verify_mastery', 'advance_task', 'plan_complete'], true) && $progressionLabel !== ''
+                            ? $progressionLabel
+                            : $nextStep['label'];
+                        $displayNextReason = in_array($progressionKind, ['verify_mastery', 'advance_task', 'plan_complete'], true) && $progressionReason !== ''
+                            ? $progressionReason
+                            : $nextStep['reason'];
+                    @endphp
                     <div class="mt-3 rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.055] p-4 sm:p-5">
                         <p class="text-[11px] font-black uppercase tracking-[0.14em] text-cyan-300">NEXT ACTION</p>
-                        <h2 class="mt-2 text-xl font-black leading-8 text-slate-50">{{ $nextStep['label'] }}</h2>
-                        @if ($nextStep['reason'])
-                            <p class="mt-2 text-sm leading-6 text-slate-300">{{ $nextStep['reason'] }}</p>
+                        <h2 class="mt-2 text-xl font-black leading-8 text-slate-50">{{ $displayNextLabel }}</h2>
+                        @if ($displayNextReason)
+                            <p class="mt-2 text-sm leading-6 text-slate-300">{{ $displayNextReason }}</p>
                         @endif
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            @foreach (($nextStep['focus_topics'] ?? []) as $topic)
-                                <span class="badge badge-slate">{{ $topic }}</span>
-                            @endforeach
-                            @if (($nextStep['kind'] ?? '') === 'practice' && ! empty($nextStep['question_count']))
-                                <span class="badge badge-slate">{{ $nextStep['question_count'] }}問</span>
-                            @endif
-                        </div>
+                        @if ($progressionKind === 'verify_mastery')
+                            <p class="mt-3 text-xs leading-5 text-cyan-100/80">1回の高得点だけでは完了にせず、別の問題でも理解が安定しているかCanoviaが確認します。</p>
+                        @else
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                @foreach (($nextStep['focus_topics'] ?? []) as $topic)
+                                    <span class="badge badge-slate">{{ $topic }}</span>
+                                @endforeach
+                                @if (($nextStep['kind'] ?? '') === 'practice' && ! empty($nextStep['question_count']))
+                                    <span class="badge badge-slate">{{ $nextStep['question_count'] }}問</span>
+                                @endif
+                            </div>
+                        @endif
 
                         <div class="mt-4">
                             @if ($currentAttempt && ! $currentAttempt->applied_at)
-                                <a href="#practice-apply-result" class="btn-primary">まず学習結果をCanoviaへ反映</a>
+                                <form method="POST" action="{{ route('plans.tasks.study_practice.apply', [$plan, $task]) }}" data-mutation-once>
+                                    @csrf
+                                    <input type="hidden" name="attempt_id" value="{{ $currentAttempt->id }}">
+                                    <input type="hidden" name="request_hash" value="{{ $currentAttempt->request_hash }}">
+                                    <input type="hidden" name="continue_after_apply" value="1">
+                                    <button type="submit" class="btn-primary">
+                                        {{ $progressionKind === 'verify_mastery' ? '結果を反映して仕上げ確認へ' : ($progressionKind === 'advance_task' ? '結果を反映して次のTaskへ' : '結果を反映して次へ') }}
+                                    </button>
+                                </form>
+                            @elseif ($currentAttempt?->applied_at && $progressionKind === 'verify_mastery')
+                                <form method="POST" action="{{ route('plans.tasks.study_practice.reset', [$plan, $task]) }}">
+                                    @csrf
+                                    <input type="hidden" name="continue" value="1">
+                                    <button type="submit" class="btn-primary">仕上げ確認を始める</button>
+                                </form>
+                            @elseif ($currentAttempt?->applied_at && $progressionKind === 'advance_task' && $nextTask)
+                                <a href="{{ route('plans.tasks.study_practice.show', [$plan, $nextTask]) }}" class="btn-primary">次のTask「{{ $nextTask->title }}」へ</a>
+                            @elseif ($currentAttempt?->applied_at && $progressionKind === 'plan_complete')
+                                <a href="{{ route('plans.show', $plan) }}" class="btn-primary">Plan全体を確認する</a>
                             @elseif ($currentAttempt?->applied_at && ($nextStep['kind'] ?? '') === 'practice')
                                 <form method="POST" action="{{ route('plans.tasks.study_practice.reset', [$plan, $task]) }}">
                                     @csrf
@@ -390,92 +424,87 @@
                     @endif
                 </div>
 
-                <div class="mt-5 grid gap-4 md:grid-cols-2">
-                    <div class="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
-                        <h3 class="font-bold text-emerald-100">理解できている点</h3>
-                        <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['strengths'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
-                    </div>
-                    <div class="rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-4">
-                        <h3 class="font-bold text-amber-100">補強する点</h3>
-                        <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['weaknesses'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
-                    </div>
-                </div>
-                @if (collect($assessment['question_feedback'] ?? [])->isNotEmpty())
-                    <div class="mt-5 space-y-3">
-                        <h3 class="text-sm font-black text-slate-100">問題ごとのフィードバック</h3>
-                        @foreach ($assessment['question_feedback'] as $feedback)
-                            @php
-                                $correctnessLabel = match ($feedback['correctness'] ?? 'ungraded') {
-                                    'correct' => '正解',
-                                    'partial' => '一部正解',
-                                    'incorrect' => '要復習',
-                                    default => '評価対象外',
-                                };
-                                $correctnessClass = match ($feedback['correctness'] ?? 'ungraded') {
-                                    'correct' => 'badge-green',
-                                    'partial' => 'badge-slate',
-                                    'incorrect' => 'badge-amber',
-                                    default => 'badge-slate',
-                                };
-                                $errorTypeLabel = match ($feedback['error_type'] ?? 'none') {
-                                    'knowledge_gap' => '知識不足',
-                                    'concept_gap' => '概念理解',
-                                    'reasoning_gap' => '推論',
-                                    'condition_reading' => '条件読解',
-                                    'unit_error' => '単位ミス',
-                                    'calculation_slip' => '計算ミス',
-                                    'careless' => 'ケアレス',
-                                    'unknown' => '原因未確定',
-                                    default => null,
-                                };
-                            @endphp
-                            <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <strong class="text-sm text-slate-100">{{ $feedback['question_id'] }}</strong>
-                                    <span class="badge {{ $correctnessClass }}">{{ $correctnessLabel }}</span>
-                                    @if ($errorTypeLabel)
-                                        <span class="badge badge-slate">{{ $errorTypeLabel }}</span>
-                                    @endif
-                                </div>
-                                @if ($feedback['feedback'])
-                                    <p class="mt-2 text-sm leading-6 text-slate-300">{{ $feedback['feedback'] }}</p>
-                                @endif
-                                @if ($feedback['reasoning_feedback'])
-                                    <div class="mt-2 rounded-xl border border-violet-300/15 bg-violet-300/[0.04] p-3">
-                                        <p class="text-[11px] font-bold text-violet-200">思考過程フィードバック</p>
-                                        <p class="mt-1 text-xs leading-5 text-slate-300">{{ $feedback['reasoning_feedback'] }}</p>
-                                    </div>
-                                @endif
-                                @if (collect($feedback['weakness_topics'] ?? [])->isNotEmpty())
-                                    <p class="mt-2 text-xs leading-5 text-slate-400">弱点候補：{{ collect($feedback['weakness_topics'])->implode(' / ') }}</p>
-                                @endif
-                                @if (collect($feedback['misconceptions'] ?? [])->isNotEmpty())
-                                    <p class="mt-2 text-xs leading-5 text-amber-100">誤解ポイント：{{ collect($feedback['misconceptions'])->implode(' / ') }}</p>
-                                @endif
-                            </article>
-                        @endforeach
-                    </div>
-                @endif
-
-                @if ($assessment['evidence_summary'])
-                    <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-4"><p class="text-xs font-bold text-slate-500">評価根拠</p><p class="mt-1 text-sm leading-6 text-slate-300">{{ $assessment['evidence_summary'] }}</p></div>
-                @endif
-                @if ($currentAttempt)
-                    @if ($currentAttempt->applied_at)
-                        <div class="mt-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
-                            <p class="text-sm font-bold text-emerald-100">Taskへ反映済み</p>
-                            <p class="mt-1 text-xs text-slate-400">進捗 {{ $currentAttempt->progress_before_percent ?? '—' }}% → {{ $currentAttempt->progress_after_percent ?? '—' }}%。AI演習だけを理由に、既存の進捗を下げることはありません。</p>
+                <details class="mt-5 rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+                    <summary class="cursor-pointer text-sm font-black text-slate-200">詳しい評価を確認</summary>
+                    <div class="mt-4">
+                        <div class="mt-5 grid gap-4 md:grid-cols-2">
+                            <div class="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
+                                <h3 class="font-bold text-emerald-100">理解できている点</h3>
+                                <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['strengths'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
+                            </div>
+                            <div class="rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-4">
+                                <h3 class="font-bold text-amber-100">補強する点</h3>
+                                <ul class="mt-2 space-y-2 text-sm text-slate-300">@forelse($assessment['weaknesses'] as $item)<li>・{{ $item }}</li>@empty<li class="text-slate-500">記載なし</li>@endforelse</ul>
+                            </div>
                         </div>
-                    @else
-                        <form id="practice-apply-result" method="POST" action="{{ route('plans.tasks.study_practice.apply', [$plan, $task]) }}" class="mt-4 scroll-mt-24 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-4" data-mutation-once>
-                            @csrf
-                            <input type="hidden" name="attempt_id" value="{{ $currentAttempt->id }}">
-                            <input type="hidden" name="request_hash" value="{{ $currentAttempt->request_hash }}">
-                            <p class="text-sm font-bold text-cyan-100">この結果をCanoviaへ反映しますか？</p>
-                            <p class="mt-1 text-xs leading-5 text-slate-400">Task進捗は現在値と評価提案の高い方を使うため、演習結果だけで進捗が後退することはありません。評価根拠と次のActionもTaskへ残します。</p>
-                            <button type="submit" class="btn-primary mt-3">この学習結果をTaskへ反映</button>
-                        </form>
-                    @endif
+                        @if (collect($assessment['question_feedback'] ?? [])->isNotEmpty())
+                            <div class="mt-5 space-y-3">
+                                <h3 class="text-sm font-black text-slate-100">問題ごとのフィードバック</h3>
+                                @foreach ($assessment['question_feedback'] as $feedback)
+                                    @php
+                                        $correctnessLabel = match ($feedback['correctness'] ?? 'ungraded') {
+                                            'correct' => '正解',
+                                            'partial' => '一部正解',
+                                            'incorrect' => '要復習',
+                                            default => '評価対象外',
+                                        };
+                                        $correctnessClass = match ($feedback['correctness'] ?? 'ungraded') {
+                                            'correct' => 'badge-green',
+                                            'partial' => 'badge-slate',
+                                            'incorrect' => 'badge-amber',
+                                            default => 'badge-slate',
+                                        };
+                                        $errorTypeLabel = match ($feedback['error_type'] ?? 'none') {
+                                            'knowledge_gap' => '知識不足',
+                                            'concept_gap' => '概念理解',
+                                            'reasoning_gap' => '推論',
+                                            'condition_reading' => '条件読解',
+                                            'unit_error' => '単位ミス',
+                                            'calculation_slip' => '計算ミス',
+                                            'careless' => 'ケアレス',
+                                            'unknown' => '原因未確定',
+                                            default => null,
+                                        };
+                                    @endphp
+                                    <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <strong class="text-sm text-slate-100">{{ $feedback['question_id'] }}</strong>
+                                            <span class="badge {{ $correctnessClass }}">{{ $correctnessLabel }}</span>
+                                            @if ($errorTypeLabel)
+                                                <span class="badge badge-slate">{{ $errorTypeLabel }}</span>
+                                            @endif
+                                        </div>
+                                        @if ($feedback['feedback'])
+                                            <p class="mt-2 text-sm leading-6 text-slate-300">{{ $feedback['feedback'] }}</p>
+                                        @endif
+                                        @if ($feedback['reasoning_feedback'])
+                                            <div class="mt-2 rounded-xl border border-violet-300/15 bg-violet-300/[0.04] p-3">
+                                                <p class="text-[11px] font-bold text-violet-200">思考過程フィードバック</p>
+                                                <p class="mt-1 text-xs leading-5 text-slate-300">{{ $feedback['reasoning_feedback'] }}</p>
+                                            </div>
+                                        @endif
+                                        @if (collect($feedback['weakness_topics'] ?? [])->isNotEmpty())
+                                            <p class="mt-2 text-xs leading-5 text-slate-400">弱点候補：{{ collect($feedback['weakness_topics'])->implode(' / ') }}</p>
+                                        @endif
+                                        @if (collect($feedback['misconceptions'] ?? [])->isNotEmpty())
+                                            <p class="mt-2 text-xs leading-5 text-amber-100">誤解ポイント：{{ collect($feedback['misconceptions'])->implode(' / ') }}</p>
+                                        @endif
+                                    </article>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if ($assessment['evidence_summary'])
+                            <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/35 p-4"><p class="text-xs font-bold text-slate-500">評価根拠</p><p class="mt-1 text-sm leading-6 text-slate-300">{{ $assessment['evidence_summary'] }}</p></div>
+                        @endif
+
+                    </div>
+                </details>
+                @if ($currentAttempt?->applied_at)
+                    <div class="mt-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4">
+                        <p class="text-sm font-bold text-emerald-100">Taskへ反映済み</p>
+                        <p class="mt-1 text-xs text-slate-400">進捗 {{ $currentAttempt->progress_before_percent ?? '—' }}% → {{ $currentAttempt->progress_after_percent ?? '—' }}%。AI演習だけを理由に、既存の進捗を下げることはありません。</p>
+                    </div>
                 @endif
             </section>
         @endif
