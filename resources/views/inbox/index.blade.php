@@ -94,10 +94,10 @@
                                     </div>
                                     <h3 class="mt-2 break-words text-sm font-black text-slate-100">{{ $inboxItem->displayTitle() }}</h3>
                                     @if ($inboxItem->content)
-                                        <p class="mt-2 whitespace-pre-line text-xs leading-5 text-slate-400">{{ IlluminateSupportStr::limit($inboxItem->content, 280) }}</p>
+                                        <p class="mt-2 whitespace-pre-line text-xs leading-5 text-slate-400">{{ str($inboxItem->content)->limit(280) }}</p>
                                     @endif
                                     @if ($inboxItem->source_url)
-                                        <a href="{{ $inboxItem->source_url }}" target="_blank" rel="noopener noreferrer" class="mt-2 block break-all text-xs font-bold text-cyan-300 hover:text-cyan-200">{{ IlluminateSupportStr::limit($inboxItem->source_url, 100) }}</a>
+                                        <a href="{{ $inboxItem->source_url }}" target="_blank" rel="noopener noreferrer" class="mt-2 block break-all text-xs font-bold text-cyan-300 hover:text-cyan-200">{{ str($inboxItem->source_url)->limit(100) }}</a>
                                     @endif
                                     @if ($inboxItem->storage_path)
                                         <a href="{{ route('inbox.file', $inboxItem) }}" target="_blank" class="mt-2 inline-flex text-xs font-bold text-cyan-300 hover:text-cyan-200">添付ファイルを確認 →</a>
@@ -143,7 +143,7 @@
                         <div class="mt-2 space-y-2">
                             @forelse ($recallCandidates->take(5) as $candidate)
                                 <a href="{{ route('plans.tasks.study_recall.show', [$candidate->plan, $candidate->task]) }}" class="block rounded-xl border border-white/8 bg-white/[0.02] p-3 transition hover:border-emerald-300/20">
-                                    <p class="text-xs font-bold text-slate-200">{{ IlluminateSupportStr::limit($candidate->prompt, 70) }}</p>
+                                    <p class="text-xs font-bold text-slate-200">{{ str($candidate->prompt)->limit(70) }}</p>
                                     <p class="mt-1 text-[10px] text-slate-500">{{ $candidate->plan?->title }} / {{ $candidate->task?->title }} · 根拠 {{ (int) $candidate->confidence }}/100</p>
                                 </a>
                             @empty
