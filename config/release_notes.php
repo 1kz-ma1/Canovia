@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v41.9',
+        'date' => '2026-09-26',
+        'title' => '足りない問題を見つけ、AI生成問題を安全に育てる',
+        'summary' => 'Practice DemandをAdminで集計し、Question Bankが不足している試験・重点分野を確認できるようにしました。Native AIが実際に生成した問題はCandidateとして隔離し、人が内容と正答を確認したものだけDraft Question Packへ昇格できます。',
+        'highlights' => [
+            '演習Session数、要求問題数、Question Bank供給数、AI補完不足数、生成数を期間・exam profile・assembly modeで確認できます。',
+            'focus topicは問題数を推定配賦せず、Bank不足を伴ったSession数として需要シグナルを表示します。',
+            'Native AI生成問題はQuestion Bankへ直接入れず、pending Candidateとして問題文・回答形式・生成文脈を記録します。',
+            '同じCandidateが再生成された場合はfingerprintでまとめ、生成回数と最新需要を更新します。同じDemandの再処理では重複カウントしません。',
+            'Candidateの正答・grading_rule・learning metadata・解説はAdminが確認し、既存Question検証を通してDraft Packへ追加します。',
+            'Candidateからreview / published / retired Packへの直接昇格は禁止し、既存のDraft → Review → Published境界を維持します。',
+        ],
+        'tip' => 'CandidateはAIの出力をそのまま正解扱いする仕組みではありません。問題資産へ昇格する前に、人が問題文・選択肢・正答・解説・分類を確認します。',
+    ],
+    [
         'version' => 'v41.8.2',
         'date' => '2026-09-26',
         'title' => '問題集を先に使い、足りない分だけAIで補う',
