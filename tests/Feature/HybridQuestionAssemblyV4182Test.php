@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\ProductKey;
 use App\Models\NativeAiRun;
 use App\Models\Plan;
+use App\Models\PracticeQuestionCandidate;
 use App\Models\PracticeQuestionDemand;
 use App\Models\Question;
 use App\Models\QuestionPack;
@@ -100,6 +101,13 @@ class HybridQuestionAssemblyV4182Test extends TestCase
         });
 
         $this->assertDatabaseCount('native_ai_runs', 1);
+        $this->assertDatabaseCount('practice_question_candidates', 7);
+
+        $candidate = PracticeQuestionCandidate::firstOrFail();
+        $this->assertSame(PracticeQuestionCandidate::STATUS_PENDING, $candidate->status);
+        $this->assertSame('ap_subject_a_exam', $candidate->exam_profile_key);
+        $this->assertArrayNotHasKey('grading_rule', $candidate->question_payload);
+        $this->assertArrayNotHasKey('answer', $candidate->question_payload);
     }
 
     public function test_hybrid_bank_only_skips_native_generation_and_uses_deterministic_grader(): void
@@ -149,6 +157,7 @@ class HybridQuestionAssemblyV4182Test extends TestCase
         $this->assertNull($demand->generation_provider);
         $this->assertSame(10, $demand->bank_selected_count);
         $this->assertSame(0, $demand->generated_count);
+        $this->assertDatabaseCount('practice_question_candidates', 0);
     }
 
     public function test_native_assessment_gets_bank_grading_context_without_exposing_answer_in_snapshot(): void
