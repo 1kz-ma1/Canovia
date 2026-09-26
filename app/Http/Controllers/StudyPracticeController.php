@@ -18,6 +18,8 @@ use App\Services\PlanOwnershipService;
 use App\Services\PracticeQuestionDemandRecorder;
 use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
+use App\Services\StudyPracticeReliabilityService;
+use App\Services\StudyActivityPolicyService;
 use App\Services\StudyTaskProgressionService;
 use App\Services\TaskEvidenceService;
 use Illuminate\Http\Request;
@@ -35,6 +37,8 @@ class StudyPracticeController extends Controller
         PlanOwnershipService $ownership,
         StudyPracticeOrchestrator $orchestrator,
         StudyTaskProgressionService $progressionService,
+        StudyActivityPolicyService $studyActivityPolicy,
+        StudyPracticeReliabilityService $reliabilityService,
         BehaviorIdentityService $identity,
         FeatureAccessService $featureAccess,
         NativeAiGateway $nativeAi,
@@ -193,6 +197,13 @@ class StudyPracticeController extends Controller
         $generationPrompt = $currentPracticeSession
             ? (string) data_get($currentPracticeSession->provider_payload, 'generation_prompt', data_get($orchestration, 'provider.payload.generation_prompt', ''))
             : (string) data_get($orchestration, 'provider.payload.generation_prompt', '');
+        $studyActivity = $studyActivityPolicy->forPlanTask($plan, $task);
+        $practiceReliability = $reliabilityService->evaluate(
+            $studyActivity,
+            $practiceProvider,
+            $currentPracticeSession,
+            $practiceStrategy,
+        );
         $prepareRequestId = old('prepare_request_id')
             ?: ($currentPracticeSession?->prepare_request_id ?? (string) Str::uuid());
         $draftAnswers = $this->draftAnswersForView($state, $currentPracticeSession);
@@ -230,6 +241,8 @@ class StudyPracticeController extends Controller
             'assessment' => $assessmentForView,
             'nextStep' => $assessmentForView['next_step'] ?? null,
             'studyProgression' => $studyProgression,
+            'studyActivity' => $studyActivity,
+            'practiceReliability' => $practiceReliability,
             'practiceStage' => $practiceStage,
             'currentAttempt' => $currentAttempt,
             'recentAttempts' => $recentAttempts,
