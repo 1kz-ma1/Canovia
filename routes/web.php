@@ -145,6 +145,8 @@ Route::get('/roadmap', [RoadmapController::class, 'index'])->name('roadmap.index
 Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline.index');
 Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
 Route::post('/inbox', [InboxController::class, 'store'])->name('inbox.store');
+Route::post('/inbox/{inboxItem}/suggest', [InboxController::class, 'suggest'])->name('inbox.suggest');
+Route::post('/inbox/{inboxItem}/route', [InboxController::class, 'routeItem'])->name('inbox.route');
 Route::patch('/inbox/{inboxItem}/status', [InboxController::class, 'updateStatus'])->name('inbox.status');
 Route::get('/inbox/{inboxItem}/file', [InboxController::class, 'file'])->name('inbox.file');
 
