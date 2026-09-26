@@ -28,7 +28,7 @@
         $processMessage = $dashboard['process_message'] ?? '続けることで、きっとどこかでつながってる。';
     @endphp
 
-    <div id="behaviorDashboard" class="pk-v18-dashboard space-y-5 md:space-y-6" data-event-url="{{ route('behavior_events.store') }}" data-navigation-url="{{ route('navigation.index') }}" data-work-started="{{ $activeSession ? 1 : 0 }}" data-onboarding-new-user="{{ $dashboard['plan_tabs']->isEmpty() ? '1' : '0' }}">
+    <div id="behaviorDashboard" class="pk-v18-dashboard space-y-5 md:space-y-6" data-guide-target="home-now" data-event-url="{{ route('behavior_events.store') }}" data-navigation-url="{{ route('navigation.index') }}" data-work-started="{{ $activeSession ? 1 : 0 }}" data-onboarding-new-user="{{ $dashboard['plan_tabs']->isEmpty() ? '1' : '0' }}">
         <div class="pk-v22-hero-stage">
             <header class="pk-v18-hero pk-home-heading">
                 <div class="pk-v18-hero-copy">
