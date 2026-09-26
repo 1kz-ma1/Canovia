@@ -1,0 +1,85 @@
+name: V41.9 Practice Supply verify
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'database/**'
+      - 'resources/**'
+      - 'routes/**'
+      - 'config/**'
+      - 'docs/**'
+      - 'tests/**'
+      - '.github/workflows/v419-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - run: php -l app/Http/Controllers/AdminPracticeDemandController.php
+      - run: php -l app/Http/Controllers/AdminDashboardController.php
+      - run: php -l app/Models/PracticeQuestionCandidate.php
+      - run: php -l app/Services/PracticeQuestionCandidateRecorder.php
+      - run: php -l app/Services/PracticeQuestionCandidatePromotionService.php
+      - run: php -l app/Services/QuestionPackImportService.php
+      - run: php -l app/Services/StudyPracticeOrchestrator.php
+      - run: php -l database/migrations/2026_09_26_120000_create_practice_question_candidates_table.php
+      - run: php -l routes/web.php
+      - run: php artisan view:cache
+      - name: Focused regression
+        run: >
+          php artisan test
+          tests/Feature/PracticeDemandCandidatesV419Test.php
+          tests/Feature/HybridQuestionAssemblyV4182Test.php
+          tests/Feature/NativeAiPracticeV418Test.php
+          tests/Feature/QuestionBankV402Test.php
+          tests/Feature/ApQuestionPackV403Test.php
+          tests/Feature/AdminPremiumExperienceV417Test.php
+          tests/Feature/StudyPracticeCalibrationV414Test.php
+
+  full-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - name: Full suite on branch
+        continue-on-error: true
+        run: php artisan test
+
+  full-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - name: Full suite on main
+        continue-on-error: true
+        run: php artisan test
