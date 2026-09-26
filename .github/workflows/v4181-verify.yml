@@ -39,7 +39,6 @@ jobs:
           php artisan test
           tests/Feature/NativeAiPracticeV418Test.php
           tests/Feature/StudyPracticeCalibrationV414Test.php
-          tests/Feature/StudyPracticeToolV392Test.php
           tests/Feature/StudyPracticeLearningLoopV393Test.php
 
   full-branch:
