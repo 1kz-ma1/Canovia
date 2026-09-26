@@ -121,6 +121,7 @@ class InboxFoundationV4113Test extends TestCase
 
         WorkSession::create([
             'actor_token' => $actorToken,
+            'browser_session_id' => 'inbox-foundation-test',
             'plan_id' => $plan->id,
             'task_id' => $task->id,
             'status' => 'completed',
