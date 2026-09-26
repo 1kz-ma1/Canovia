@@ -99,6 +99,122 @@
             </section>
         @endif
 
+        <section class="page-card border-violet-300/20 p-5 sm:p-6">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-300">MATERIAL → CANDIDATE</p>
+                    <h2 class="mt-1 text-lg font-black text-slate-50">教材からRecall候補を作る</h2>
+                    <p class="mt-2 max-w-3xl text-xs leading-5 text-slate-500">参考書の写真・スクリーンショット・PDF・コピーした本文をNative AIで読み取り、まずCandidateとして隔離します。確認するまでDeckには入りません。</p>
+                </div>
+                @if (! $canGenerateRecallCandidates)
+                    <span class="badge badge-slate">Native AI利用時のみ</span>
+                @endif
+            </div>
+
+            @if ($canGenerateRecallCandidates)
+                <form method="POST" action="{{ route('plans.tasks.study_recall.candidates.extract', [$plan, $task]) }}" enctype="multipart/form-data" class="mt-4 grid gap-4 lg:grid-cols-2" data-mutation-once>
+                    @csrf
+                    <div class="rounded-xl border border-white/8 bg-slate-950/20 p-4">
+                        <label class="text-xs font-bold text-slate-300" for="recall-source-file">画像 / PDF</label>
+                        <input id="recall-source-file" type="file" name="source_file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" class="input-field mt-2 w-full">
+                        <p class="mt-2 text-[10px] leading-4 text-slate-600">最大10MB。参考書は必要なページだけ撮影・PDF化すると、抽出精度とコストの両方を抑えられます。</p>
+                    </div>
+                    <div class="rounded-xl border border-white/8 bg-slate-950/20 p-4">
+                        <label class="text-xs font-bold text-slate-300" for="recall-source-text">または本文を貼り付け</label>
+                        <textarea id="recall-source-text" name="source_text" rows="5" class="input-field mt-2 w-full" placeholder="教材の本文・単語一覧・用語解説など">{{ old('source_text') }}</textarea>
+                    </div>
+                    @error('source_file')
+                        <p class="text-xs text-rose-300 lg:col-span-2">{{ $message }}</p>
+                    @enderror
+                    @error('source_text')
+                        <p class="text-xs text-rose-300 lg:col-span-2">{{ $message }}</p>
+                    @enderror
+                    <div class="lg:col-span-2">
+                        <button type="submit" class="btn-primary">候補を抽出</button>
+                    </div>
+                </form>
+            @else
+                <p class="mt-4 text-sm leading-6 text-slate-400">Recall自体は手動カードで利用できます。教材からの自動抽出はAutomatic AI Executionが利用できる場合に表示されます。</p>
+            @endif
+
+            @if ($recallSources->isNotEmpty())
+                <details class="mt-4 rounded-xl border border-white/8 bg-white/[0.02] p-3">
+                    <summary class="cursor-pointer text-xs font-bold text-slate-300">最近取り込んだ教材</summary>
+                    <div class="mt-3 grid gap-2">
+                        @foreach ($recallSources as $source)
+                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/6 bg-slate-950/20 px-3 py-2">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-200">{{ $source->original_name ?: $source->sourceLabel() }}</p>
+                                    <p class="mt-1 text-[10px] text-slate-600">{{ $source->sourceLabel() }} · {{ $source->status }} · 新規候補 {{ (int) $source->candidate_count }}件</p>
+                                </div>
+                                @if ($source->storage_path)
+                                    <a href="{{ route('plans.tasks.study_recall.sources.file', [$plan, $task, $source]) }}" target="_blank" class="text-xs font-bold text-violet-200 hover:text-violet-100">元教材を確認</a>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </details>
+            @endif
+        </section>
+
+        @if ($recallCandidates->isNotEmpty())
+            <section class="page-card border-amber-300/20 p-5 sm:p-6">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">CANDIDATE REVIEW</p>
+                    <h2 class="mt-1 text-lg font-black text-slate-50">Deckへ入れる前に確認</h2>
+                    <p class="mt-2 max-w-3xl text-xs leading-5 text-slate-500">AI抽出結果は正解扱いしません。表・裏を必要なら修正し、採用する候補だけチェックしてください。</p>
+                </div>
+
+                @error('candidates')
+                    <p class="mt-3 text-xs text-rose-300">{{ $message }}</p>
+                @enderror
+
+                <form method="POST" action="{{ route('plans.tasks.study_recall.candidates.review', [$plan, $task]) }}" class="mt-4 space-y-3" data-mutation-once>
+                    @csrf
+                    @foreach ($recallCandidates as $candidate)
+                        <div class="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <label class="flex items-center gap-2 text-xs font-bold text-slate-200">
+                                    <input type="checkbox" name="candidates[{{ $candidate->id }}][selected]" value="1" checked>
+                                    Candidate #{{ $candidate->id }}
+                                </label>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="badge badge-slate">根拠 {{ (int) $candidate->confidence }}/100</span>
+                                    <span class="badge badge-slate">{{ $candidate->source?->sourceLabel() ?? '教材' }}</span>
+                                </div>
+                            </div>
+
+                            @if ($candidate->source_excerpt)
+                                <blockquote class="mt-3 rounded-xl border border-violet-300/10 bg-violet-300/[0.025] px-3 py-2 text-[11px] leading-5 text-slate-400">
+                                    根拠: {{ $candidate->source_excerpt }}
+                                </blockquote>
+                            @endif
+
+                            <div class="mt-3 grid gap-3 lg:grid-cols-2">
+                                <div>
+                                    <label class="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">FRONT</label>
+                                    <textarea name="candidates[{{ $candidate->id }}][prompt]" rows="3" class="input-field mt-1 w-full">{{ $candidate->prompt }}</textarea>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">BACK</label>
+                                    <textarea name="candidates[{{ $candidate->id }}][answer]" rows="3" class="input-field mt-1 w-full">{{ $candidate->answer }}</textarea>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">NOTE</label>
+                                <textarea name="candidates[{{ $candidate->id }}][note]" rows="2" class="input-field mt-1 w-full">{{ $candidate->note }}</textarea>
+                            </div>
+                        </div>
+                    @endforeach
+
+                    <div class="flex flex-wrap gap-2">
+                        <button type="submit" name="decision" value="promote" class="btn-primary">選択した候補をDeckへ追加</button>
+                        <button type="submit" name="decision" value="reject" class="btn-secondary">選択した候補を見送る</button>
+                    </div>
+                </form>
+            </section>
+        @endif
+
         <section class="page-card p-5 sm:p-6">
             <div>
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-300">ADD CARDS</p>

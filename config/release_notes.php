@@ -2,6 +2,22 @@
 
 return [
     [
+        'version' => 'v41.12',
+        'date' => '2026-09-26',
+        'title' => '教材からRecallカードを、安全に作る',
+        'summary' => '参考書の写真・スクリーンショット・PDF・貼り付けテキストをNative AIで読み取り、Recallカード候補を作れるようにしました。AI出力は直接Deckへ入れず、根拠と信頼度を見ながら人が編集・選択した候補だけを追加します。',
+        'highlights' => [
+            '画像・PDFはprivate storageへ保存し、所有権チェック付きの経路からだけ元教材を確認できます。',
+            'Responses APIへ画像はinput_image、PDFはinput_fileとして渡し、既存のtext-only Native AI呼び出しはそのまま維持します。',
+            'AIは最大30件のCandidateを生成し、front / back / note / tags / source excerpt / confidenceを保持します。',
+            'Candidateはpendingで隔離され、AIが自動でRecall Deckへ追加する経路はありません。',
+            'Review画面でfront・back・noteを修正し、選択したCandidateだけ一括PromoteまたはRejectできます。',
+            'Promote時もDeck側のfingerprintを再計算し、既存カードと同一なら重複作成せず再利用します。',
+            'Recall本体と手動カード追加はFreeでも成立し、教材からの自動抽出だけAutomatic AI Execution配下に置きます。',
+        ],
+        'tip' => '参考書全体を一度に渡すより、覚えたいページだけに絞ると候補品質とAPIコストの両方を改善できます。',
+    ],
+    [
         'version' => 'v41.11',
         'date' => '2026-09-26',
         'title' => '単語・用語学習を、AI問題生成ではなくRecallへ',

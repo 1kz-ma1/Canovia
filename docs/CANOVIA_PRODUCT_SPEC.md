@@ -1,8 +1,8 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-26 / V41.11 Recall Learning Loop
+更新基準: 2026-09-26 / V41.12 Recall Candidate Import
 
-V41.8〜V41.10のNative AI Practice / Practice Demand / Adaptive Learning Flowを維持しつつ、V41.11ではStudy Activity PolicyのRecallを永続学習ループへ接続する。単語・用語学習は問題生成へ寄せず、想起・自己評価・間隔調整・Evidence記録で進める。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md)、[V41.9仕様](V41.9_PRACTICE_DEMAND_CANDIDATES.md)、[V41.10仕様](V41.10_ADAPTIVE_LEARNING_FLOW.md)、[V41.11仕様](V41.11_RECALL_LEARNING_LOOP.md) を参照。
+V41.8〜V41.11のNative AI Practice / Adaptive Learning Flow / Recall Learning Loopを維持しつつ、V41.12では参考書写真・スクリーンショット・PDF・貼り付けテキストからRecall Candidateを作り、人が確認した候補だけDeckへ昇格できる安全な取り込みを追加する。詳細は [V41.10仕様](V41.10_ADAPTIVE_LEARNING_FLOW.md)、[V41.11仕様](V41.11_RECALL_LEARNING_LOOP.md)、[V41.12仕様](V41.12_RECALL_CANDIDATE_IMPORT.md) を参照。
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -95,6 +95,9 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - AI Practice Reliability（出題内容 / 採点 / Coverage / 学習方法適合度）の視覚化
 - Recall Learning Loop（Task Deck / Again-Hard-Good-Easy / spaced repetition / Task Evidence）
 - Recallカード一括追加・重複防止・review idempotency・定着候補表示
+- Recall Material Import（画像 / PDF / text → pending Candidate → Human Review → Deck）
+- Recall Candidateのsource excerpt / confidence / private source provenance / batch promote・reject
+- Native AI Responses APIのimage / PDF input対応（既存text-only caller互換）
 - Native AI Run usage history（provider / model / AI Capacity / token usage / status）
 
 ### Next
@@ -109,7 +112,8 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - Roadmap FeatureとRelease Notesの明示的な紐付け
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
-- Resource / PDF / screenshotからRecall Candidateを生成する安全な取り込み
+- failed Recall Sourceの再抽出UI・複数ページbatch ingest
+- Plan Resourceからの安全なRecall material ingest
 - Recall成績をTask progressionへ使うPolicy
 - Listening / Dictation / Shadowing等のStudy Activity拡張
 - Native AI usage historyを使ったquota / cost policy

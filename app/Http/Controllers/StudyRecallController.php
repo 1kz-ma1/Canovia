@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EvidenceSource;
+use App\Enums\FeatureKey;
 use App\Models\Plan;
+use App\Models\StudyRecallCandidate;
 use App\Models\StudyRecallItem;
+use App\Models\StudyRecallSource;
 use App\Models\Task;
 use App\Services\BehaviorIdentityService;
+use App\Services\FeatureAccessService;
+use App\Services\NativeAiGateway;
 use App\Services\PlanOwnershipService;
 use App\Services\StudyRecallSchedulerService;
 use App\Services\TaskEvidenceService;
@@ -22,6 +27,8 @@ class StudyRecallController extends Controller
         Plan $plan,
         Task $task,
         PlanOwnershipService $ownership,
+        FeatureAccessService $featureAccess,
+        NativeAiGateway $nativeAi,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
 
@@ -57,6 +64,27 @@ class StudyRecallController extends Controller
                 ->latest('reviewed_at')
                 ->take(8)
                 ->get(),
+            'recallCandidates' => StudyRecallCandidate::query()
+                ->with('source')
+                ->where('plan_id', $plan->id)
+                ->where('task_id', $task->id)
+                ->where('status', 'pending')
+                ->orderByDesc('confidence')
+                ->orderBy('id')
+                ->take(100)
+                ->get(),
+            'recallSources' => StudyRecallSource::query()
+                ->where('plan_id', $plan->id)
+                ->where('task_id', $task->id)
+                ->latest('id')
+                ->take(8)
+                ->get(),
+            'canGenerateRecallCandidates' => $nativeAi->isConfigured()
+                && $featureAccess->canUse(
+                    $request->user(),
+                    FeatureKey::AutomaticAiExecution,
+                    ['plan_id' => (int) $plan->id, 'task_id' => (int) $task->id],
+                ),
         ]);
     }
 
