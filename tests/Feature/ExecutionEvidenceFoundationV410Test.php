@@ -122,7 +122,7 @@ class ExecutionEvidenceFoundationV410Test extends TestCase
         $this->assertStringContainsString('$surfaceModules', $view);
         $this->assertStringContainsString('CURRENT TASK', $currentTask);
         $this->assertStringContainsString('PLAN TOOLS', $planTools);
-        $this->assertStringContainsString('集中タイマー（任意）', $currentTask);
+        $this->assertStringContainsString('集中タイマーで進める', $currentTask);
         $this->assertStringContainsString('時間は目安', $currentTask);
         $this->assertStringNotContainsString("'roadmapMode' => 'dashboard'", $view);
         $this->assertStringContainsString("route('roadmap.index', ['plan_id' =>", $planTools);

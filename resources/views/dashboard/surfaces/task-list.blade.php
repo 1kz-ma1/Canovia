@@ -2,7 +2,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <p class="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300">TASKS</p>
-            <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">このPlanの現在地</h2>
+            <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">このあと</h2>
         </div>
         <a href="{{ route('plans.show', $item['plan']) }}" class="text-xs font-bold text-sky-300">全Taskを見る →</a>
     </div>
@@ -13,7 +13,7 @@
                 <div class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
                         <p class="truncate text-sm font-bold text-slate-100">
-                            @if ($hubCurrentTask && (int) $hubTask->id === (int) $hubCurrentTask->id)<span class="mr-1 text-cyan-300">●</span>@else<span class="mr-1 text-slate-600">○</span>@endif
+                            <span class="mr-1 text-slate-600">○</span>
                             {{ $hubTask->title }}
                         </p>
                         <p class="mt-1 text-[11px] text-slate-500">進捗 {{ (int) $hubTask->progress_percent }}% · 残り目安 {{ (int) ($hubTask->remaining_minutes ?? 0) }}分</p>

@@ -77,7 +77,7 @@
                 </div>
             </section>
         @else
-            @if ($guidanceDeck->isNotEmpty())
+            @if (! $activeSession && $guidanceDeck->isNotEmpty())
                 <section class="pk-v18-recommendation pk-v395-guidance plan-identity-shell" data-plan-accent="{{ data_get($primaryGuidance, 'plan')?->accentKey() ?? 'sky' }}">
                     <div class="pk-v18-recommendation-titlebar">
                         <div class="flex items-center gap-2">
@@ -107,10 +107,17 @@
                                     <span class="badge {{ $guidanceIndex === 0 ? 'badge-green' : 'badge-slate' }}">{{ $guidanceIndex === 0 ? '最優先' : 'Plan '.($guidanceIndex + 1) }}</span>
                                 </div>
 
-                                <p class="mt-2 text-xs text-slate-400">{{ $guidanceTask->status === 'doing' ? '進行中' : '未着手' }} · 目安 {{ $adaptive?->recommendedMinutes ?? (int) ($guidanceTask->remaining_minutes ?? 0) }}分</p>
+                                <p class="mt-2 text-xs text-slate-400">
+                                    {{ $guidanceTask->status === 'doing' ? '進行中' : '未着手' }}
+                                    @if (($tool['id'] ?? null) === 'timer')
+                                        · 目安 {{ $adaptive?->recommendedMinutes ?? (int) ($guidanceTask->remaining_minutes ?? 0) }}分
+                                    @endif
+                                </p>
 
                                 <div class="mt-3 flex flex-wrap gap-2">
-                                    @if (($tool['id'] ?? null) === 'ai_practice')
+                                    @if (($tool['id'] ?? null) === 'study_activity')
+                                        <a href="{{ route('plans.tasks.study_activity.show', [$guidancePlan, $guidanceTask]) }}" class="btn-primary flex-1 px-3 py-2 text-xs">{{ data_get($tool, 'activity.action_label', '学習方法で進める') }}</a>
+                                    @elseif (($tool['id'] ?? null) === 'ai_practice')
                                         <a href="{{ route('plans.tasks.study_practice.show', [$guidancePlan, $guidanceTask]) }}" class="btn-primary flex-1 px-3 py-2 text-xs">AI演習で進める</a>
                                     @elseif (($tool['id'] ?? null) === 'career_workspace')
                                         <a href="{{ route('plans.career.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">Careerで進める</a>
@@ -118,22 +125,18 @@
                                         <a href="{{ route('plans.artifacts.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">制作ファイルを開く</a>
                                     @elseif (($tool['id'] ?? null) === 'resources')
                                         <a href="{{ route('plans.resources.index', $guidancePlan) }}" class="btn-primary flex-1 px-3 py-2 text-xs">関連資料を開く</a>
-                                    @endif
-
-                                    @if (! $tool)
+                                    @elseif (($tool['id'] ?? null) === 'timer')
+                                        <form method="POST" action="{{ route('work_sessions.start') }}" class="flex-1" data-work-start-form>
+                                            @csrf
+                                            <input type="hidden" name="task_id" value="{{ $guidanceTask->id }}">
+                                            <input type="hidden" name="source" value="dashboard">
+                                            <button type="submit" class="btn-primary w-full px-3 py-2 text-xs" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>◷ 集中タイマーで進める</button>
+                                        </form>
+                                    @else
                                         <button type="button" class="btn-primary flex-1 px-3 py-2 text-xs" data-open-dashboard-tab="plan-{{ $guidancePlan->id }}" @if($guidanceIndex === 0) data-onboarding-target="today-start" @endif>
                                             次のActionを見る
                                         </button>
                                     @endif
-
-                                    <form method="POST" action="{{ route('work_sessions.start') }}" class="flex-1" data-work-start-form>
-                                        @csrf
-                                        <input type="hidden" name="task_id" value="{{ $guidanceTask->id }}">
-                                        <input type="hidden" name="source" value="dashboard">
-                                        <button type="submit" class="btn-secondary w-full px-3 py-2 text-xs">
-                                            ◷ 集中タイマー（任意）
-                                        </button>
-                                    </form>
                                 </div>
                                 <details class="pk-action-details mt-3" data-guidance-reasons>
                                     <summary>なぜこの行動？・進め方</summary>
@@ -402,7 +405,6 @@
                 $recentEvidence = collect($item['recent_evidence'] ?? []);
                 $categoryProfile = $item['category_profile'];
                 $surfaceModules = collect($item['surface_modules'] ?? []);
-                $timerTool = $executionTools->first(fn ($tool) => ($tool['id'] ?? null) === 'timer');
                 $activeTaskCount = $item['plan']->tasks
                     ->filter(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true) && (int) $task->progress_percent < 100)
                     ->count();

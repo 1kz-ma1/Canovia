@@ -29,7 +29,7 @@ class ActionFirstV416Test extends TestCase
         $this->assertSame(1, $xpath->query('//details[@data-home-collaboration]/preceding::section[contains(@class,"pk-v395-guidance")]')->length);
         $this->assertSame(1, $xpath->query('//details[@data-current-task-details and not(@open)]')->length);
         $this->assertSame(0, $xpath->query('//details[@data-current-task-details]//a | //details[@data-current-task-details]//form')->length);
-        $this->assertSame(1, $xpath->query('//*[@data-plan-hub-current]//form[@data-work-start-form and not(ancestor::details)]')->length);
+        $this->assertSame(0, $xpath->query('//*[@data-plan-hub-current]//form[@data-work-start-form and not(ancestor::details)]')->length);
         foreach (['study_focus', 'task_list', 'recent_activity'] as $id) {
             $this->assertSame(1, $xpath->query('//details[@data-surface-disclosure="'.$id.'" and not(@open)]')->length);
         }

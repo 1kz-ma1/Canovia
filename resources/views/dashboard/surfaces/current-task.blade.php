@@ -9,7 +9,9 @@
             <p class="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300">CURRENT TASK</p>
             <h2 class="mt-1 text-base font-black text-slate-100 sm:text-lg">次に進めること</h2>
         </div>
-        <span class="badge badge-slate">時間は目安</span>
+        @if (($primaryExecutionTool['id'] ?? null) === 'timer')
+            <span class="badge badge-slate">時間は目安</span>
+        @endif
     </div>
 
     @if ($hubCurrentTask)
@@ -41,17 +43,15 @@
                     <a href="{{ route('plans.artifacts.index', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">◇ 制作ファイルを開く</a>
                 @elseif (($primaryExecutionTool['id'] ?? null) === 'resources')
                     <a href="{{ route('plans.resources.index', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">⌘ 関連資料を開く</a>
-                @else
-                    <a href="{{ route('plans.show', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">Taskを確認</a>
-                @endif
-
-                @if ($planCanEdit && $timerTool)
+                @elseif (($primaryExecutionTool['id'] ?? null) === 'timer')
                     <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
                         @csrf
                         <input type="hidden" name="task_id" value="{{ $hubCurrentTask->id }}">
                         <input type="hidden" name="source" value="dashboard">
-                        <button type="submit" class="btn-secondary px-3 py-2 text-xs">◷ 集中タイマー（任意）</button>
+                        <button type="submit" class="btn-primary px-3 py-2 text-xs">◷ 集中タイマーで進める</button>
                     </form>
+                @else
+                    <a href="{{ route('plans.show', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">Taskを確認</a>
                 @endif
             </div>
 

@@ -20,6 +20,7 @@ class DashboardPresentationService
         private readonly DashboardGuidanceService $guidanceService,
         private readonly RoadmapService $roadmapService,
         private readonly PlanToolService $toolService,
+        private readonly ExecutionActionPolicyService $executionActions,
         private readonly PlanCategoryProfileService $categoryProfiles,
         private readonly PlanSituationResolver $situationResolver,
         private readonly PlanSurfaceEngine $surfaceEngine,
@@ -90,7 +91,9 @@ class DashboardPresentationService
             }
 
             $hubTasks = $plan->tasks
-                ->filter(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true) && (int) $task->progress_percent < 100)
+                ->filter(fn ($task) => ! in_array($task->status, ['done', 'cancelled'], true)
+                    && (int) $task->progress_percent < 100
+                    && (int) $task->id !== (int) ($currentTask?->id ?? 0))
                 ->sort(function ($left, $right) use ($currentTask) {
                     $current = ((int) $left->id === (int) ($currentTask?->id ?? 0) ? 0 : 1)
                         <=> ((int) $right->id === (int) ($currentTask?->id ?? 0) ? 0 : 1);
@@ -110,23 +113,13 @@ class DashboardPresentationService
 
                     return (int) ($left->sort_order ?? PHP_INT_MAX) <=> (int) ($right->sort_order ?? PHP_INT_MAX);
                 })
-                ->take(4)
+                ->take(3)
                 ->values();
 
             $executionTools = $currentTask && $canEdit
                 ? collect($this->toolService->forTask($plan, $currentTask, true, $actor))
                 : collect();
-            $primaryExecutionTool = $executionTools
-                ->filter(fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && (bool) ($tool['recommended'] ?? false))
-                ->sortBy(fn (array $tool) => match ($tool['id'] ?? null) {
-                    'study_activity' => 0,
-                    'ai_practice' => 1,
-                    'career_workspace' => 2,
-                    'artifacts' => 3,
-                    'resources' => 4,
-                    default => 9,
-                })
-                ->first();
+            $primaryExecutionTool = $this->executionActions->primary($executionTools);
 
             $recentEvidenceModels = $currentTask
                 ? $currentTask->evidences()->take(8)->get()
