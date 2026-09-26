@@ -84,6 +84,7 @@ class CanoviaGuideV405Test extends TestCase
     {
         $files = [
             'views/dashboard/index.blade.php',
+            'views/dashboard/surfaces/current-task.blade.php',
             'views/plans/create.blade.php',
             'views/inbox/index.blade.php',
             'views/navigation/index.blade.php',
