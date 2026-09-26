@@ -2,11 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FeatureKey;
+use App\Exceptions\NativeAiExecutionException;
 use App\Models\CareerCapture;
+use App\Models\FutureMemo;
 use App\Models\InboxItem;
 use App\Models\StudyRecallCandidate;
+use App\Models\Task;
 use App\Models\WorkSession;
 use App\Services\BehaviorIdentityService;
+use App\Services\FeatureAccessService;
+use App\Services\InboxIntelligenceService;
+use App\Services\InboxRoutingService;
+use App\Services\NativeAiGateway;
 use App\Services\PlanOwnershipService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -20,11 +28,13 @@ class InboxController extends Controller
         Request $request,
         BehaviorIdentityService $identity,
         PlanOwnershipService $ownership,
+        FeatureAccessService $featureAccess,
+        NativeAiGateway $nativeAi,
     ) {
         $actorToken = $identity->resolve($request);
         $userId = $request->user()?->id;
 
-        $editablePlans = $ownership->ownedPlans($request)
+        $editablePlans = $ownership->ownedPlans($request, ['tasks'])
             ->filter(fn ($plan) => $ownership->canEdit($request, $plan))
             ->values();
         $editablePlanIds = $editablePlans->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -94,6 +104,11 @@ class InboxController extends Controller
                 + $recallCandidates->count()
                 + $careerCaptures->count()
                 + $pendingPlanUpdates->count(),
+            'canUseInboxAi' => $nativeAi->isConfigured()
+                && $featureAccess->canUse($request->user(), FeatureKey::AutomaticAiExecution),
+            'routingDestinations' => InboxIntelligenceService::DESTINATIONS,
+            'futureMemoKinds' => FutureMemo::KINDS,
+            'futureMemoCategories' => FutureMemo::CATEGORIES,
         ]);
     }
 
@@ -176,6 +191,98 @@ class InboxController extends Controller
         return redirect()
             ->route('inbox.index')
             ->with('success', 'Inboxへ追加しました。整理先はあとから決められます。');
+    }
+
+    public function suggest(
+        Request $request,
+        InboxItem $inboxItem,
+        BehaviorIdentityService $identity,
+        FeatureAccessService $featureAccess,
+        InboxIntelligenceService $intelligence,
+    ) {
+        $this->authorizeItem($request, $inboxItem, $identity);
+        $featureAccess->authorizeUse($request->user(), FeatureKey::AutomaticAiExecution);
+
+        try {
+            $suggestion = $intelligence->suggest($inboxItem, $request->user()?->id);
+        } catch (NativeAiExecutionException $exception) {
+            return redirect()
+                ->route('inbox.index')
+                ->with('status', $exception->getMessage());
+        }
+
+        $metadata = is_array($inboxItem->metadata) ? $inboxItem->metadata : [];
+        $metadata['routing_suggestion'] = $suggestion;
+
+        $inboxItem->update([
+            'status' => 'review',
+            'metadata' => $metadata,
+        ]);
+
+        return redirect()
+            ->route('inbox.index')
+            ->with('success', '行き先候補を作りました。確認してから確定してください。');
+    }
+
+    public function routeItem(
+        Request $request,
+        InboxItem $inboxItem,
+        BehaviorIdentityService $identity,
+        PlanOwnershipService $ownership,
+        FeatureAccessService $featureAccess,
+        InboxRoutingService $routing,
+    ) {
+        $this->authorizeItem($request, $inboxItem, $identity);
+
+        $validated = $request->validate([
+            'destination' => ['required', 'in:'.implode(',', array_keys(InboxIntelligenceService::DESTINATIONS))],
+            'plan_id' => ['nullable', 'integer'],
+            'task_id' => ['nullable', 'integer'],
+            'future_memo_kind' => ['nullable', 'in:'.implode(',', array_keys(FutureMemo::KINDS))],
+            'future_memo_category' => ['nullable', 'in:'.implode(',', array_keys(FutureMemo::CATEGORIES))],
+        ]);
+
+        $editablePlans = $ownership->ownedPlans($request, ['tasks'])
+            ->filter(fn ($plan) => $ownership->canEdit($request, $plan))
+            ->values();
+
+        $plan = ! empty($validated['plan_id'])
+            ? $editablePlans->firstWhere('id', (int) $validated['plan_id'])
+            : null;
+
+        if (! empty($validated['plan_id']) && ! $plan) {
+            throw ValidationException::withMessages(['plan_id' => 'このPlanへ整理する権限がありません。']);
+        }
+
+        $task = null;
+        if (! empty($validated['task_id'])) {
+            $task = Task::query()->find((int) $validated['task_id']);
+            if (! $task || ! $plan || (int) $task->plan_id !== (int) $plan->id) {
+                throw ValidationException::withMessages(['task_id' => '選択したPlanのTaskを選んでください。']);
+            }
+            $ownership->authorizeTask($request, $task);
+        }
+
+        if (($validated['destination'] ?? null) === 'recall_material') {
+            $featureAccess->authorizeUse(
+                $request->user(),
+                FeatureKey::AutomaticAiExecution,
+                ['plan_id' => $plan?->id, 'task_id' => $task?->id],
+            );
+        }
+
+        $result = $routing->route(
+            $request,
+            $inboxItem,
+            $validated,
+            $plan,
+            $task,
+            $identity->resolve($request),
+        );
+
+        return redirect()
+            ->route('inbox.index')
+            ->with('success', $result['message']);
     }
 
     public function updateStatus(
