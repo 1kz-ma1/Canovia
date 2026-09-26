@@ -119,10 +119,11 @@ class DashboardPresentationService
             $primaryExecutionTool = $executionTools
                 ->filter(fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && (bool) ($tool['recommended'] ?? false))
                 ->sortBy(fn (array $tool) => match ($tool['id'] ?? null) {
-                    'ai_practice' => 0,
-                    'career_workspace' => 1,
-                    'artifacts' => 2,
-                    'resources' => 3,
+                    'study_activity' => 0,
+                    'ai_practice' => 1,
+                    'career_workspace' => 2,
+                    'artifacts' => 3,
+                    'resources' => 4,
                     default => 9,
                 })
                 ->first();
