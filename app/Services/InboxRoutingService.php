@@ -9,7 +9,8 @@ use App\Models\PlanResource;
 use App\Models\StudyRecallSource;
 use App\Models\Task;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class InboxRoutingService
@@ -36,8 +37,7 @@ class InboxRoutingService
     ): array {
         $destination = (string) $data['destination'];
 
-        return DB::transaction(function () use ($request, $item, $data, $plan, $task, $actorToken, $destination) {
-            $message = match ($destination) {
+        $message = match ($destination) {
                 'future_memo' => $this->toFutureMemo($request, $item, $data),
                 'career_capture' => $this->toCareerCapture($request, $item, $plan, $actorToken),
                 'recall_material' => $this->toRecall($request, $item, $plan, $task, $actorToken),
@@ -66,8 +66,7 @@ class InboxRoutingService
                 $item->update(['status' => 'new']);
             }
 
-            return ['message' => $message, 'destination' => $destination];
-        });
+        return ['message' => $message, 'destination' => $destination];
     }
 
     private function toFutureMemo(Request $request, InboxItem $item, array $data): string
@@ -104,13 +103,26 @@ class InboxRoutingService
             default => 'manual',
         };
 
+        $screenshotData = null;
+        if ($item->source_type === 'image') {
+            if (($item->byte_size ?? 0) > 3 * 1024 * 1024) {
+                throw ValidationException::withMessages([
+                    'destination' => 'Career Captureへ送るスクリーンショットは3MB以下にしてください。',
+                ]);
+            }
+            if (! $item->storage_path || ! Storage::exists($item->storage_path)) {
+                throw ValidationException::withMessages(['destination' => 'Inbox画像を読み込めませんでした。']);
+            }
+            $screenshotData = base64_encode(Storage::get($item->storage_path));
+        }
+
         $this->careerCaptures->record(
             $plan,
             sourceType: $sourceType,
             sourceUrl: $item->source_url,
-            screenshotPath: $item->source_type === 'image' ? $item->storage_path : null,
             screenshotMime: $item->source_type === 'image' ? $item->mime_type : null,
             screenshotOriginalName: $item->source_type === 'image' ? $item->original_name : null,
+            screenshotData: $screenshotData,
             screenshotByteSize: $item->source_type === 'image' ? $item->byte_size : null,
             rawText: trim((string) $item->content) ?: null,
             userId: $request->user()?->id,
@@ -132,6 +144,22 @@ class InboxRoutingService
             throw ValidationException::withMessages(['plan_id' => 'Recall教材には資格学習Planを選んでください。']);
         }
 
+        if ($item->source_type === 'url') {
+            throw ValidationException::withMessages([
+                'destination' => 'URLだけではRecall教材として抽出しません。教材本文・画像・PDFをInboxへ追加してください。',
+            ]);
+        }
+
+        $recallPath = null;
+        if (in_array($item->source_type, ['image', 'pdf'], true)) {
+            if (! $item->storage_path || ! Storage::exists($item->storage_path)) {
+                throw ValidationException::withMessages(['destination' => 'Inbox教材ファイルを読み込めませんでした。']);
+            }
+            $extension = pathinfo((string) $item->storage_path, PATHINFO_EXTENSION);
+            $recallPath = 'study-recall-sources/'.$plan->id.'/'.$task->id.'/'.Str::uuid().($extension ? '.'.$extension : '');
+            Storage::copy($item->storage_path, $recallPath);
+        }
+
         $source = StudyRecallSource::query()->create([
             'plan_id' => (int) $plan->id,
             'task_id' => (int) $task->id,
@@ -140,10 +168,10 @@ class InboxRoutingService
             'source_type' => in_array($item->source_type, ['image', 'pdf'], true) ? $item->source_type : 'text',
             'original_name' => $item->original_name,
             'mime_type' => $item->mime_type,
-            'storage_path' => in_array($item->source_type, ['image', 'pdf'], true) ? $item->storage_path : null,
+            'storage_path' => $recallPath,
             'source_text' => in_array($item->source_type, ['image', 'pdf'], true)
                 ? null
-                : trim((string) ($item->content ?: $item->source_url)),
+                : trim((string) $item->content),
             'status' => 'pending',
         ]);
 
