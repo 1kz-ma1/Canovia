@@ -321,7 +321,7 @@ JSONのキーと文字列を囲む引用符には半角ダブルクォート（"
     "kind": "practice",
     "label": "DNSレコードの使い分けを確認する",
     "reason": "レコード種別の使い分けに混同が残っているため",
-    "focus_topics": ["DNS"],
+    "focus_topics": ["DNS", "CNAME"],
     "question_count": 5
   }
 }
