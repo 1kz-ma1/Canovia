@@ -194,7 +194,7 @@
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="badge {{ $candidate->status === 'pending' ? 'badge-yellow' : ($candidate->status === 'promoted' ? 'badge-green' : 'badge-slate') }}">{{ $candidate->status }}</span>
+                                    <span class="badge {{ $candidate->status === 'pending' ? 'badge-slate' : ($candidate->status === 'promoted' ? 'badge-green' : 'badge-slate') }}">{{ $candidate->status }}</span>
                                     @if ($candidate->exam_profile_key)
                                         <span class="badge badge-slate">{{ $candidate->exam_profile_key }}</span>
                                     @endif
@@ -242,7 +242,7 @@
                         <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
                             <span class="badge badge-slate">要求 {{ $demand->requested_count }}</span>
                             <span class="badge badge-green">Bank {{ $demand->bank_selected_count }}</span>
-                            <span class="badge badge-yellow">不足 {{ $demand->generated_requested_count }}</span>
+                            <span class="badge badge-slate">不足 {{ $demand->generated_requested_count }}</span>
                             <span class="badge badge-slate">生成 {{ $demand->generated_count }}</span>
                             @foreach (collect($demand->focus_topics ?? [])->take(6) as $topic)
                                 <span class="badge badge-slate">{{ $topic }}</span>
