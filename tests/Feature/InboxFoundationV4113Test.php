@@ -165,12 +165,11 @@ class InboxFoundationV4113Test extends TestCase
         $this->assertSame('processed', $item->fresh()->status);
         $this->assertNotNull($item->fresh()->processed_at);
 
-        $response = $this->actingAs($user)->get(route('inbox.index'))->assertOk();
-        $this->assertStringNotContainsString(
-            'まだ整理していないもの</h2>',
-            str_replace(["\n", "\r"], '', $response->getContent())
-        ) === false;
-        $response->assertSee('最近整理したInbox Item');
+        $this->actingAs($user)
+            ->get(route('inbox.index'))
+            ->assertOk()
+            ->assertSee('未整理 0件')
+            ->assertSee('最近整理したInbox Item');
     }
 
     public function test_main_navigation_uses_inbox_while_legacy_today_route_remains_available(): void
