@@ -194,11 +194,15 @@ class PlanController extends Controller
         $planTools = $toolFocusTask
             ? ($taskTools[(int) $toolFocusTask->id] ?? [])
             : [];
+        $studyActivityTask = $plan->tasks->first(function ($task) use ($taskTools) {
+            return collect($taskTools[(int) $task->id] ?? [])
+                ->contains(fn (array $tool) => ($tool['id'] ?? null) === 'study_activity' && (bool) ($tool['recommended'] ?? false));
+        });
         $aiPracticeTask = $plan->tasks->first(function ($task) use ($taskTools) {
             return collect($taskTools[(int) $task->id] ?? [])
-                ->contains(fn (array $tool) => ($tool['id'] ?? null) === 'ai_practice');
+                ->contains(fn (array $tool) => ($tool['id'] ?? null) === 'ai_practice' && (bool) ($tool['recommended'] ?? false));
         });
-        $studyToolCategoryMismatch = ! $aiPracticeTask
+        $studyToolCategoryMismatch = ! $studyActivityTask && ! $aiPracticeTask
             && trim((string) $plan->category) !== '資格学習'
             && $toolService->looksLikeStudyPlan($plan);
 
@@ -216,6 +220,7 @@ class PlanController extends Controller
             'taskTools',
             'toolFocusTask',
             'planTools',
+            'studyActivityTask',
             'aiPracticeTask',
             'studyToolCategoryMismatch',
             'priorityEvaluation',
