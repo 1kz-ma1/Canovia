@@ -38,6 +38,10 @@ class StudyPracticeCalibrationV414Test extends TestCase
 
         $this->assertStringContainsString('AP科目A 本番準拠', $prompt);
         $this->assertStringContainsString('原則はsingle_choiceの4択', $prompt);
+        $this->assertStringContainsString('work_inputを必ず付け', $prompt);
+        $this->assertStringContainsString('work_input=reasoning / calculation', $prompt);
+        $this->assertStringContainsString('計算過程', $prompt);
+        $this->assertStringContainsString('考え方・判断理由', $prompt);
         $this->assertStringContainsString('面倒な算術だけで上げない', $prompt);
         $this->assertStringContainsString('不要に桁数の多い値や割り切れない値', $prompt);
     }
