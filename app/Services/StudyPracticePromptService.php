@@ -81,7 +81,10 @@ class StudyPracticePromptService
                 '- 数値は、考え方が正しければ過度な筆算をせず選択肢を判別できる値を優先する。',
                 '- 小数・百分率を使う場合も、不要に桁数の多い値や割り切れない値を並べて計算精度だけを試さない。',
                 '- 難易度を上げる場合は、条件判断・概念の組合せ・式の選択・単位の理解などで上げ、面倒な算術だけで上げない。',
-                '- reasoning欄は診断価値がある場合だけ任意で追加し、本番形式のanswer自体は4択を維持する。',
+                '- 本番形式のanswer自体は4択を維持する。',
+                '- ただし、計算式・途中値・単位変換が理解診断に重要な問題はwork_inputをcalculationにする。',
+                '- 条件整理・複数概念の比較・根拠判断が理解診断に重要な問題はwork_inputをreasoningにする。',
+                '- 単純な用語・定義・知識再生だけで十分な問題はwork_inputをnoneにする。',
             ])
             : implode("\n", [
                 '- 資格試験として不必要な算術負荷を避け、理解・判断を測る難易度にする。',
@@ -152,7 +155,15 @@ task_id: {$task->id}
 JSONのキーと文字列を囲む引用符には半角ダブルクォート（"）を使い、文字列内で"を使う場合は\\\"としてエスケープしてください。
 末尾カンマ、コメント、スマートクォート（“ ”）は使わないでください。
 flow、plan_id、task_idは下記から変更しないでください。
-各questionにはresponse_fieldsを1〜4件付けてください。AIは問題に必要な回答欄を自由に組み合わせられます。
+各questionにはwork_inputを必ず付け、none / reasoning / calculation のいずれかにしてください。
+- none: 単純な知識確認・用語・定義など、最終回答だけで十分に理解度を判断できる
+- reasoning: 条件整理、複数概念の比較、アルゴリズム追跡、判断根拠など、考え方を見る価値がある
+- calculation: 式、途中値、単位変換、確率、性能・可用性計算など、計算過程を見る価値がある
+work_input=reasoning / calculation の場合、最終回答がsingle_choiceでもresponse_fieldsにtextareaを1件含めてください。
+reasoningならidはreasoning、labelは「考え方・判断理由」を基本にしてください。
+calculationならidはcalculation_work、labelは「計算過程」を基本にしてください。
+これらのtextareaは学習診断用なのでrequired=falseとし、本番形式の最終回答は別fieldとして維持してください。
+各questionにはresponse_fieldsを1〜4件付けてください。AIは問題に必要な回答欄を組み合わせられます。
 response_fields.typeは single_choice / multiple_choice / number / short_text / textarea のいずれかです。
 - single_choice / multiple_choice: choicesを2〜6件付ける
 - number: 数値回答。{$examProfileLabel}では必要な場合だけ使い、合理的な丸め条件を問題文に明示する
@@ -160,8 +171,8 @@ response_fields.typeは single_choice / multiple_choice / number / short_text / 
 - textarea: 記述問題・説明・計算過程・思考過程など長めの入力
 各fieldには英数字・_・-だけの重複しないid、分かりやすいlabel、requiredを付けてください。
 各fieldには必ずplaceholderを文字列で、choicesを配列で含めてください。placeholderが不要なら""、選択式以外でchoicesが不要なら[]を返してください。
-選択式問題でも、学習効果が高い場合はanswerの選択欄に加えてreasoning用textareaを組み合わせて構いません。
-ただし全問に思考過程を強制せず、誤解や判断過程の分析に価値がある問題で使ってください。
+選択式問題でもwork_inputがreasoning / calculationなら、answerの選択欄に加えて対応するtextareaを必ず付けてください。
+全問に思考過程を付けるのではなく、work_input=noneの問題ではchoice-onlyを許可します。
 旧type / choices形式もCanoviaは互換読込できますが、新しく生成するJSONではresponse_fieldsを使ってください。
 
 {
@@ -178,12 +189,14 @@ response_fields.typeは single_choice / multiple_choice / number / short_text / 
     {
       "id": "q1",
       "prompt": "最も適切なものを選んでください。",
+      "work_input": "reasoning",
       "response_fields": [
         {
           "id": "answer",
           "type": "{$preferredType}",
           "label": "回答",
           "required": true,
+          "placeholder": "",
           "choices": [
             {"id": "A", "label": "選択肢A"},
             {"id": "B", "label": "選択肢B"},
@@ -195,7 +208,9 @@ response_fields.typeは single_choice / multiple_choice / number / short_text / 
           "id": "reasoning",
           "type": "textarea",
           "label": "考え方・判断理由",
-          "required": false
+          "required": false,
+          "placeholder": "選んだ根拠や条件整理を入力",
+          "choices": []
         }
       ]
     }
