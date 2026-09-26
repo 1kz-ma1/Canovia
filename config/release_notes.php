@@ -2,6 +2,23 @@
 
 return [
     [
+        'version' => 'v41.13',
+        'date' => '2026-09-26',
+        'title' => '次の行動は1つに。新しい情報はInboxへ',
+        'summary' => 'Taskに合う実行方法がある場合はそのActionだけをPrimaryにし、TimerはFallbackへ整理しました。あわせてメインナビの「今日」をInboxへ置き換え、テキスト・URL・画像・PDFを分類前のままCanoviaへ渡せる共通入口を追加しました。',
+        'highlights' => [
+            'Study Activity / AI演習 / Career / 制作ファイル / 関連資料をTaskごとのPrimary Actionとして共通Policyで選びます。',
+            '専用ToolがあるTaskでは「集中タイマー（任意）」を並べず、専用Toolがない場合だけTimerをPrimary Fallbackにします。',
+            'Study FocusやTask一覧など、Current Taskと重複していた実行CTA・表示を整理しました。',
+            'メインナビを Home / Inbox / Roadmap / Timeline に変更し、旧「今日」は互換Routeとして残します。',
+            'Inboxはテキスト・URL・画像・スクリーンショット・PDFを、整理先を決める前の状態で保存できます。',
+            'Inboxのファイルはprivate storageへ保存し、本人だけが閲覧できます。',
+            'Recall Candidate・Career Capture・Planへ未反映のWorkSessionをコピーせずInboxから横断確認できます。',
+            'AIによる自動分類はまだ行わず、Step 3でCandidate確認を挟んだ安全な振り分けへ接続します。',
+        ],
+        'tip' => '今やるTaskはホーム、まだ整理先が決まっていない情報はInbox、先を見るならロードマップ、過去を振り返るならタイムライン、という役割分担になりました。',
+    ],
+    [
         'version' => 'v41.12',
         'date' => '2026-09-26',
         'title' => '教材からRecallカードを、安全に作る',
