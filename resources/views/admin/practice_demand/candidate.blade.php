@@ -12,7 +12,7 @@
                     <p class="text-[10px] font-black uppercase tracking-[.18em] text-cyan-300">QUESTION CANDIDATE #{{ $candidate->id }}</p>
                     <div class="mt-2 flex flex-wrap items-center gap-2">
                         <h1 class="text-2xl font-black text-slate-50">AI生成問題をレビュー</h1>
-                        <span class="badge {{ $candidate->status === 'pending' ? 'badge-yellow' : ($candidate->status === 'promoted' ? 'badge-green' : 'badge-slate') }}">{{ $candidate->status }}</span>
+                        <span class="badge {{ $candidate->status === 'pending' ? 'badge-slate' : ($candidate->status === 'promoted' ? 'badge-green' : 'badge-slate') }}">{{ $candidate->status }}</span>
                     </div>
                     <p class="mt-2 text-sm leading-6 text-slate-400">
                         生成結果は候補にすぎません。問題文・選択肢・正答・解説・分類を確認し、利用価値があるものだけDraft Packへ昇格してください。
