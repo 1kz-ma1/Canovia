@@ -29,8 +29,6 @@ final class StudyPracticeNativeAiSchema
                             ],
                             'response_fields' => [
                                 'type' => 'array',
-                                'minItems' => 1,
-                                'maxItems' => 4,
                                 'items' => [
                                     'type' => 'object',
                                     'additionalProperties' => false,
