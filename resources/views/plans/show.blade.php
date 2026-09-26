@@ -66,7 +66,9 @@
 
             <div class="w-full md:w-auto">
                 <div class="flex flex-wrap gap-2">
-                    @if ($aiPracticeTask ?? false)
+                    @if ($studyActivityTask ?? false)
+                        <a href="{{ route('plans.tasks.study_activity.show', [$plan, $studyActivityTask]) }}" class="btn-primary flex-1 md:flex-none">◉ 学習方法</a>
+                    @elseif ($aiPracticeTask ?? false)
                         <a href="{{ route('plans.tasks.study_practice.show', [$plan, $aiPracticeTask]) }}" class="btn-primary flex-1 md:flex-none" data-guide-target="study-practice">✦ AI演習</a>
                     @endif
                     @if (! empty($planTools))
