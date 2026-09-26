@@ -27,7 +27,9 @@
 
     <p class="mt-3 text-sm leading-6 text-slate-300">{{ $studyNextAction ?: ($hubCurrentTask?->next_action_note ?: '演習結果とCurrent Taskを使って、次に確認する範囲を絞ります。') }}</p>
 
-    @if ($hubCurrentTask && ($primaryExecutionTool['id'] ?? null) === 'ai_practice')
+    @if ($hubCurrentTask && ($primaryExecutionTool['id'] ?? null) === 'study_activity')
+        <a href="{{ route('plans.tasks.study_activity.show', [$item['plan'], $hubCurrentTask]) }}" class="btn-secondary mt-4 px-3 py-2 text-xs">{{ data_get($primaryExecutionTool, 'activity.short_label', '学習方法') }}を開く →</a>
+    @elseif ($hubCurrentTask && ($primaryExecutionTool['id'] ?? null) === 'ai_practice')
         <a href="{{ route('plans.tasks.study_practice.show', [$item['plan'], $hubCurrentTask]) }}" class="btn-secondary mt-4 px-3 py-2 text-xs">AI演習を開く →</a>
     @endif
 </section>
