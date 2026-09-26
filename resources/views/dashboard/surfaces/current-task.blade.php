@@ -31,7 +31,9 @@
             </div>
 
             <div class="mt-4 flex flex-wrap gap-2">
-                @if (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
+                @if (($primaryExecutionTool['id'] ?? null) === 'study_activity')
+                    <a href="{{ route('plans.tasks.study_activity.show', [$item['plan'], $hubCurrentTask]) }}" class="btn-primary px-3 py-2 text-xs">{{ $primaryExecutionTool['icon'] ?? '◉' }} {{ data_get($primaryExecutionTool, 'activity.action_label', '学習方法を確認') }}</a>
+                @elseif (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
                     <a href="{{ route('plans.tasks.study_practice.show', [$item['plan'], $hubCurrentTask]) }}" class="btn-primary px-3 py-2 text-xs">✦ AI演習で進める</a>
                 @elseif (($primaryExecutionTool['id'] ?? null) === 'career_workspace')
                     <a href="{{ route('plans.career.index', $item['plan']) }}" class="btn-primary px-3 py-2 text-xs">◆ Careerで進める</a>
@@ -61,7 +63,9 @@
                 @if ($hubCurrentTask->next_action_note && $hubCurrentTask->description)
                     <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-300">{{ $hubCurrentTask->description }}</p>
                 @endif
-                @if (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
+                @if (($primaryExecutionTool['id'] ?? null) === 'study_activity')
+                    <p class="mt-3 text-[11px] leading-5 text-cyan-200/80">このTaskでは「{{ data_get($primaryExecutionTool, 'activity.label', 'Study Activity') }}」をAI演習より優先しています。</p>
+                @elseif (($primaryExecutionTool['id'] ?? null) === 'ai_practice')
                     <p class="mt-3 text-[11px] leading-5 text-cyan-200/80">AI演習は回答・評価結果をCanoviaが自動でEvidenceとして残します。</p>
                 @endif
             </details>
