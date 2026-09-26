@@ -1384,6 +1384,21 @@ class StudyPracticeController extends Controller
                 ]];
             }
 
+            $workInput = $this->normalizeWorkInput(
+                $question['work_input'] ?? null,
+                $rawFields,
+            );
+
+            if ($workInput !== 'none' && ! $this->hasDiagnosticTextarea($rawFields)) {
+                if (count($rawFields) >= 4) {
+                    throw ValidationException::withMessages([
+                        'questions_json' => 'work_inputがreasoningまたはcalculationのquestionには、textareaを含めてresponse_fieldsを1〜4件にしてください。',
+                    ]);
+                }
+
+                $rawFields[] = $this->diagnosticTextareaFor($workInput);
+            }
+
             if (count($rawFields) < 1 || count($rawFields) > 4) {
                 throw ValidationException::withMessages([
                     'questions_json' => '各questionのresponse_fieldsは1〜4件にしてください。',
@@ -1412,6 +1427,7 @@ class StudyPracticeController extends Controller
             $questions[] = [
                 'id' => mb_substr($id, 0, 64),
                 'prompt' => mb_substr($prompt, 0, 4000),
+                'work_input' => $workInput,
                 'response_fields' => $fields,
                 // Compatibility keys remain while old attempts and consumers exist.
                 'type' => $legacyType,
@@ -1420,6 +1436,94 @@ class StudyPracticeController extends Controller
         }
 
         return $questions;
+    }
+
+    /**
+     * @param array<int, mixed> $rawFields
+     */
+    private function normalizeWorkInput(mixed $raw, array $rawFields): string
+    {
+        $value = mb_strtolower(trim((string) ($raw ?? '')));
+
+        if ($value === '') {
+            foreach ($rawFields as $field) {
+                if (! is_array($field)) {
+                    continue;
+                }
+
+                $id = mb_strtolower(trim((string) ($field['id'] ?? '')));
+                $label = mb_strtolower(trim((string) ($field['label'] ?? '')));
+
+                if (
+                    str_contains($id, 'calculation')
+                    || str_contains($id, 'work')
+                    || str_contains($label, '計算')
+                    || str_contains($label, '途中')
+                ) {
+                    return 'calculation';
+                }
+
+                if (
+                    str_contains($id, 'reasoning')
+                    || str_contains($id, 'reason')
+                    || str_contains($label, '考え')
+                    || str_contains($label, '理由')
+                    || str_contains($label, '根拠')
+                ) {
+                    return 'reasoning';
+                }
+            }
+
+            return 'none';
+        }
+
+        if (! in_array($value, ['none', 'reasoning', 'calculation'], true)) {
+            throw ValidationException::withMessages([
+                'questions_json' => 'question.work_inputはnone / reasoning / calculationのいずれかにしてください。',
+            ]);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<int, mixed> $rawFields
+     */
+    private function hasDiagnosticTextarea(array $rawFields): bool
+    {
+        foreach ($rawFields as $field) {
+            if (is_array($field) && ($field['type'] ?? null) === 'textarea') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function diagnosticTextareaFor(string $workInput): array
+    {
+        if ($workInput === 'calculation') {
+            return [
+                'id' => 'calculation_work',
+                'type' => 'textarea',
+                'label' => '計算過程',
+                'required' => false,
+                'placeholder' => '式・途中値・単位変換などを入力',
+                'choices' => [],
+            ];
+        }
+
+        return [
+            'id' => 'reasoning',
+            'type' => 'textarea',
+            'label' => '考え方・判断理由',
+            'required' => false,
+            'placeholder' => '選んだ根拠や条件整理を入力',
+            'choices' => [],
+        ];
     }
 
     /**
