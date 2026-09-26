@@ -8,7 +8,7 @@ return [
         'summary' => 'Taskに合う実行方法がある場合はそのActionだけをPrimaryにし、TimerはFallbackへ整理しました。あわせてメインナビの「今日」をInboxへ置き換え、テキスト・URL・画像・PDFを分類前のままCanoviaへ渡せる共通入口を追加しました。',
         'highlights' => [
             'Study Activity / AI演習 / Career / 制作ファイル / 関連資料をTaskごとのPrimary Actionとして共通Policyで選びます。',
-            '専用ToolがあるTaskでは「集中タイマー（任意）」を並べず、専用Toolがない場合だけTimerをPrimary Fallbackにします。',
+            '専用ToolがあるTaskでは補助Timerを並べず、専用Toolがない場合だけTimerをPrimary Fallbackにします。',
             'Study FocusやTask一覧など、Current Taskと重複していた実行CTA・表示を整理しました。',
             'メインナビを Home / Inbox / Roadmap / Timeline に変更し、旧「今日」は互換Routeとして残します。',
             'Inboxはテキスト・URL・画像・スクリーンショット・PDFを、整理先を決める前の状態で保存できます。',
