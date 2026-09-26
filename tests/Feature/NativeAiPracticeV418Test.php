@@ -173,6 +173,105 @@ class NativeAiPracticeV418Test extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_native_calculation_question_adds_calculation_work_field_when_provider_returns_choice_only(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+        $this->grantPremium($user);
+
+        $payload = $this->questionEnvelope($plan, $task);
+        $payload['title'] = '性能計算';
+        $payload['questions'][0] = [
+            'id' => 'q1',
+            'prompt' => '200MIPSのCPUで1件あたり200万命令を実行する。1秒間に処理できる件数として最も近いものを選んでください。',
+            'work_input' => 'calculation',
+            'response_fields' => [[
+                'id' => 'answer',
+                'type' => 'single_choice',
+                'label' => '回答',
+                'required' => true,
+                'placeholder' => '',
+                'choices' => [
+                    ['id' => 'A', 'label' => '10件'],
+                    ['id' => 'B', 'label' => '50件'],
+                    ['id' => 'C', 'label' => '100件'],
+                    ['id' => 'D', 'label' => '200件'],
+                ],
+            ]],
+        ];
+
+        Http::fake([
+            'https://api.openai.com/v1/responses' => Http::response(
+                $this->responseBody($payload, 'resp_calculation'),
+                200,
+            ),
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('plans.tasks.study_practice.native.prepare', [$plan, $task]), [
+                'prepare_request_id' => (string) Str::uuid(),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $session = StudyPracticeSession::latest('id')->firstOrFail();
+        $question = data_get($session->questions_snapshot, '0');
+
+        $this->assertSame('calculation', data_get($question, 'work_input'));
+        $this->assertSame(
+            ['answer', 'calculation_work'],
+            collect(data_get($question, 'response_fields', []))->pluck('id')->all(),
+        );
+        $this->assertSame('textarea', data_get($question, 'response_fields.1.type'));
+        $this->assertSame('計算過程', data_get($question, 'response_fields.1.label'));
+        $this->assertFalse((bool) data_get($question, 'response_fields.1.required'));
+    }
+
+    public function test_external_ai_import_uses_same_work_input_contract(): void
+    {
+        [$user, $plan, $task] = $this->studyPlan();
+
+        $payload = [
+            'schema_version' => '1.0',
+            'flow' => 'study_practice',
+            'target_plan' => ['id' => $plan->id],
+            'target_task' => ['id' => $task->id],
+            'title' => '条件判断',
+            'questions' => [[
+                'id' => 'q1',
+                'prompt' => '複数条件を比較して最も適切な選択肢を選んでください。',
+                'work_input' => 'reasoning',
+                'response_fields' => [[
+                    'id' => 'answer',
+                    'type' => 'single_choice',
+                    'label' => '回答',
+                    'required' => true,
+                    'choices' => [
+                        ['id' => 'A', 'label' => 'A'],
+                        ['id' => 'B', 'label' => 'B'],
+                    ],
+                ]],
+            ]],
+        ];
+
+        $this->actingAs($user)
+            ->post(route('plans.tasks.study_practice.import', [$plan, $task]), [
+                'prepare_request_id' => (string) Str::uuid(),
+                'questions_json' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $session = StudyPracticeSession::latest('id')->firstOrFail();
+        $question = data_get($session->questions_snapshot, '0');
+
+        $this->assertSame('reasoning', data_get($question, 'work_input'));
+        $this->assertSame(
+            ['answer', 'reasoning'],
+            collect(data_get($question, 'response_fields', []))->pluck('id')->all(),
+        );
+        $this->assertSame('考え方・判断理由', data_get($question, 'response_fields.1.label'));
+    }
+
     public function test_native_generation_failure_falls_back_to_manual_external_ai(): void
     {
         [$user, $plan, $task] = $this->studyPlan();
@@ -282,6 +381,7 @@ class NativeAiPracticeV418Test extends TestCase
             'questions' => [[
                 'id' => 'q1',
                 'prompt' => 'メールサーバの配送先を示すDNSレコードを選んでください。',
+                'work_input' => 'reasoning',
                 'response_fields' => [
                     [
                         'id' => 'answer',
