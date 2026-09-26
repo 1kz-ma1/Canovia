@@ -1,0 +1,44 @@
+name: V41.13 Verify
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Syntax and Blade cache
+        run: |
+          php -l app/Services/ExecutionActionPolicyService.php
+          php -l app/Services/DashboardPresentationService.php
+          php -l app/Services/DashboardGuidanceService.php
+          php -l app/Http/Controllers/PlanController.php
+          php -l tests/Feature/ActionHierarchyV4113Test.php
+          php artisan view:cache
+      - name: Focused regression tests
+        run: |
+          php artisan test \
+            tests/Feature/ActionHierarchyV4113Test.php \
+            tests/Feature/ActionFirstV416Test.php \
+            tests/Feature/ExecutionEvidenceFoundationV410Test.php \
+            tests/Feature/DashboardGuidanceV395Test.php \
+            tests/Feature/StudyActivityPolicyV4110Test.php \
+            tests/Feature/StudyRecallV4111Test.php
