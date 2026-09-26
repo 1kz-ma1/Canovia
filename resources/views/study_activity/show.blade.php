@@ -56,7 +56,7 @@
                             </div>
                         </div>
                         <div class="mt-4 flex flex-wrap gap-2">
-                            <a href="{{ route('plans.tasks.study_recall.show', [$plan, $task]) }}" class="btn-primary">◉ Recallを始める</a>
+                            <a href="{{ route('plans.tasks.study_recall.show', [$plan, $task]) }}" class="btn-primary" data-guide-target="study-recall">◉ Recallを始める</a>
                             @if ($resources->isNotEmpty())
                                 <a href="{{ route('plans.resources.index', $plan) }}" class="btn-secondary">⌘ 教材を開く</a>
                             @else
