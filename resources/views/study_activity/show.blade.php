@@ -56,17 +56,12 @@
                             </div>
                         </div>
                         <div class="mt-4 flex flex-wrap gap-2">
+                            <a href="{{ route('plans.tasks.study_recall.show', [$plan, $task]) }}" class="btn-primary">◉ Recallを始める</a>
                             @if ($resources->isNotEmpty())
-                                <a href="{{ route('plans.resources.index', $plan) }}" class="btn-primary">⌘ 教材を開く</a>
+                                <a href="{{ route('plans.resources.index', $plan) }}" class="btn-secondary">⌘ 教材を開く</a>
                             @else
-                                <a href="{{ route('plans.resources.index', $plan) }}" class="btn-primary">⌘ 単語帳・教材を登録</a>
+                                <a href="{{ route('plans.resources.index', $plan) }}" class="btn-secondary">⌘ 単語帳・教材を登録</a>
                             @endif
-                            <form method="POST" action="{{ route('work_sessions.start') }}" data-work-start-form>
-                                @csrf
-                                <input type="hidden" name="task_id" value="{{ $task->id }}">
-                                <input type="hidden" name="source" value="plan">
-                                <button type="submit" class="btn-secondary">◷ 記憶学習を開始</button>
-                            </form>
                         </div>
                     @else
                         <p class="text-sm leading-6 text-slate-300">まず教材・解説から知識を入れ、理解できた箇所をあとで問題演習へつなげます。</p>
