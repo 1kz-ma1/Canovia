@@ -153,6 +153,7 @@ task_id: {$task->id}
 - 過去のAI演習でweaknessesがある場合でも、Canoviaの優先度・出題配分に従い、全問をその弱点だけへ寄せない
 - 重点弱点・他の弱点・横断診断を上記の配分に近づける
 - すでに安定して正解できている内容だけを同じ形で繰り返さない
+- Canoviaの方針が「完了前の仕上げ確認」の場合は、直前と同型の反復ではなくTask全体から広く確認し、理解の穴が残っていないかを見る
 - 難易度は「理解・判断・条件整理」の深さで調整し、無意味に複雑な手計算では調整しない
 - 問題文だけで解答に必要な条件が分かるようにする
 - 過去問・定番問題の構造を参考にする場合は、元の意味領域・業務文脈・専門用語を不自然に抽象化しない
@@ -280,6 +281,7 @@ task_id: {$task->id}
 - next_actionは次に取るべき具体的な学習Actionを1つに絞る
 - next_stepは「この評価を見た直後にCanovia上で何をすべきか」を構造化して必ず返す
 - next_step.kindは practice / review / continue_task / complete_task / plan_update のいずれか
+- complete_taskはTask完了の候補Signalであり、Canovia側が履歴を確認して追加の仕上げ確認を要求する場合がある
 - practiceを選ぶ場合はfocus_topicsとquestion_countも具体化する。ただしこれは候補であり、次回はCanoviaが他の弱点・横断診断と再配分する
 - practice以外を選ぶ場合もnext_step.focus_topicsとnext_step.question_countは省略せず、focus_topicsは[]、question_countは0を返す
 - labelはユーザーがそのまま次の行動として読める具体的な一文にする
