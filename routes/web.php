@@ -39,7 +39,6 @@ use App\Http\Controllers\PlanResourceAssistantController;
 use App\Http\Controllers\PlanArtifactController;
 use App\Http\Controllers\StudyPracticeController;
 use App\Http\Controllers\StudyActivityController;
-use App\Http\Controllers\StudyRecallController;
 use App\Http\Controllers\FutureMemoController;
 use App\Http\Controllers\CareerWorkspaceController;
 use App\Http\Controllers\InterviewReviewController;
@@ -222,15 +221,6 @@ Route::middleware('feature.access:'.FeatureKey::ProjectArtifact->value)->group(f
 // 資格学習のActivity選択はAI演習より上位の共通入口として扱う。
 Route::get('/plans/{plan}/tasks/{task}/study-activity', [StudyActivityController::class, 'show'])
     ->name('plans.tasks.study_activity.show');
-
-Route::get('/plans/{plan}/tasks/{task}/study-recall', [StudyRecallController::class, 'show'])
-    ->name('plans.tasks.study_recall.show');
-Route::post('/plans/{plan}/tasks/{task}/study-recall/items', [StudyRecallController::class, 'store'])
-    ->name('plans.tasks.study_recall.items.store');
-Route::post('/plans/{plan}/tasks/{task}/study-recall/items/{item}/review', [StudyRecallController::class, 'review'])
-    ->name('plans.tasks.study_recall.items.review');
-Route::delete('/plans/{plan}/tasks/{task}/study-recall/items/{item}', [StudyRecallController::class, 'destroy'])
-    ->name('plans.tasks.study_recall.items.destroy');
 
 // Canovia Tools: 資格学習向けAI演習。
 // Freeは外部AIとのJSON handoffを維持し、Premium CoreはNative AIを同じ演習UIへ接続する。

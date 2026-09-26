@@ -2,22 +2,6 @@
 
 return [
     [
-        'version' => 'v41.11',
-        'date' => '2026-09-26',
-        'title' => '単語・用語学習を、AI問題生成ではなくRecallへ',
-        'summary' => 'Study Activity PolicyでRecallが適切と判断されたTaskを、答えを隠して思い出す永続学習ループへ接続しました。Again / Hard / Good / Easyの自己評価に応じて次回確認間隔を調整し、学習実績はTask Evidenceとして残します。',
-        'highlights' => [
-            '1 Taskを1つのRecall Deckとして扱い、単語・用語カードを永続保存します。',
-            'カードは「表 | 裏」またはタブ区切りで一度に100件まで追加でき、同じTask内の重複カードはfingerprintで防ぎます。',
-            'Again / Hard / Good / Easyの4段階で想起結果を記録し、次回due_atを決定論で更新します。',
-            'Againは約10分後、Goodは初回1日後・2回目3日後、Easyはより長い間隔へ進めます。',
-            'review_request_idで二重送信を吸収し、同じレビューでrepetitionsやintervalが二重更新されません。',
-            'Recall reviewはTask Evidenceへ残しますが、学習時間や自己評価だけを理由にTask進捗を自動加算しません。',
-            'repetitions 3回以上かつinterval 7日以上のカードを「定着候補」として表示します。',
-        ],
-        'tip' => 'V41.11では手動カード追加を正としています。教材・PDF・スクリーンショットからの自動カード生成は、内容確認を挟むCandidate方式で後続実装します。',
-    ],
-    [
         'version' => 'v41.10',
         'date' => '2026-09-26',
         'title' => '次のTaskだけでなく、次の学び方まで選ぶ',

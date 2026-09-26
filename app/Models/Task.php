@@ -64,16 +64,6 @@ class Task extends Model
         return $this->hasMany(StudyPracticeAttempt::class);
     }
 
-    public function studyRecallItems()
-    {
-        return $this->hasMany(StudyRecallItem::class);
-    }
-
-    public function studyRecallReviews()
-    {
-        return $this->hasMany(StudyRecallReview::class);
-    }
-
     public function evidences()
     {
         return $this->hasMany(TaskEvidence::class)->latest('occurred_at')->latest('id');

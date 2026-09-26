@@ -1,8 +1,8 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-26 / V41.11 Recall Learning Loop
+更新基準: 2026-09-26 / V41.10 Adaptive Learning Flow
 
-V41.8〜V41.10のNative AI Practice / Practice Demand / Adaptive Learning Flowを維持しつつ、V41.11ではStudy Activity PolicyのRecallを永続学習ループへ接続する。単語・用語学習は問題生成へ寄せず、想起・自己評価・間隔調整・Evidence記録で進める。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md)、[V41.9仕様](V41.9_PRACTICE_DEMAND_CANDIDATES.md)、[V41.10仕様](V41.10_ADAPTIVE_LEARNING_FLOW.md)、[V41.11仕様](V41.11_RECALL_LEARNING_LOOP.md) を参照。
+V41.8〜V41.9のNative AI Practice / Hybrid Question Assembly / Practice Demand運営ループを維持しつつ、V41.10ではAIのTask完了提案をCanovia側で検証し、必要なら仕上げ確認を挟んでから次のeligible Taskへ学習対象を切り替えるAdaptive Learning Flowを追加する。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md)、[V41.9仕様](V41.9_PRACTICE_DEMAND_CANDIDATES.md)、[V41.10仕様](V41.10_ADAPTIVE_LEARNING_FLOW.md) を参照。
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -93,8 +93,6 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - Study Activity Policy（Question Practice / Recall / Resource Study）とTask別のPrimary Activity選択
 - TOEIC語彙・暗記TaskでAI演習をPrimaryにしない学習方法Policy
 - AI Practice Reliability（出題内容 / 採点 / Coverage / 学習方法適合度）の視覚化
-- Recall Learning Loop（Task Deck / Again-Hard-Good-Easy / spaced repetition / Task Evidence）
-- Recallカード一括追加・重複防止・review idempotency・定着候補表示
 - Native AI Run usage history（provider / model / AI Capacity / token usage / status）
 
 ### Next
@@ -109,8 +107,7 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - Roadmap FeatureとRelease Notesの明示的な紐付け
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
-- Resource / PDF / screenshotからRecall Candidateを生成する安全な取り込み
-- Recall成績をTask progressionへ使うPolicy
+- Recall専用のFlashcard / spaced repetition engine
 - Listening / Dictation / Shadowing等のStudy Activity拡張
 - Native AI usage historyを使ったquota / cost policy
 
