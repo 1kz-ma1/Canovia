@@ -14,9 +14,11 @@ return [
             'Inboxはテキスト・URL・画像・スクリーンショット・PDFを、整理先を決める前の状態で保存できます。',
             'Inboxのファイルはprivate storageへ保存し、本人だけが閲覧できます。',
             'Recall Candidate・Career Capture・Planへ未反映のWorkSessionをコピーせずInboxから横断確認できます。',
-            'AIによる自動分類はまだ行わず、Step 3でCandidate確認を挟んだ安全な振り分けへ接続します。',
+            'PremiumではInbox内容から行き先候補・理由・確信度を提案できますが、AIはPlan / Task IDを決めず、人が確認してから確定します。',
+            'Freeでも手動整理ができ、Future Memo / Career Capture / Task Evidence / 対応Resourceへ接続できます。RecallのCandidate抽出だけはAutomatic AIを使います。',
+            'Guideをv2へ更新し、旧「今日」中心の説明をHome / Inbox / Timer fallback / AI演習 / Recall中心へ組み替えました。',
         ],
-        'tip' => '今やるTaskはホーム、まだ整理先が決まっていない情報はInbox、先を見るならロードマップ、過去を振り返るならタイムライン、という役割分担になりました。',
+        'tip' => '今やるTaskはホーム、外から入ってくる情報はInbox、先を見るならロードマップ、過去を振り返るならタイムライン。InboxのAI提案も確定ではなく、最後は人が整理先を決めます。',
     ],
     [
         'version' => 'v41.12',
