@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Plan;
 use App\Services\BehaviorIdentityService;
 use App\Services\ContinuityService;
+use App\Services\ExecutionActionPolicyService;
 use App\Services\PlanOwnershipService;
 use App\Services\PlanCollaborationService;
 use App\Services\PlanActivityService;
@@ -131,6 +132,7 @@ class PlanController extends Controller
         RoadmapService $roadmapService,
         ContinuityService $continuityService,
         PlanToolService $toolService,
+        ExecutionActionPolicyService $executionActions,
         PlanPriorityService $priorityService,
     ) {
         $canView = $ownership->canView($request, $plan);
@@ -194,16 +196,8 @@ class PlanController extends Controller
         $planTools = $toolFocusTask
             ? ($taskTools[(int) $toolFocusTask->id] ?? [])
             : [];
-        $studyActivityTask = $plan->tasks->first(function ($task) use ($taskTools) {
-            return collect($taskTools[(int) $task->id] ?? [])
-                ->contains(fn (array $tool) => ($tool['id'] ?? null) === 'study_activity' && (bool) ($tool['recommended'] ?? false));
-        });
-        $aiPracticeTask = $plan->tasks->first(function ($task) use ($taskTools) {
-            return collect($taskTools[(int) $task->id] ?? [])
-                ->contains(fn (array $tool) => ($tool['id'] ?? null) === 'ai_practice' && (bool) ($tool['recommended'] ?? false));
-        });
-        $studyToolCategoryMismatch = ! $studyActivityTask && ! $aiPracticeTask
-            && trim((string) $plan->category) !== '資格学習'
+        $primaryPlanAction = $executionActions->primary($planTools);
+        $studyToolCategoryMismatch = trim((string) $plan->category) !== '資格学習'
             && $toolService->looksLikeStudyPlan($plan);
 
         return view('plans.show', compact(
@@ -220,8 +214,7 @@ class PlanController extends Controller
             'taskTools',
             'toolFocusTask',
             'planTools',
-            'studyActivityTask',
-            'aiPracticeTask',
+            'primaryPlanAction',
             'studyToolCategoryMismatch',
             'priorityEvaluation',
         ));
