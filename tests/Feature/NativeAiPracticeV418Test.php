@@ -85,7 +85,7 @@ class NativeAiPracticeV418Test extends TestCase
         $session = StudyPracticeSession::where('prepare_request_id', $prepareRequestId)->firstOrFail();
         $run = NativeAiRun::firstOrFail();
 
-        $this->assertSame('native_ai', $session->question_provider);
+        $this->assertSame('hybrid_ai', $session->question_provider);
         $this->assertSame('direct', $session->question_provider_mode);
         $this->assertSame(StudyPracticeSession::STATUS_READY, $session->status);
         $this->assertSame('q1', data_get($session->questions_snapshot, '0.id'));

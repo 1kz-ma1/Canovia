@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\StudyPracticeAssessmentProvider;
 use App\Exceptions\NativeAiExecutionException;
 use App\Models\Plan;
+use App\Models\Question;
 use App\Models\Task;
 use App\Models\User;
 
@@ -15,6 +16,53 @@ class NativeAiStudyPracticeAssessmentProvider implements StudyPracticeAssessment
         private readonly NativeAiGateway $gateway,
         private readonly AiCapacityService $capacity,
     ) {}
+
+    /**
+     * Add trusted grading data only to the server-side Native AI prompt.
+     * The browser-facing question snapshot never receives the correct answer.
+     *
+     * @param array<int,array<string,mixed>> $questions
+     * @return array<int,array<string,mixed>>
+     */
+    private function withQuestionBankGradingContext(array $questions): array
+    {
+        $sourceIds = collect($questions)
+            ->pluck('source_question_id')
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($sourceIds->isEmpty()) {
+            return $questions;
+        }
+
+        $models = Question::query()
+            ->whereIn('id', $sourceIds)
+            ->get()
+            ->keyBy('id');
+
+        return collect($questions)
+            ->map(function ($question) use ($models) {
+                if (! is_array($question) || ! is_numeric($question['source_question_id'] ?? null)) {
+                    return $question;
+                }
+
+                $model = $models->get((int) $question['source_question_id']);
+                if (! $model || ! is_array($model->grading_rule)) {
+                    return $question;
+                }
+
+                $question['grading_context'] = [
+                    'grading_rule' => $model->grading_rule,
+                    'explanation' => trim((string) ($model->explanation ?? '')),
+                ];
+
+                return $question;
+            })
+            ->values()
+            ->all();
+    }
 
     public function key(): string
     {
@@ -34,7 +82,8 @@ class NativeAiStudyPracticeAssessmentProvider implements StudyPracticeAssessment
         ?int $actorUserId = null,
         ?int $studyPracticeSessionId = null,
     ): array {
-        $prompt = $this->promptService->evaluationPrompt($plan, $task, $questions, $answers);
+        $assessmentQuestions = $this->withQuestionBankGradingContext($questions);
+        $prompt = $this->promptService->evaluationPrompt($plan, $task, $assessmentQuestions, $answers);
         $user = $actorUserId ? User::query()->find($actorUserId) : null;
         $capacityTier = $this->capacity->tierFor($user);
         $maxOutputTokens = (int) config(

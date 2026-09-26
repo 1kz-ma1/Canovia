@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-25 / V41.8 Native AI Practice
+更新基準: 2026-09-26 / V41.8.2 Hybrid Question Assembly
 
 V41.6のAction First、V41.7のAdmin / Premium Experience Foundationを維持しつつ、V41.8ではPremium Coreを最初の実際のNative AI価値へ接続する。Freeの外部AI Handoffは残し、PremiumではAI Practiceの問題生成・評価に伴うコピー/貼り付けをCanoviaが引き受ける。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md) を参照。
 
@@ -82,6 +82,8 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - 決定論的Economy RecommendationとAdmin Economy Inspector
 - 単一アカウントSuper Admin、Settings Hub、Complimentary Premium、Admin Free/Premium Preview
 - Premium CoreのNative AI Practice（問題生成 / 回答評価 / manual fallback）
+- Hybrid Question Assembly（Question Bank優先、不足分だけNative AI補完）
+- Practice Question Demand履歴（要求数 / Bank供給数 / 生成不足 / focus / coverage）
 - Native AI Run usage history（provider / model / AI Capacity / token usage / status）
 
 ### Next
@@ -97,6 +99,8 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
 - Native AI usage historyを使ったquota / cost policy
+- Practice DemandのAdmin集計（Plan / Task / focus topic / Coverage gap）
+- Native AI生成問題のCandidate保存・検証・Question Bank昇格フロー
 
 ### Future
 

@@ -14,6 +14,7 @@ class StudyPracticeOrchestrator
     public function __construct(
         private readonly StudyPracticeStrategyService $strategyService,
         private readonly StudyPracticeProviderRouter $providerRouter,
+        private readonly PracticeQuestionDemandRecorder $demandRecorder,
     ) {}
 
     /**
@@ -76,6 +77,26 @@ class StudyPracticeOrchestrator
                 throw new RuntimeException('この演習準備リクエストは別の対象で使用済みです。');
             }
 
+            $storedStrategy = is_array(data_get($existing->selection_context, 'strategy'))
+                ? data_get($existing->selection_context, 'strategy')
+                : $this->strategyService->build($plan, $task, $recentAttempts);
+            $demand = $this->demandRecorder->record(
+                $existing,
+                $plan,
+                $task,
+                $storedStrategy,
+                [
+                    'provider' => $existing->question_provider,
+                    'questions' => is_array($existing->questions_snapshot) ? $existing->questions_snapshot : [],
+                    'payload' => is_array($existing->provider_payload) ? $existing->provider_payload : [],
+                ],
+            );
+            $selectionContext = is_array($existing->selection_context) ? $existing->selection_context : [];
+            if ((int) ($selectionContext['practice_demand_id'] ?? 0) !== (int) $demand->id) {
+                $selectionContext['practice_demand_id'] = $demand->id;
+                $existing->update(['selection_context' => $selectionContext]);
+            }
+
             return $existing;
         }
 
@@ -136,6 +157,17 @@ class StudyPracticeOrchestrator
         ) {
             throw new RuntimeException('この演習準備リクエストは別の対象で使用済みです。');
         }
+
+        $demand = $this->demandRecorder->record(
+            $session,
+            $plan,
+            $task,
+            $strategy,
+            $prepared,
+        );
+        $selectionContext = is_array($session->selection_context) ? $session->selection_context : [];
+        $selectionContext['practice_demand_id'] = $demand->id;
+        $session->update(['selection_context' => $selectionContext]);
 
         return $session;
     }

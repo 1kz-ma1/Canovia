@@ -17,6 +17,7 @@ class StudyPracticeProviderRouter
         private readonly ExternalAiStudyPracticeQuestionProvider $externalQuestionProvider,
         private readonly ExternalAiStudyPracticeAssessmentProvider $externalAssessmentProvider,
         private readonly NativeAiStudyPracticeQuestionProvider $nativeQuestionProvider,
+        private readonly HybridStudyPracticeQuestionProvider $hybridQuestionProvider,
         private readonly NativeAiStudyPracticeAssessmentProvider $nativeAssessmentProvider,
     ) {}
 
@@ -34,6 +35,7 @@ class StudyPracticeProviderRouter
         return match ($key) {
             'question_bank' => $this->questionBankProvider,
             'native_ai' => $this->nativeQuestionProvider,
+            'hybrid_ai' => $this->hybridQuestionProvider,
             'external_ai' => $this->externalQuestionProvider,
             default => $this->externalQuestionProvider,
         };

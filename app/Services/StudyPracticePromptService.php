@@ -40,6 +40,14 @@ class StudyPracticePromptService
         $focusTopics = collect($strategy['focus_topics'] ?? [])->filter()->implode(' / ');
         $focusTopics = $focusTopics !== '' ? $focusTopics : 'Task全体';
         $targetQuestionCount = max(1, min(20, (int) ($strategy['target_question_count'] ?? 10)));
+        $existingQuestionSummaries = collect($strategy['existing_question_summaries'] ?? [])
+            ->filter(fn ($item) => is_string($item) && trim($item) !== '')
+            ->map(fn ($item) => '- '.mb_substr(trim($item), 0, 500))
+            ->take(20)
+            ->implode("\n");
+        $existingQuestionSummaries = $existingQuestionSummaries !== ''
+            ? $existingQuestionSummaries
+            : '- なし';
 
         $examProfile = is_array($strategy['exam_profile'] ?? null) ? $strategy['exam_profile'] : [];
         $examProfileLabel = trim((string) ($examProfile['label'] ?? '資格学習'));
@@ -129,6 +137,10 @@ task_id: {$task->id}
 - 他の弱点・再確認: {$secondaryCount}問 / topics: {$secondaryTopics}
 - 横断診断・未発見弱点の探索: {$diagnosticCount}問
 - 監視中: {$monitorTopics}
+
+【Question Bankですでに選定済みの問題】
+{$existingQuestionSummaries}
+※ここに問題がある場合、それらと実質的に同じ問い・同じ数値差し替えだけの問題は避け、足りないCoverageを補ってください。
 ※同じ系統へ全問を寄せないでください。単発の誤答・軽微な計算ミスだけで、その系統を演習全体の中心にしないでください。
 ※横断診断はPlan・Taskの試験範囲内から選び、既知弱点に隠れている別の弱点を発見できるようにしてください。
 
