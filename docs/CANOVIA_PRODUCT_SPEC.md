@@ -1,8 +1,8 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-26 / V41.12 Recall Candidate Import
+更新基準: 2026-09-26 / V41.13 Step 2 Canovia Inbox Foundation
 
-V41.8〜V41.11のNative AI Practice / Adaptive Learning Flow / Recall Learning Loopを維持しつつ、V41.12では参考書写真・スクリーンショット・PDF・貼り付けテキストからRecall Candidateを作り、人が確認した候補だけDeckへ昇格できる安全な取り込みを追加する。詳細は [V41.10仕様](V41.10_ADAPTIVE_LEARNING_FLOW.md)、[V41.11仕様](V41.11_RECALL_LEARNING_LOOP.md)、[V41.12仕様](V41.12_RECALL_CANDIDATE_IMPORT.md) を参照。
+V41.8〜V41.12のNative AI Practice / Adaptive Learning Flow / Recall基盤を維持しつつ、V41.13ではTaskごとのPrimary Actionを1つに整理し、旧「今日」をメインナビから退役させてCanovia Inboxを追加する。Home=Now、Inbox=Input、Roadmap=Future、Timeline=Pastとして主要導線の責務を分離する。詳細は [V41.12仕様](V41.12_RECALL_CANDIDATE_IMPORT.md)、[V41.13仕様](V41.13_ACTION_INBOX_REFRAME.md) を参照。
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -13,13 +13,15 @@ Canoviaは、**頑張りたいけれど、頑張り方が分からない・や�
 中核となる体験は次の循環である。
 
 ```text
+Inbox / 現実からのInput
+  ↓
 Plan
   ↓
 Task / Roadmap
   ↓
-Today / Recommendation
+Home / Primary Execution Action
   ↓
-実行 / WorkSession / Timer
+実行 / WorkSession / Study Activity / External Tool
   ↓
 振り返り / WorkLog
   ↓
@@ -52,7 +54,9 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 現在実装済み、またはV40.7で基盤を持つ領域。
 
 - Guest / Account、所有権、共同計画
-- Plan / Task / Roadmap / Today / Recommendation
+- Plan / Task / Roadmap / Recommendation
+- Action Hierarchy（専用Execution Tool優先 / Timer fallback）
+- Canovia Inbox Foundation（text / URL / image / PDF capture、private file、pending横断表示）
 - WorkSession / Timer / WorkLog / Continuity
 - Calendar / Availability
 - AI JSON外部往復によるTask生成・計画更新
@@ -112,6 +116,8 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - Roadmap FeatureとRelease Notesの明示的な紐付け
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
+- Inbox Intelligence（destination suggestion / Candidate routing / Human Review）
+- Canovia Guide v2 / Inbox前提の新規オンボーディング
 - failed Recall Sourceの再抽出UI・複数ページbatch ingest
 - Plan Resourceからの安全なRecall material ingest
 - Recall成績をTask progressionへ使うPolicy
