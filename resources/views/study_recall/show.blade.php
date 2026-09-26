@@ -80,7 +80,7 @@
                                 <form method="POST" action="{{ route('plans.tasks.study_recall.items.review', [$plan, $task, $currentItem]) }}" data-mutation-once>
                                     @csrf
                                     <input type="hidden" name="rating" value="{{ $rating }}">
-                                    <input type="hidden" name="review_request_id" value="{{ (string) IlluminateSupportStr::uuid() }}">
+                                    <input type="hidden" name="review_request_id" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
                                     <button type="submit" class="w-full rounded-xl border p-3 text-left transition hover:bg-white/[0.06] {{ $meta['class'] }}">
                                         <strong class="block text-sm">{{ $meta['label'] }}</strong>
                                         <span class="mt-1 block text-[10px] opacity-70">{{ $meta['hint'] }}</span>
