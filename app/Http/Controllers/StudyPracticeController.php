@@ -15,6 +15,7 @@ use App\Services\EvidenceProgressService;
 use App\Services\FeatureAccessService;
 use App\Services\NativeAiGateway;
 use App\Services\PlanOwnershipService;
+use App\Services\PracticeQuestionDemandRecorder;
 use App\Services\StudyPracticeOrchestrator;
 use App\Services\StudyPracticePromptService;
 use App\Services\TaskEvidenceService;
@@ -430,6 +431,7 @@ class StudyPracticeController extends Controller
         AiJsonInputNormalizer $normalizer,
         StudyPracticeOrchestrator $orchestrator,
         BehaviorIdentityService $identity,
+        PracticeQuestionDemandRecorder $demandRecorder,
     ) {
         $this->authorizeTask($request, $plan, $task, $ownership);
         abort_unless(trim((string) $plan->category) === '資格学習', 404);
@@ -477,6 +479,20 @@ class StudyPracticeController extends Controller
             'draft_answers' => null,
             'draft_saved_at' => null,
         ]);
+
+        $demandRecorder->record(
+            $practiceSession->fresh(),
+            $plan,
+            $task,
+            (array) data_get($practiceSession->selection_context, 'strategy', []),
+            [
+                'provider' => (string) $practiceSession->question_provider,
+                'questions' => $questions,
+                'payload' => is_array($practiceSession->provider_payload)
+                    ? $practiceSession->provider_payload
+                    : [],
+            ],
+        );
 
         $request->session()->put($this->sessionKey($plan, $task), [
             'title' => $exerciseTitle,
