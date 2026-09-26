@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-26 / V41.10 Adaptive Learning Flow Phase A
+更新基準: 2026-09-26 / V41.10 Adaptive Learning Flow
 
 V41.8〜V41.9のNative AI Practice / Hybrid Question Assembly / Practice Demand運営ループを維持しつつ、V41.10ではAIのTask完了提案をCanovia側で検証し、必要なら仕上げ確認を挟んでから次のeligible Taskへ学習対象を切り替えるAdaptive Learning Flowを追加する。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md)、[V41.9仕様](V41.9_PRACTICE_DEMAND_CANDIDATES.md)、[V41.10仕様](V41.10_ADAPTIVE_LEARNING_FLOW.md) を参照。
 
@@ -90,6 +90,9 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - AI Practiceの完了前仕上げ確認（直近2回の安定確認・1回だけの高得点ではTaskを跨がない）
 - AI Practice ResultのPrimary Action化と詳細評価の折りたたみ
 - 次Task内容を使ったStudy Practice Strategy / Prompt handoff
+- Study Activity Policy（Question Practice / Recall / Resource Study）とTask別のPrimary Activity選択
+- TOEIC語彙・暗記TaskでAI演習をPrimaryにしない学習方法Policy
+- AI Practice Reliability（出題内容 / 採点 / Coverage / 学習方法適合度）の視覚化
 - Native AI Run usage history（provider / model / AI Capacity / token usage / status）
 
 ### Next
@@ -104,8 +107,8 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - Roadmap FeatureとRelease Notesの明示的な紐付け
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
-- Study Activity Policy（Question Practice / Recall / Resource Study等）の抽象化
-- 出題品質 / 採点信頼性 / Coverage / 学習方法適合度の可視化
+- Recall専用のFlashcard / spaced repetition engine
+- Listening / Dictation / Shadowing等のStudy Activity拡張
 - Native AI usage historyを使ったquota / cost policy
 
 ### Future
