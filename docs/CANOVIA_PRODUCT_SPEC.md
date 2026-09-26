@@ -1,6 +1,6 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-26 / V41.13 Step 2 Canovia Inbox Foundation
+更新基準: 2026-09-26 / V41.13 Action & Inbox Reframe 完了
 
 V41.8〜V41.12のNative AI Practice / Adaptive Learning Flow / Recall基盤を維持しつつ、V41.13ではTaskごとのPrimary Actionを1つに整理し、旧「今日」をメインナビから退役させてCanovia Inboxを追加する。Home=Now、Inbox=Input、Roadmap=Future、Timeline=Pastとして主要導線の責務を分離する。詳細は [V41.12仕様](V41.12_RECALL_CANDIDATE_IMPORT.md)、[V41.13仕様](V41.13_ACTION_INBOX_REFRAME.md) を参照。
 
@@ -56,7 +56,10 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - Guest / Account、所有権、共同計画
 - Plan / Task / Roadmap / Recommendation
 - Action Hierarchy（専用Execution Tool優先 / Timer fallback）
-- Canovia Inbox Foundation（text / URL / image / PDF capture、private file、pending横断表示）
+- Canovia Inbox（text / URL / image / PDF capture、private file、pending横断表示）
+- Inbox Intelligence（destination suggestion → Human Review → Future Memo / Career / Recall / Evidence / Resource）
+- AIはInboxでPlan / Task IDを決定せず、名前hintだけを返す境界
+- Canovia Guide v2（Home / Inbox / Timer fallback / AI演習 / Recall / Resource / Collaboration）
 - WorkSession / Timer / WorkLog / Continuity
 - Calendar / Availability
 - AI JSON外部往復によるTask生成・計画更新
@@ -116,8 +119,6 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - Roadmap FeatureとRelease Notesの明示的な紐付け
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
-- Inbox Intelligence（destination suggestion / Candidate routing / Human Review）
-- Canovia Guide v2 / Inbox前提の新規オンボーディング
 - failed Recall Sourceの再抽出UI・複数ページbatch ingest
 - Plan Resourceからの安全なRecall material ingest
 - Recall成績をTask progressionへ使うPolicy
