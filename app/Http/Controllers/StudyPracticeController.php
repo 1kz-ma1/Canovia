@@ -342,13 +342,6 @@ class StudyPracticeController extends Controller
             'prepare_request_id' => ['required', 'uuid'],
         ]);
 
-        if (! $nativeAi->isConfigured()) {
-            return redirect()
-                ->route('plans.tasks.study_practice.show', [$plan, $task])
-                ->with('status', 'Canovia Native AIは現在利用できないため、外部AIの手動フローへ切り替えました。')
-                ->with('native_ai_fallback', true);
-        }
-
         $actorToken = $identity->resolve($request);
         $attemptQuery = $this->attemptQuery($request, $plan, $task, $actorToken);
         $recentAttempts = (clone $attemptQuery)->latest('created_at')->latest('id')->take(5)->get();
@@ -361,7 +354,7 @@ class StudyPracticeController extends Controller
                 $request->user()?->id,
                 $request->user() ? null : $actorToken,
                 (string) $validated['prepare_request_id'],
-                'native_ai',
+                'hybrid_ai',
             );
         } catch (NativeAiExecutionException $exception) {
             return redirect()
@@ -371,17 +364,9 @@ class StudyPracticeController extends Controller
         }
 
         $runId = (int) data_get($practiceSession->provider_payload, 'native_ai.run_id', 0);
-        $envelope = data_get($practiceSession->provider_payload, 'response_envelope');
 
         try {
-            if (! is_array($envelope)) {
-                throw ValidationException::withMessages([
-                    'prepare_request_id' => 'Native AIの問題生成結果を読み取れませんでした。',
-                ]);
-            }
-
-            $this->assertEnvelope($envelope, 'study_practice', $plan, $task, 'prepare_request_id');
-            $questions = $this->normalizeQuestions($envelope['questions'] ?? null);
+            $questions = $this->normalizeQuestions($practiceSession->questions_snapshot);
         } catch (ValidationException $exception) {
             $practiceSession->update(['status' => StudyPracticeSession::STATUS_ABANDONED]);
             if ($runId > 0) {
@@ -394,22 +379,17 @@ class StudyPracticeController extends Controller
 
             return redirect()
                 ->route('plans.tasks.study_practice.show', [$plan, $task])
-                ->with('status', 'Native AIの結果を安全に読み込めなかったため、外部AIの手動フローへ切り替えました。')
+                ->with('status', '演習セットを安全に読み込めなかったため、外部AIの手動フローへ切り替えました。')
                 ->with('native_ai_fallback', true);
         }
 
-        $title = trim((string) ($envelope['title'] ?? 'Canovia Native AI演習'));
-        $exerciseTitle = $title !== '' ? mb_substr($title, 0, 120) : 'Canovia Native AI演習';
+        $title = trim((string) data_get($practiceSession->provider_payload, 'title', 'Canovia Hybrid演習'));
+        $exerciseTitle = $title !== '' ? mb_substr($title, 0, 120) : 'Canovia Hybrid演習';
 
         $practiceSession->update([
             'status' => StudyPracticeSession::STATUS_READY,
             'exercise_title' => $exerciseTitle,
             'questions_snapshot' => $questions,
-            'selected_questions' => collect($questions)->map(fn (array $question) => [
-                'question_ref' => (string) $question['id'],
-                'question_id' => null,
-                'source_type' => 'native_ai',
-            ])->values()->all(),
         ]);
 
         if ($runId > 0) {
@@ -428,9 +408,17 @@ class StudyPracticeController extends Controller
             'practice_session_id' => $practiceSession->id,
         ]);
 
+        $bankCount = (int) data_get($practiceSession->provider_payload, 'source_mix.bank_selected_count', 0);
+        $nativeCount = (int) data_get($practiceSession->provider_payload, 'source_mix.native_generated_count', 0);
+        $successMessage = match (true) {
+            $bankCount > 0 && $nativeCount > 0 => count($questions)."問を準備しました（Question Bank {$bankCount}問 + Native AI {$nativeCount}問）。",
+            $bankCount > 0 => count($questions).'問をQuestion Bankから準備しました。Native AI生成は不要でした。',
+            default => count($questions).'問をCanovia Native AIで準備しました。',
+        };
+
         return redirect()
             ->route('plans.tasks.study_practice.show', [$plan, $task])
-            ->with('success', count($questions).'問をCanovia Native AIで準備しました。')
+            ->with('success', $successMessage)
             ->with('study_practice_scroll_to', 'practice-questions');
     }
 
@@ -705,7 +693,14 @@ class StudyPracticeController extends Controller
             $nativeFallback = false;
             $assessmentProviderKey = null;
 
-            if ((string) $practiceSession->question_provider === 'native_ai') {
+            $practiceUsesNativeAssessment =
+                (string) $practiceSession->question_provider === 'native_ai'
+                || (
+                    (string) $practiceSession->question_provider === 'hybrid_ai'
+                    && (int) data_get($practiceSession->provider_payload, 'source_mix.native_generated_count', 0) > 0
+                );
+
+            if ($practiceUsesNativeAssessment) {
                 $nativeAllowed = $featureAccess->canUse(
                     $request->user(),
                     FeatureKey::AutomaticAiExecution,
@@ -1424,7 +1419,7 @@ class StudyPracticeController extends Controller
                 default => $first['type'],
             };
 
-            $questions[] = [
+            $normalizedQuestion = [
                 'id' => mb_substr($id, 0, 64),
                 'prompt' => mb_substr($prompt, 0, 4000),
                 'work_input' => $workInput,
@@ -1433,6 +1428,18 @@ class StudyPracticeController extends Controller
                 'type' => $legacyType,
                 'choices' => $first['choices'] ?? [],
             ];
+
+            if (is_numeric($question['source_question_id'] ?? null)) {
+                $normalizedQuestion['source_question_id'] = (int) $question['source_question_id'];
+            }
+            if (filled($question['source_type'] ?? null)) {
+                $normalizedQuestion['source_type'] = mb_substr(trim((string) $question['source_type']), 0, 32);
+            }
+            if (filled($question['source_reference'] ?? null)) {
+                $normalizedQuestion['source_reference'] = mb_substr(trim((string) $question['source_reference']), 0, 500);
+            }
+
+            $questions[] = $normalizedQuestion;
         }
 
         return $questions;
