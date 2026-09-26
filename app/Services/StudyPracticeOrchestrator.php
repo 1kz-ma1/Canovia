@@ -15,6 +15,7 @@ class StudyPracticeOrchestrator
         private readonly StudyPracticeStrategyService $strategyService,
         private readonly StudyPracticeProviderRouter $providerRouter,
         private readonly PracticeQuestionDemandRecorder $demandRecorder,
+        private readonly PracticeQuestionCandidateRecorder $candidateRecorder,
     ) {}
 
     /**
@@ -97,6 +98,18 @@ class StudyPracticeOrchestrator
                 $existing->update(['selection_context' => $selectionContext]);
             }
 
+            $this->candidateRecorder->record(
+                $existing,
+                $demand,
+                $storedStrategy,
+                [
+                    'provider' => $existing->question_provider,
+                    'questions' => is_array($existing->questions_snapshot) ? $existing->questions_snapshot : [],
+                    'selected_questions' => is_array($existing->selected_questions) ? $existing->selected_questions : [],
+                    'payload' => is_array($existing->provider_payload) ? $existing->provider_payload : [],
+                ],
+            );
+
             return $existing;
         }
 
@@ -168,6 +181,13 @@ class StudyPracticeOrchestrator
         $selectionContext = is_array($session->selection_context) ? $session->selection_context : [];
         $selectionContext['practice_demand_id'] = $demand->id;
         $session->update(['selection_context' => $selectionContext]);
+
+        $this->candidateRecorder->record(
+            $session,
+            $demand,
+            $strategy,
+            $prepared,
+        );
 
         return $session;
     }

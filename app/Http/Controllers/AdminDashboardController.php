@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\BehaviorEventType;
 use App\Models\BehaviorEvent;
 use App\Models\Feedback;
+use App\Models\PracticeQuestionCandidate;
+use App\Models\PracticeQuestionDemand;
 use App\Models\QuestionPack;
 use App\Services\AdminAccessService;
 use Illuminate\Http\Request;
@@ -47,6 +49,17 @@ class AdminDashboardController extends Controller
         $questionPackCount = QuestionPack::query()->count();
         $publishedQuestionPackCount = QuestionPack::query()->where('status', 'published')->count();
 
+        $practiceSince = now()->subDays(30);
+        $practiceDemand30d = PracticeQuestionDemand::query()
+            ->where('created_at', '>=', $practiceSince)
+            ->count();
+        $practiceGapQuestions30d = (int) PracticeQuestionDemand::query()
+            ->where('created_at', '>=', $practiceSince)
+            ->sum('generated_requested_count');
+        $pendingQuestionCandidateCount = PracticeQuestionCandidate::query()
+            ->where('status', PracticeQuestionCandidate::STATUS_PENDING)
+            ->count();
+
         return view('admin.index', compact(
             'feedbackNew',
             'generationAttempts',
@@ -54,6 +67,9 @@ class AdminDashboardController extends Controller
             'updateFailures',
             'questionPackCount',
             'publishedQuestionPackCount',
+            'practiceDemand30d',
+            'practiceGapQuestions30d',
+            'pendingQuestionCandidateCount',
         ));
     }
 }

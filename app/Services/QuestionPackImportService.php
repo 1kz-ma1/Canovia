@@ -10,6 +10,17 @@ use Illuminate\Validation\ValidationException;
 class QuestionPackImportService
 {
     /**
+     * Validate and normalize one Question definition without mutating a Pack.
+     * Candidate promotion reuses the same contract as JSON import.
+     *
+     * @return array<string,mixed>
+     */
+    public function normalizeQuestionDefinition(mixed $raw, int $index = 0): array
+    {
+        return $this->normalizeQuestion($raw, $index);
+    }
+
+    /**
      * @param array<string, mixed> $payload
      * @return array{pack:QuestionPack,created:int,updated:int,deactivated:int,total:int}
      */

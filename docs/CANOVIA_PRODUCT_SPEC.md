@@ -1,8 +1,8 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-26 / V41.8.2 Hybrid Question Assembly
+更新基準: 2026-09-26 / V41.9 Practice Demand & Question Candidate Operations
 
-V41.6のAction First、V41.7のAdmin / Premium Experience Foundationを維持しつつ、V41.8ではPremium Coreを最初の実際のNative AI価値へ接続する。Freeの外部AI Handoffは残し、PremiumではAI Practiceの問題生成・評価に伴うコピー/貼り付けをCanoviaが引き受ける。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md) を参照。
+V41.8系のNative AI Practice / Hybrid Question Assemblyを維持しつつ、V41.9では実際のPractice DemandをQuestion Bank拡充判断へ接続し、Native AI生成問題をCandidateとして隔離して人のレビュー後だけDraft Packへ昇格できる運営ループを追加する。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md) と [V41.9仕様](V41.9_PRACTICE_DEMAND_CANDIDATES.md) を参照。
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -84,6 +84,8 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - Premium CoreのNative AI Practice（問題生成 / 回答評価 / manual fallback）
 - Hybrid Question Assembly（Question Bank優先、不足分だけNative AI補完）
 - Practice Question Demand履歴（要求数 / Bank供給数 / 生成不足 / focus / coverage）
+- Practice Demand Admin集計（exam profile / focus topic / Bank供給 / AI補完不足）
+- Native AI生成問題のQuestion Candidate保存・人手レビュー・Draft Pack昇格フロー
 - Native AI Run usage history（provider / model / AI Capacity / token usage / status）
 
 ### Next
@@ -99,8 +101,6 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
 - Native AI usage historyを使ったquota / cost policy
-- Practice DemandのAdmin集計（Plan / Task / focus topic / Coverage gap）
-- Native AI生成問題のCandidate保存・検証・Question Bank昇格フロー
 
 ### Future
 

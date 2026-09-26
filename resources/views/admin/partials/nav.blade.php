@@ -16,6 +16,10 @@
         class="{{ request()->routeIs('admin.question_packs.*') ? 'btn-primary' : 'btn-secondary' }} px-3 py-2 text-xs"
     >問題集</a>
     <a
+        href="{{ route('admin.practice_demand.index') }}"
+        class="{{ request()->routeIs('admin.practice_demand.*') ? 'btn-primary' : 'btn-secondary' }} px-3 py-2 text-xs"
+    >演習需要</a>
+    <a
         href="{{ route('admin.economy.index') }}"
         class="{{ request()->routeIs('admin.economy.*') ? 'btn-primary' : 'btn-secondary' }} px-3 py-2 text-xs"
     >Economy</a>
