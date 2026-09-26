@@ -13,6 +13,7 @@ class DashboardGuidanceService
     public function __construct(
         private readonly RecommendationService $recommendationService,
         private readonly PlanToolService $toolService,
+        private readonly ExecutionActionPolicyService $executionActions,
         private readonly PlanPriorityService $priorityService,
     ) {}
 
@@ -54,16 +55,7 @@ class DashboardGuidanceService
                 );
 
                 $tools = collect($this->toolService->forTask($plan, $task, true, $actor));
-                $recommendedTool = $tools
-                    ->filter(fn (array $tool) => ($tool['id'] ?? null) !== 'timer' && (bool) ($tool['recommended'] ?? false))
-                    ->sortBy(fn (array $tool) => match ($tool['id'] ?? null) {
-                        'ai_practice' => 0,
-                        'career_workspace' => 1,
-                        'artifacts' => 2,
-                        'resources' => 3,
-                        default => 9,
-                    })
-                    ->first();
+                $recommendedTool = $this->executionActions->primary($tools);
 
                 return [
                     'plan' => $plan,
