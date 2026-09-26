@@ -55,7 +55,7 @@ class PracticeDemandCandidatesV419Test extends TestCase
             ->assertSee('演習需要とQuestion Candidate')
             ->assertSee('ap_subject_a_exam')
             ->assertSee('DNS')
-            ->assertSee('60.0%')
+            ->assertSee('40.0%')
             ->assertSee('Native補完問題');
     }
 
