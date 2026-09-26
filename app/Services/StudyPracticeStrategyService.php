@@ -11,6 +11,7 @@ class StudyPracticeStrategyService
     public function __construct(
         private readonly StudyPracticeExamProfileService $examProfiles,
         private readonly StudyWeaknessPrioritizationService $weaknessPriorities,
+        private readonly StudyTaskProgressionService $progression,
     ) {}
 
     /**
@@ -20,6 +21,8 @@ class StudyPracticeStrategyService
     public function build(Plan $plan, Task $task, Collection $recentAttempts): array
     {
         $recentAttempts = $recentAttempts->take(8)->values();
+        $progression = $this->progression->resolve($plan, $task, $recentAttempts);
+        $masteryVerification = ($progression['kind'] ?? null) === 'verify_mastery';
 
         $latest = $recentAttempts->first();
         $latestScore = $latest ? (int) $latest->score_percent : null;
@@ -39,9 +42,11 @@ class StudyPracticeStrategyService
         // External AI can suggest a count, but Canovia owns the allocation.
         // Weakness reinforcement needs enough questions to keep a diagnostic
         // slice instead of turning the whole session into one local drill.
-        $targetQuestionCount = $guidedPractice
-            ? max(5, min(20, (int) ($guidedNextStep['question_count'] ?? 5)))
-            : 10;
+        $targetQuestionCount = $masteryVerification
+            ? 5
+            : ($guidedPractice
+                ? max(5, min(20, (int) ($guidedNextStep['question_count'] ?? 5)))
+                : 10);
 
         $weakness = $this->weaknessPriorities->analyze(
             $plan,
@@ -52,14 +57,20 @@ class StudyPracticeStrategyService
         );
         $examProfile = $this->examProfiles->forPlanTask($plan, $task);
 
-        $focusTopics = collect($weakness['primary_topics'] ?? [])
-            ->merge($weakness['secondary_topics'] ?? [])
-            ->unique()
-            ->take(5)
-            ->values()
-            ->all();
+        $focusTopics = $masteryVerification
+            ? []
+            : collect($weakness['primary_topics'] ?? [])
+                ->merge($weakness['secondary_topics'] ?? [])
+                ->unique()
+                ->take(5)
+                ->values()
+                ->all();
 
-        if ($recentAttempts->isEmpty()) {
+        if ($masteryVerification) {
+            $key = 'mastery_verification';
+            $label = '完了前の仕上げ確認';
+            $reason = (string) ($progression['reason'] ?? '現在Taskを完了する前に、別の問題で理解が安定しているか確認します。');
+        } elseif ($recentAttempts->isEmpty()) {
             $key = 'baseline_assessment';
             $label = '初回理解度確認';
             $reason = 'このTaskではまだ演習履歴がないため、本番に近い形式で現在の理解度を広く確認します。';
@@ -90,10 +101,21 @@ class StudyPracticeStrategyService
             'latest_score_percent' => $latestScore,
             'exam_profile' => $examProfile,
             'weakness_priority' => $weakness,
-            'question_mix' => $weakness['question_mix'] ?? [
-                'primary' => 0,
-                'secondary' => 0,
-                'diagnostic' => $targetQuestionCount,
+            'question_mix' => $masteryVerification
+                ? [
+                    'primary' => 0,
+                    'secondary' => 0,
+                    'diagnostic' => $targetQuestionCount,
+                ]
+                : ($weakness['question_mix'] ?? [
+                    'primary' => 0,
+                    'secondary' => 0,
+                    'diagnostic' => $targetQuestionCount,
+                ]),
+            'progression' => [
+                'kind' => $progression['kind'] ?? 'continue_current',
+                'reason' => $progression['reason'] ?? null,
+                'verification' => $progression['verification'] ?? null,
             ],
             'task_snapshot' => [
                 'title' => (string) $task->title,

@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v41.10',
+        'date' => '2026-09-26',
+        'title' => 'AI演習を、Taskをまたいで次の学習へつなげる',
+        'summary' => 'AIの「このTaskは完了できそう」という提案をそのまま完了扱いにせず、Canoviaが直近の学習結果を確認して必要なら仕上げ確認を挟み、理解が安定した場合だけ次のTaskへ進めるAdaptive Learning Flowを追加しました。',
+        'highlights' => [
+            'next_step=complete_taskや進捗100%提案はcompletion signalとして扱い、AIだけではTaskを完了できません。',
+            '直近2回でscore 85%以上・重大な弱点Signalなしが続いた場合に、CanoviaがTask完了を確定します。',
+            '確認が足りない場合はTaskを最大99%に留め、5問目安の「完了前の仕上げ確認」をTask全体から出題します。',
+            '仕上げ確認を通過するとdependencyを考慮して次に実行可能なTaskを選び、そのTask内容で新しい演習Strategy / Promptを組み立てます。',
+            '採点後画面はNEXT ACTIONとPrimary CTAを主役にし、Task反映用の重複CTAを廃止しました。',
+            '強み・弱点・問題別Feedback・評価根拠は「詳しい評価を確認」へ折りたたみ、次の行動を見失いにくくしました。',
+        ],
+        'tip' => '次の段階では、AI問題演習だけでなくRecall / Resource Studyなど学習方法そのものを選ぶPolicyと、演習の信頼度・学習方法適合度の可視化を追加します。',
+    ],
+    [
         'version' => 'v41.9',
         'date' => '2026-09-26',
         'title' => '足りない問題を見つけ、AI生成問題を安全に育てる',

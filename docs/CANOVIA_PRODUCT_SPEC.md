@@ -1,8 +1,8 @@
 # Canovia Product Specification
 
-更新基準: 2026-09-26 / V41.9 Practice Demand & Question Candidate Operations
+更新基準: 2026-09-26 / V41.10 Adaptive Learning Flow Phase A
 
-V41.8系のNative AI Practice / Hybrid Question Assemblyを維持しつつ、V41.9では実際のPractice DemandをQuestion Bank拡充判断へ接続し、Native AI生成問題をCandidateとして隔離して人のレビュー後だけDraft Packへ昇格できる運営ループを追加する。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md) と [V41.9仕様](V41.9_PRACTICE_DEMAND_CANDIDATES.md) を参照。
+V41.8〜V41.9のNative AI Practice / Hybrid Question Assembly / Practice Demand運営ループを維持しつつ、V41.10ではAIのTask完了提案をCanovia側で検証し、必要なら仕上げ確認を挟んでから次のeligible Taskへ学習対象を切り替えるAdaptive Learning Flowを追加する。詳細は [V41.8仕様](V41.8_NATIVE_AI_PRACTICE.md)、[V41.9仕様](V41.9_PRACTICE_DEMAND_CANDIDATES.md)、[V41.10仕様](V41.10_ADAPTIVE_LEARNING_FLOW.md) を参照。
 
 この文書をCanoviaのプロダクトレベル仕様の正とする。旧PaceKeeper v16系のProject Overview / Requirements / Functional Spec / Future Ideasは履歴資料として扱い、現在仕様の判断には本書と各V40系実装ドキュメントを優先する。
 
@@ -86,6 +86,10 @@ Canoviaは「完璧な計画を守らせる」より、現実の行動・発見�
 - Practice Question Demand履歴（要求数 / Bank供給数 / 生成不足 / focus / coverage）
 - Practice Demand Admin集計（exam profile / focus topic / Bank供給 / AI補完不足）
 - Native AI生成問題のQuestion Candidate保存・人手レビュー・Draft Pack昇格フロー
+- Study Task Progression（completion signal → mastery verification → next eligible Task）
+- AI Practiceの完了前仕上げ確認（直近2回の安定確認・1回だけの高得点ではTaskを跨がない）
+- AI Practice ResultのPrimary Action化と詳細評価の折りたたみ
+- 次Task内容を使ったStudy Practice Strategy / Prompt handoff
 - Native AI Run usage history（provider / model / AI Capacity / token usage / status）
 
 ### Next
@@ -100,6 +104,8 @@ iOS正式公開準備や、現行基盤を実運用へ接続する近い将来�
 - Roadmap FeatureとRelease Notesの明示的な紐付け
 - StoreKit / App Store Server API / Stripe等からProduct Grantへ同期するBilling Adapter
 - Study / Career / Developer Packの具体Capability実装とFeatureKey接続
+- Study Activity Policy（Question Practice / Recall / Resource Study等）の抽象化
+- 出題品質 / 採点信頼性 / Coverage / 学習方法適合度の可視化
 - Native AI usage historyを使ったquota / cost policy
 
 ### Future
