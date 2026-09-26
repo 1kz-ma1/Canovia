@@ -11,6 +11,7 @@ class PlanToolService
 {
     public function __construct(
         private readonly FeatureAccessService $featureAccess,
+        private readonly StudyActivityPolicyService $studyActivities,
     ) {}
 
     /**
@@ -44,21 +45,44 @@ class PlanToolService
             ];
         }
 
-        if (
-            $this->isStudyPlan($plan)
-            && $this->featureAccess->canUse($actor, FeatureKey::AiPractice, [
+        if ($this->isStudyPlan($plan)) {
+            $studyActivity = $this->studyActivities->forPlanTask($plan, $task);
+            $primaryActivity = (array) ($studyActivity['primary'] ?? []);
+            $primaryActivityKey = (string) ($primaryActivity['key'] ?? StudyActivityPolicyService::QUESTION_PRACTICE);
+
+            if ($primaryActivityKey !== StudyActivityPolicyService::QUESTION_PRACTICE) {
+                $tools[] = [
+                    'id' => 'study_activity',
+                    'name' => (string) ($primaryActivity['short_label'] ?? '学習方法'),
+                    'description' => (string) ($primaryActivity['reason'] ?? $primaryActivity['description'] ?? 'このTaskに合う学習方法で進めます。'),
+                    'icon' => (string) ($primaryActivity['icon'] ?? '◉'),
+                    'recommended' => true,
+                    'badge' => '適合度 '.(int) ($primaryActivity['fit_score'] ?? 0),
+                    'activity' => $primaryActivity,
+                ];
+            }
+
+            if ($this->featureAccess->canUse($actor, FeatureKey::AiPractice, [
                 'plan_id' => (int) $plan->id,
                 'task_id' => (int) $task->id,
-            ])
-        ) {
-            $tools[] = [
-                'id' => 'ai_practice',
-                'name' => 'AI演習',
-                'description' => 'Taskの内容から問題を作り、Canovia上で解いて理解度を確認します。',
-                'icon' => '✦',
-                'recommended' => $this->practiceFriendly($task),
-                'badge' => '学習',
-            ];
+            ])) {
+                $questionPractice = collect($studyActivity['all'] ?? [])
+                    ->firstWhere('key', StudyActivityPolicyService::QUESTION_PRACTICE);
+
+                $tools[] = [
+                    'id' => 'ai_practice',
+                    'name' => 'AI演習',
+                    'description' => $primaryActivityKey === StudyActivityPolicyService::QUESTION_PRACTICE
+                        ? 'Taskの内容から問題を作り、Canovia上で解いて理解度を確認します。'
+                        : 'このTaskでは別の学習方法を優先しますが、理解確認用の問題演習として利用できます。',
+                    'icon' => '✦',
+                    'recommended' => $primaryActivityKey === StudyActivityPolicyService::QUESTION_PRACTICE,
+                    'badge' => $primaryActivityKey === StudyActivityPolicyService::QUESTION_PRACTICE
+                        ? 'おすすめ'
+                        : '適合度 '.(int) data_get($questionPractice, 'fit_score', 0),
+                    'activity' => $questionPractice,
+                ];
+            }
         }
 
         if ($plan->relationLoaded('resources') || $task->relationLoaded('resources')) {
