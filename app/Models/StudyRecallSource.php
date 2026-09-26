@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class StudyRecallSource extends Model
+{
+    public const TYPES = ['image', 'pdf', 'text'];
+    public const STATUSES = ['pending', 'ready', 'failed'];
+
+    protected $fillable = [
+        'plan_id',
+        'task_id',
+        'user_id',
+        'actor_token',
+        'source_type',
+        'original_name',
+        'mime_type',
+        'storage_path',
+        'source_text',
+        'status',
+        'native_ai_run_id',
+        'candidate_count',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'candidate_count' => 'integer',
+        ];
+    }
+
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class);
+    }
+
+    public function task()
+    {
+        return $this->belongsTo(Task::class);
+    }
+
+    public function candidates()
+    {
+        return $this->hasMany(StudyRecallCandidate::class);
+    }
+
+    public function sourceLabel(): string
+    {
+        return match ($this->source_type) {
+            'image' => '画像・スクリーンショット',
+            'pdf' => 'PDF',
+            'text' => 'テキスト',
+            default => '教材',
+        };
+    }
+}
