@@ -2,6 +2,21 @@
 
 return [
     [
+        'version' => 'v41.8.1',
+        'date' => '2026-09-26',
+        'title' => 'AI演習の回答欄を、問題の考え方に合わせる',
+        'summary' => 'Native AIで選択問題を生成したときも、計算や条件整理が学習診断に重要な問題では、最終回答だけでなく計算過程・思考過程を入力できるようにしました。',
+        'highlights' => [
+            '各AI生成問題へwork_inputを追加し、none / reasoning / calculationの3種類で入力形式を明示します。',
+            '単純な知識確認はchoice-onlyを維持し、すべての問題へ記述欄を強制しません。',
+            '条件整理・比較・判断根拠が重要な問題では「考え方・判断理由」のtextareaを表示します。',
+            '式・途中値・単位変換などが重要な問題では「計算過程」のtextareaを表示します。',
+            'Native AIがtextareaを返し忘れても、work_inputがreasoning / calculationならCanovia側が診断用textareaを補完します。',
+            '同じ正規化を外部AIからのJSON読込にも適用し、Native / 外部AIで回答UIの考え方が分かれないようにしました。',
+        ],
+        'tip' => '思考・計算欄は学習診断用で任意です。本番形式の選択回答はそのまま維持します。',
+    ],
+    [
         'version' => 'v41.8',
         'date' => '2026-09-25',
         'title' => 'Premiumなら、AI演習のコピペをCanoviaが引き受ける',
