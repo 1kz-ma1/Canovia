@@ -1,0 +1,246 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\CareerCapture;
+use App\Models\Plan;
+use App\Models\StudyRecallCandidate;
+use App\Models\StudyRecallSource;
+use App\Models\Task;
+use App\Models\User;
+use App\Models\WorkSession;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Tests\TestCase;
+
+class InboxFoundationV4113Test extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutVite();
+        config(['filesystems.default' => 'local']);
+        Storage::fake('local');
+    }
+
+    public function test_user_can_capture_text_without_choosing_a_destination(): void
+    {
+        [$user] = $this->scenario();
+
+        $this->actingAs($user)
+            ->post(route('inbox.store'), [
+                'content' => 'あとで検討したい新機能のアイデア',
+            ])
+            ->assertRedirect(route('inbox.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('inbox_items', [
+            'user_id' => $user->id,
+            'plan_id' => null,
+            'source_type' => 'text',
+            'status' => 'new',
+            'content' => 'あとで検討したい新機能のアイデア',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('inbox.index'))
+            ->assertOk()
+            ->assertSee('とりあえず、ここに渡す')
+            ->assertSee('あとで検討したい新機能のアイデア')
+            ->assertSee('Plan未指定');
+    }
+
+    public function test_image_or_pdf_is_stored_privately_and_other_user_cannot_open_it(): void
+    {
+        [$owner] = $this->scenario();
+
+        $this->actingAs($owner)
+            ->post(route('inbox.store'), [
+                'source_file' => $this->pdfUpload('reference.pdf'),
+                'content' => 'あとで整理する参考資料',
+            ])
+            ->assertRedirect(route('inbox.index'))
+            ->assertSessionHasNoErrors();
+
+        $item = \App\Models\InboxItem::firstOrFail();
+        $this->assertSame('pdf', $item->source_type);
+        $this->assertNotNull($item->storage_path);
+        Storage::disk('local')->assertExists($item->storage_path);
+
+        $other = User::factory()->create();
+
+        $this->actingAs($other)
+            ->get(route('inbox.file', $item))
+            ->assertForbidden();
+
+        $this->actingAs($owner)
+            ->get(route('inbox.file', $item))
+            ->assertOk();
+    }
+
+    public function test_inbox_aggregates_existing_pending_states_without_copying_them(): void
+    {
+        [$user, $plan, $task] = $this->scenario();
+        $actorToken = str_repeat('a', 64);
+
+        $source = StudyRecallSource::create([
+            'plan_id' => $plan->id,
+            'task_id' => $task->id,
+            'user_id' => $user->id,
+            'source_type' => 'text',
+            'source_text' => 'maintain = 維持する',
+            'status' => 'ready',
+            'candidate_count' => 1,
+        ]);
+
+        StudyRecallCandidate::create([
+            'study_recall_source_id' => $source->id,
+            'plan_id' => $plan->id,
+            'task_id' => $task->id,
+            'prompt' => 'maintain',
+            'answer' => '維持する',
+            'tags' => ['TOEIC'],
+            'source_excerpt' => 'maintain = 維持する',
+            'confidence' => 93,
+            'status' => 'pending',
+            'fingerprint' => hash('sha256', 'maintain|維持する'),
+        ]);
+
+        CareerCapture::create([
+            'plan_id' => $plan->id,
+            'user_id' => $user->id,
+            'source_type' => 'url',
+            'status' => 'pending',
+            'source_url' => 'https://example.com/jobs/1',
+            'captured_at' => now(),
+        ]);
+
+        WorkSession::create([
+            'actor_token' => $actorToken,
+            'browser_session_id' => 'inbox-foundation-test',
+            'plan_id' => $plan->id,
+            'task_id' => $task->id,
+            'status' => 'completed',
+            'started_at' => now()->subHour(),
+            'ended_at' => now()->subMinutes(30),
+            'actual_seconds' => 1800,
+            'paused_seconds' => 0,
+            'source' => 'dashboard',
+            'needs_plan_update' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['pace_keeper.actor_token' => $actorToken])
+            ->get(route('inbox.index'))
+            ->assertOk()
+            ->assertSee('Recall Candidate')
+            ->assertSee('maintain')
+            ->assertSee('Career Capture')
+            ->assertSee('Planへ未反映')
+            ->assertSee($task->title);
+
+        $this->assertDatabaseCount('inbox_items', 0);
+        $this->assertDatabaseCount('study_recall_candidates', 1);
+        $this->assertDatabaseCount('career_captures', 1);
+        $this->assertDatabaseCount('work_sessions', 1);
+    }
+
+    public function test_item_can_be_marked_processed_and_leaves_unsorted_queue(): void
+    {
+        [$user] = $this->scenario();
+
+        $this->actingAs($user)->post(route('inbox.store'), [
+            'content' => '整理するメモ',
+        ]);
+
+        $item = \App\Models\InboxItem::firstOrFail();
+
+        $this->actingAs($user)
+            ->patch(route('inbox.status', $item), ['status' => 'processed'])
+            ->assertRedirect(route('inbox.index'));
+
+        $this->assertSame('processed', $item->fresh()->status);
+        $this->assertNotNull($item->fresh()->processed_at);
+
+        $this->actingAs($user)
+            ->get(route('inbox.index'))
+            ->assertOk()
+            ->assertSee('未整理 0件')
+            ->assertSee('最近整理したInbox Item');
+    }
+
+    public function test_main_navigation_uses_inbox_while_legacy_today_route_remains_available(): void
+    {
+        [$user] = $this->scenario();
+
+        $mobile = file_get_contents(resource_path('views/layouts/partials/mobile-nav.blade.php'));
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $this->assertStringContainsString("route('inbox.index')", $mobile);
+        $this->assertStringContainsString('<span>Inbox</span>', $mobile);
+        $this->assertStringNotContainsString("route('navigation.index')", $mobile);
+        $this->assertStringContainsString("route('inbox.index')", $layout);
+        $this->assertStringContainsString('<span>Inbox</span>', $layout);
+
+        $this->actingAs($user)
+            ->get(route('navigation.index'))
+            ->assertOk();
+    }
+
+    public function test_old_onboarding_copy_no_longer_tells_users_to_go_to_today(): void
+    {
+        $script = file_get_contents(resource_path('js/app.js'));
+        $intro = file_get_contents(resource_path('views/layouts/partials/onboarding.blade.php'));
+
+        $this->assertStringContainsString('新しい情報はInboxへ', $script);
+        $this->assertStringContainsString('分類はあとで大丈夫', $script);
+        $this->assertStringNotContainsString('迷ったら「今日」へ', $script);
+        $this->assertStringContainsString('新しい情報はInboxへ', $intro);
+    }
+
+    private function pdfUpload(string $name): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'inbox-pdf-');
+        file_put_contents($path, "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF");
+
+        return new UploadedFile($path, $name, 'application/pdf', null, true);
+    }
+
+    private function scenario(): array
+    {
+        $user = User::factory()->create();
+
+        $plan = Plan::create([
+            'user_id' => $user->id,
+            'owner_token' => Str::random(64),
+            'public_slug' => (string) Str::uuid(),
+            'title' => 'InboxテストPlan',
+            'description' => 'Inboxの確認',
+            'category' => '就活・キャリア',
+            'priority' => 1,
+            'priority_mode' => 'manual',
+            'start_date' => today(),
+            'deadline' => today()->addMonth(),
+            'is_public' => false,
+        ]);
+
+        $task = Task::create([
+            'plan_id' => $plan->id,
+            'title' => '確認Task',
+            'description' => 'Inbox連携を確認する',
+            'estimated_minutes' => 60,
+            'remaining_minutes' => 60,
+            'progress_percent' => 20,
+            'status' => 'doing',
+            'priority' => 1,
+            'activation_cost' => 2,
+            'sort_order' => 1,
+        ]);
+
+        return [$user, $plan, $task];
+    }
+}

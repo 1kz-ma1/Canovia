@@ -28,7 +28,7 @@
             </article>
             <article>
                 <span aria-hidden="true">⚡</span>
-                <div><strong>迷ったら「今日」から</strong><small>候補を絞って、そのまま作業を始められます。</small></div>
+                <div><strong>新しい情報はInboxへ</strong><small>整理先を決める前でも、まずCanoviaへ渡しておけます。</small></div>
             </article>
         </div>
 

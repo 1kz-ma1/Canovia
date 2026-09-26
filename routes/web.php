@@ -15,6 +15,7 @@ use App\Http\Controllers\PlanReviewAssistantController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\BehaviorEventController;
 use App\Http\Controllers\NavigationController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\WorkSessionController;
 use App\Http\Controllers\AuthController;
@@ -142,6 +143,10 @@ Route::get('/dashboard/tools', [HomeController::class, 'legacy'])->name('dashboa
 Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
 Route::get('/roadmap', [RoadmapController::class, 'index'])->name('roadmap.index');
 Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline.index');
+Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+Route::post('/inbox', [InboxController::class, 'store'])->name('inbox.store');
+Route::patch('/inbox/{inboxItem}/status', [InboxController::class, 'updateStatus'])->name('inbox.status');
+Route::get('/inbox/{inboxItem}/file', [InboxController::class, 'file'])->name('inbox.file');
 
 Route::post('/behavior/events', [BehaviorEventController::class, 'store'])->name('behavior_events.store');
 Route::post('/recommendations/alternative', [RecommendationController::class, 'alternative'])->name('recommendations.alternative');
