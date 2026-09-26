@@ -1,6 +1,12 @@
 @php
     $tools = collect($tools ?? []);
     $compactTools = (bool) ($compactTools ?? false);
+    $hasSpecializedPrimary = $tools->contains(
+        fn ($tool) => ($tool['id'] ?? null) !== 'timer' && (bool) ($tool['recommended'] ?? false)
+    );
+    $tools = $hasSpecializedPrimary
+        ? $tools->reject(fn ($tool) => ($tool['id'] ?? null) === 'timer')->values()
+        : $tools;
 @endphp
 
 @if ($tools->isNotEmpty())
