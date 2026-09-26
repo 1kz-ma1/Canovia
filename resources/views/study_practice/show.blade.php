@@ -586,11 +586,11 @@
                                                 @endforeach
                                             </div>
                                         @elseif ($field['type'] === 'number')
-                                            <input type="number" step="any" name="{{ $fieldName }}" value="{{ $fieldValue }}" class="form-control mt-2" placeholder="{{ $field['placeholder'] ?: '数値を入力' }}">
+                                            <input type="number" step="any" name="{{ $fieldName }}" value="{{ $fieldValue }}" class="form-control mt-2" placeholder="{{ ($field['placeholder'] ?? '') ?: '数値を入力' }}">
                                         @elseif ($field['type'] === 'short_text')
-                                            <input type="text" name="{{ $fieldName }}" value="{{ $fieldValue }}" class="form-control mt-2" placeholder="{{ $field['placeholder'] ?: '短く回答' }}">
+                                            <input type="text" name="{{ $fieldName }}" value="{{ $fieldValue }}" class="form-control mt-2" placeholder="{{ ($field['placeholder'] ?? '') ?: '短く回答' }}">
                                         @else
-                                            <textarea name="{{ $fieldName }}" class="form-control mt-2 min-h-28" placeholder="{{ $field['placeholder'] ?: '回答・考え方を入力' }}">{{ $fieldValue }}</textarea>
+                                            <textarea name="{{ $fieldName }}" class="form-control mt-2 min-h-28" placeholder="{{ ($field['placeholder'] ?? '') ?: '回答・考え方を入力' }}">{{ $fieldValue }}</textarea>
                                         @endif
 
                                         @error($fieldError)<p class="mt-2 text-sm font-semibold text-rose-300">{{ $message }}</p>@enderror
