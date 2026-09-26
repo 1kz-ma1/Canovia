@@ -26,10 +26,58 @@ class QuestionBankStudyPracticeQuestionProvider implements StudyPracticeQuestion
 
     public function prepare(Plan $plan, Task $task, Collection $recentAttempts, array $strategy, ?int $actorUserId = null): array
     {
+        return $this->prepareSelection(
+            $plan,
+            $task,
+            $recentAttempts,
+            $strategy,
+            $actorUserId,
+            false,
+        );
+    }
+
+    /**
+     * Select only the questions the current Question Bank can confidently
+     * supply. Missing seats are intentionally left open for Hybrid assembly.
+     */
+    public function preparePartial(
+        Plan $plan,
+        Task $task,
+        Collection $recentAttempts,
+        array $strategy,
+        ?int $actorUserId = null,
+    ): array {
+        return $this->prepareSelection(
+            $plan,
+            $task,
+            $recentAttempts,
+            $strategy,
+            $actorUserId,
+            true,
+        );
+    }
+
+    private function prepareSelection(
+        Plan $plan,
+        Task $task,
+        Collection $recentAttempts,
+        array $strategy,
+        ?int $actorUserId,
+        bool $allowPartial,
+    ): array {
+
         $coverage = $this->coverageService->evaluate($plan, $task, $strategy);
         $pack = $coverage['pack'];
 
-        if (! $coverage['available'] || ! $pack) {
+        if (! $pack) {
+            if ($allowPartial) {
+                return $this->emptySelection($coverage, $strategy);
+            }
+
+            throw new RuntimeException('Question BankのCoverageが不足しています。');
+        }
+
+        if (! $allowPartial && ! $coverage['available']) {
             throw new RuntimeException('Question BankのCoverageが不足しています。');
         }
 
@@ -62,7 +110,7 @@ class QuestionBankStudyPracticeQuestionProvider implements StudyPracticeQuestion
         $recentQuestionIds = StudyPracticeSession::query()
             ->where('plan_id', $plan->id)
             ->where('task_id', $task->id)
-            ->where('question_provider', $this->key())
+            ->whereNotNull('selected_questions')
             ->latest('created_at')
             ->take(8)
             ->get()
@@ -132,23 +180,26 @@ class QuestionBankStudyPracticeQuestionProvider implements StudyPracticeQuestion
         );
         $this->appendSelection($selected, $selectedIds, $diagnostic, 'diagnostic');
 
-        // Coverage can be sparse for a particular weakness. Fill any remaining
-        // seats from the whole exam pack rather than failing the session.
-        $remaining = max(0, $targetCount - $selected->count());
-        if ($remaining > 0) {
-            $fallback = $this->selectBucket(
-                $candidates,
-                $remaining,
-                'domain_key',
-                null,
-                $preferHarder,
-                $selectedIds,
-            );
-            $this->appendSelection($selected, $selectedIds, $fallback, 'balanced_fill');
-        }
+        // Bank-only mode keeps the historical behavior and fills the remaining
+        // seats from the pack. Hybrid mode deliberately leaves uncovered seats
+        // open so Native AI can generate only the missing practice demand.
+        if (! $allowPartial) {
+            $remaining = max(0, $targetCount - $selected->count());
+            if ($remaining > 0) {
+                $fallback = $this->selectBucket(
+                    $candidates,
+                    $remaining,
+                    'domain_key',
+                    null,
+                    $preferHarder,
+                    $selectedIds,
+                );
+                $this->appendSelection($selected, $selectedIds, $fallback, 'balanced_fill');
+            }
 
-        if ($selected->count() < $targetCount) {
-            throw new RuntimeException('Question Bankから必要数の問題を選定できませんでした。');
+            if ($selected->count() < $targetCount) {
+                throw new RuntimeException('Question Bankから必要数の問題を選定できませんでした。');
+            }
         }
 
         $selected = $selected->take($targetCount)->values();
