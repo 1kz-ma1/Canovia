@@ -45,8 +45,9 @@ class StudyPracticeReliabilityService
         };
 
         $coverage = $this->coverageScore($session, $providerKey, $strategy);
-        $methodFit = (int) collect($activity['all'] ?? [])
-            ->firstWhere('key', StudyActivityPolicyService::QUESTION_PRACTICE)['fit_score'] ?? 60;
+        $questionPractice = collect($activity['all'] ?? [])
+            ->firstWhere('key', StudyActivityPolicyService::QUESTION_PRACTICE);
+        $methodFit = (int) data_get($questionPractice, 'fit_score', 60);
 
         $metrics = [
             [
