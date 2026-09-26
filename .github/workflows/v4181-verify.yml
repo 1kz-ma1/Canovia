@@ -1,0 +1,73 @@
+name: V41.8.1 Practice Input verify
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'config/**'
+      - 'docs/**'
+      - 'tests/**'
+      - '.github/workflows/v4181-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - run: php -l app/Http/Controllers/StudyPracticeController.php
+      - run: php -l app/Services/StudyPracticePromptService.php
+      - run: php -l app/Services/StudyPracticeNativeAiSchema.php
+      - run: php artisan view:cache
+      - name: Focused regression
+        run: >
+          php artisan test
+          tests/Feature/NativeAiPracticeV418Test.php
+          tests/Feature/StudyPracticeCalibrationV414Test.php
+          tests/Feature/StudyPracticeToolV392Test.php
+          tests/Feature/StudyPracticeLearningLoopV393Test.php
+
+  full-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - name: Full suite on branch
+        continue-on-error: true
+        run: php artisan test
+
+  full-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - name: Full suite on main
+        continue-on-error: true
+        run: php artisan test
